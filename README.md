@@ -233,34 +233,38 @@ concatenated by `build.js` into a single installable file at
 
 ```
 src/
-├── 00-banner.js            UserScript metadata header
+├── banner.js               UserScript metadata header
 ├── open.js                 IIFE open + 'use strict'
-├── 01-config.js            CONFIG, animation constants
-├── 02-host-shield.js       HostShield (event isolation)
-├── 03-utils.js             Utils, truncation helpers
-├── 04-providers.js         Providers (host detection and context wrapping)
-├── 05-project-context.js   ProjectContext + legacy migration
-├── 06-errors.js            NetError, ErrorIndexer (catalog and history)
-├── 07-history.js           EnhancementHistory + legacy migration
-├── 08-rate-limiter.js      RateLimiter (10 req / 60 s per host)
-├── 09-params.js            ParamSchema (declarative definition + presets)
-├── 10-system-prompt.js     SystemPromptManager (validation + presets)
-├── 11-stream-parser.js     StreamParser (SSE)
-├── 12-anim.js              Anim (GSAP wrappers), createGear (canvas)
-├── 13-styles.js            injectStyles (full CSS)
-├── 14-icons.js             ICONS, Atoms (SVG + button builders)
-├── 15-code-attachment.js   codeAttachment (paste + file attachment)
-├── 16-context-popover.js   contextPopover (anchored popover)
-├── 17-state.js             Shared state object
-├── 18-settings-modal.js    settingsModal (params, context, prompt, history)
-├── 19-wire-overlay.js      wireOverlayToEvents (loading overlay events)
-├── 20-molecules.js         Molecules (toolbar, overlays, panels, wizard, toast)
-├── 21-kilo-api.js          KiloApi (HTTP client with streaming + history)
-├── 22-composer.js          Composer (toolbar mounting per input)
-├── 23-main-flow.js         Event handlers, flow orchestration, menu, init
-├── 24-bootstrap.js         DOMContentLoaded / init dispatch
+├── config.js               CONFIG and animation constants
+├── host-shield.js          HostShield (event isolation)
+├── utils.js                Utils and truncation helpers
+├── providers-project-context.js Providers and ProjectContext (host detection, context and files)
+├── migration.js            Legacy storage and history migration
+├── network-errors.js       NetError and ErrorIndexer (catalog and history)
+├── enhancement-history.js  EnhancementHistory (run history)
+├── rate-limiter.js         RateLimiter (10 req / 60 s per host)
+├── param-schema.js         ParamSchema (declarative definition + presets)
+├── system-prompt-manager.js SystemPromptManager (validation + presets)
+├── stream-parser-anim.js   StreamParser (SSE) and Anim (GSAP wrappers)
+├── gear.js                 Loading gear states and canvas
+├── styles.js               injectStyles (full CSS)
+├── icons-atoms.js          ICONS and Atoms (SVG + button builders)
+├── code-attachment.js      codeAttachment (paste + file attachment)
+├── context-popover.js      contextPopover (anchored popover)
+├── state.js                Shared state object
+├── settings-modal.js       settingsModal (params, context, prompt, history)
+├── overlay-events.js       wireOverlayToEvents (loading overlay events)
+├── molecules.js            Molecules (toolbar, overlays, panels, wizard, toast)
+├── kilo-api.js             KiloApi (HTTP client with streaming + history)
+├── composer.js             Composer (toolbar mounting per input)
+├── orchestration.js        Event handlers, flow orchestration, menu
+├── bootstrap.js            DOMContentLoaded / init dispatch
 └── close.js                IIFE close
 ```
+
+The concatenation order of the 24 middle modules is controlled by the
+root-level `manifest.json`; `banner.js`, `open.js` and `close.js` remain in
+fixed structural positions.
 
 **Composition order for every request:**
 

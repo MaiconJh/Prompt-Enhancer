@@ -1,4 +1,4 @@
-// ===== src/08-rate-limiter.js =====
+// ===== src/rate-limiter.js =====
     const RateLimiter = (() => {
         const map = new Map();
         const key = () => location.hostname || 'unknown';

@@ -1,4 +1,4 @@
-// ===== src/22-composer.js =====
+// ===== src/composer.js =====
     const Composer = (() => {
         const mounted = new WeakSet();
         function findComposer(input) {

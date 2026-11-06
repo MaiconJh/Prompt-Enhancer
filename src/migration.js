@@ -1,4 +1,4 @@
-// ===== src/05-migration.js =====
+// ===== src/migration.js =====
     function migrateLegacy() {
         const KEY_MIGRATED = 'kpe_ctx_migrated';
         let migrated = false;

@@ -1,4 +1,4 @@
-// ===== src/01-config.js =====
+// ===== src/config.js =====
     const CONFIG = {
         API_URL: 'https://api.kilo.ai/api/openrouter/chat/completions',
         MODEL: 'kilo-auto/free',

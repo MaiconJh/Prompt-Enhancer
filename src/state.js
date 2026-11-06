@@ -1,4 +1,4 @@
-// ===== src/17-state.js =====
+// ===== src/state.js =====
     const State = {
         activeInput: null, activeComposer: null, previousText: null,
         isProcessing: false, isGuiding: false, preview: null, wizard: null,

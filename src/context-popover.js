@@ -1,4 +1,4 @@
-// ===== src/16-context-popover.js =====
+// ===== src/context-popover.js =====
     function contextPopover({ anchor, onChange } = {}) {
         const root = document.createElement('div');
         root.className = 'kpe-agents-popover kpe-scope';

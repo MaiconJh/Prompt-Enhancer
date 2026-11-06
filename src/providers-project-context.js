@@ -1,4 +1,4 @@
-// ===== src/04-providers-project-context.js =====
+// ===== src/providers-project-context.js =====
     const Providers = (() => {
         function detect() {
             const host = (location.hostname || '').toLowerCase();

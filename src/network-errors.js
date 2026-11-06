@@ -1,4 +1,4 @@
-// ===== src/06-network-errors.js =====
+// ===== src/network-errors.js =====
     class NetError extends Error {
         constructor(code, message, meta = {}) {
             super(message || code);

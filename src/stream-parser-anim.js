@@ -1,4 +1,4 @@
-// ===== src/11-stream-parser-anim.js =====
+// ===== src/stream-parser-anim.js =====
     const StreamParser = (() => {
         function create() {
             let buffer = '', doneEmitted = false;

@@ -1,4 +1,4 @@
-// ===== src/15-code-attachment.js =====
+// ===== src/code-attachment.js =====
     function codeAttachment({ q, onUpdate } = {}) {
         const root = document.createElement('div');
         root.className = 'kpe-code-wrap';

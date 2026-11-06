@@ -1,4 +1,4 @@
-// ===== src/24-bootstrap.js =====
+// ===== src/bootstrap.js =====
     function init() {
         injectStyles();
         HostShield.install();

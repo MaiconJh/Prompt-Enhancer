@@ -1,4 +1,4 @@
-// ===== src/12-gear.js =====
+// ===== src/gear.js =====
     // ===== Gear canvas (loading overlay) =====
     const GEAR_STATES = {
         connecting: { rgb: [124, 156, 255], rgb2: [168,  85, 247], morph: 0.0, speed: 1.0 },

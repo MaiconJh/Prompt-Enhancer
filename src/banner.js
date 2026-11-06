@@ -1,4 +1,4 @@
-// ===== src/00-banner.js =====
+// ===== src/banner.js =====
 // ==UserScript==
 // @name         Prompt-Enhancer
 // @name:pt-BR   Aprimorador de Prompt Kilo

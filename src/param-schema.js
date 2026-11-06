@@ -1,4 +1,4 @@
-// ===== src/09-param-schema.js =====
+// ===== src/param-schema.js =====
     // ===== ParamSchema (number | select) =====
     const ParamSchema = (() => {
         const SCHEMA = [

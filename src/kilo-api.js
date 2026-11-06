@@ -1,4 +1,4 @@
-// ===== src/21-kilo-api.js =====
+// ===== src/kilo-api.js =====
     // ===== KiloApi (with history capture per-call + extended system composition) =====
     const KiloApi = {
         _post(systemPrompt, userContent, options = {}) {

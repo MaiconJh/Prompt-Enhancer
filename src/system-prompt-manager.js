@@ -1,4 +1,4 @@
-// ===== src/10-system-prompt-manager.js =====
+// ===== src/system-prompt-manager.js =====
     const SystemPromptManager = (() => {
         const STORAGE_KEY = 'kpe_system_prompt_v1';
         const MAX_LENGTH = 12_000;

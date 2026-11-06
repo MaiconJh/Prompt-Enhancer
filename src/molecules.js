@@ -1,4 +1,4 @@
-// ===== src/20-molecules.js =====
+// ===== src/molecules.js =====
     const Molecules = {
         codeAttachment, contextPopover, settingsModal,
 

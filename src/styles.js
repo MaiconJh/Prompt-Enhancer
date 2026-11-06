@@ -1,4 +1,4 @@
-// ===== src/13-styles.js =====
+// ===== src/styles.js =====
     function injectStyles() {
         GM_addStyle(`
             :where(.kpe-scope){

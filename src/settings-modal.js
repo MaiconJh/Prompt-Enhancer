@@ -1,4 +1,4 @@
-// ===== src/18-settings-modal.js =====
+// ===== src/settings-modal.js =====
     // ===== Settings Modal (Histórico + Parâmetros + Contexto/Idioma + System prompt) =====
     function settingsModal({ initialTab = 'params', onSave, onClose } = {}) {
         const previouslyFocused = document.activeElement;

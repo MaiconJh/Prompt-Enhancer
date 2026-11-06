@@ -1,4 +1,4 @@
-// ===== src/23-orchestration.js =====
+// ===== src/orchestration.js =====
     const getAnchor = () => State.activeComposer?.mount || State.activeInput || document.body;
     const closePreview = () => { State.preview?.close?.(); State.preview = null; };
     const closeWizard = () => { State.wizard?.close?.(); State.wizard = null; };

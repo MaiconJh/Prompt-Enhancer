@@ -1,4 +1,4 @@
-// ===== src/02-host-shield.js =====
+// ===== src/host-shield.js =====
     const HostShield = (() => {
         let installed = false;
         const isInsideScope = (t) => t && t.closest && t.closest('.kpe-scope');

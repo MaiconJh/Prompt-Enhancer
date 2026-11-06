@@ -1,4 +1,4 @@
-// ===== src/19-overlay-events.js =====
+// ===== src/overlay-events.js =====
     // ===== wireOverlayToEvents (shared) =====
     function wireOverlayToEvents(overlay) {
         let isFirstMeta = true;
