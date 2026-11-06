@@ -1,0 +1,14 @@
+{
+  "name": "prompt-enhancer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.js",
+    "check": "node check.js",
+    "test": "npm run check"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
