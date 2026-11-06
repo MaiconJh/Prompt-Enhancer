@@ -342,6 +342,10 @@
             .kpe-param-row--full{flex-direction:column;align-items:stretch;gap:6px;min-width:0;}
             .kpe-param-row--full .kpe-param-label{flex:0 0 auto;padding-top:0;}
             .kpe-param-row--full .kpe-param-input{max-width:100%;}
+            .kpe-provider-actions{display:flex;align-items:center;gap:8px;margin:4px 0 14px;}
+            .kpe-provider-status{font-size:11px;margin-left:8px;}
+            .kpe-provider-status.is-ok{color:var(--kpe-success);}
+            .kpe-provider-status.is-error{color:var(--kpe-error);}
             .kpe-pop-list{max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;margin-top:8px;}
             .kpe-pop-item{display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--kpe-surface-code);border:1px solid var(--kpe-border);border-radius:7px;font-size:11.5px;min-width:0;}
             .kpe-pop-item__checkbox{display:inline-flex;align-items:center;cursor:pointer;flex-shrink:0;}
@@ -511,4 +515,3 @@
             }
         `);
     }
-

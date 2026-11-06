@@ -1,5 +1,14 @@
 // ===== src/api-client.js =====
     // ===== HTTP client with history capture per-call + extended system composition =====
+    function readApiKey() {
+        try {
+            const v = GM_getValue('pe_api_key', 'anonymous');
+            return typeof v === 'string' && v.trim() ? v.trim() : 'anonymous';
+        } catch (_) {
+            return 'anonymous';
+        }
+    }
+
     const ApiClient = {
         _post(systemPrompt, userContent, options = {}) {
             const runId = options.runId || null;
@@ -168,7 +177,7 @@
                 reqRef = GM_xmlhttpRequest({
                     method: 'POST',
                     url: CONFIG.API_URL,
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer anonymous', [CONFIG.PROVIDER_HEADER_NAME]: CONFIG.EDITOR_NAME },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + readApiKey(), [CONFIG.PROVIDER_HEADER_NAME]: CONFIG.EDITOR_NAME },
                     data: JSON.stringify(payload),
                     timeout: timeoutMs,
                     onprogress: useStream ? (res) => {

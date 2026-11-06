@@ -9,8 +9,8 @@
     };
 
     const CONFIG = {
-        API_URL: DEFAULT_PROVIDER.url,
-        MODEL: DEFAULT_PROVIDER.model,
+        API_URL: GM_getValue('pe_api_url', DEFAULT_PROVIDER.url),
+        MODEL: GM_getValue('pe_model', DEFAULT_PROVIDER.model),
         EDITOR_NAME: DEFAULT_PROVIDER.editorName,
         PROVIDER_HEADER_NAME: DEFAULT_PROVIDER.headerName,
         DEBOUNCE_MS: 500,

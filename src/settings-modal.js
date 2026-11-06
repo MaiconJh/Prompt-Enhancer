@@ -3,6 +3,11 @@
     function settingsModal({ initialTab = 'params', onSave, onClose } = {}) {
         const previouslyFocused = document.activeElement;
         const draft = { ...ParamSchema.defaults(), ...(State.params || ParamSchema.load()) };
+        const providerDraft = {
+            baseUrl: GM_getValue('pe_api_url', ''),
+            model: GM_getValue('pe_model', ''),
+            apiKey: GM_getValue('pe_api_key', '')
+        };
         let systemPromptDraft;
         try {
             systemPromptDraft = SystemPromptManager.load();
@@ -46,7 +51,8 @@
             { key: 'params', label: 'Parâmetros' },
             { key: 'context', label: 'Contexto & Idioma' },
             { key: 'systemPrompt', label: 'System prompt' },
-            { key: 'history', label: 'Histórico' }
+            { key: 'history', label: 'Histórico' },
+            { key: 'provider', label: 'Provider' }
         ];
         const tabButtons = {};
         tabDefs.forEach(t => {
@@ -129,10 +135,19 @@
             }
             ParamSchema.save(cleaned);
             State.params = cleaned;
+            persistProviderValue('pe_api_url', providerDraft.baseUrl);
+            persistProviderValue('pe_model', providerDraft.model);
+            persistProviderValue('pe_api_key', providerDraft.apiKey);
             try { GM_setValue('kpe_params_configured', true); } catch (_) {}
             Molecules.toast('Configurações salvas.', 'success');
             try { onSave?.(cleaned); } catch (_) {}
             close();
+        }
+
+        function persistProviderValue(key, value) {
+            const cleanValue = String(value || '').trim();
+            if (cleanValue) GM_setValue(key, cleanValue);
+            else GM_deleteValue(key);
         }
 
         function showErrors(errors) {
@@ -171,6 +186,7 @@
             if (activeTab === 'params') renderParams();
             else if (activeTab === 'context') renderContext();
             else if (activeTab === 'systemPrompt') renderSystemPrompt();
+            else if (activeTab === 'provider') renderProvider();
             else renderHistory();
         }
 
@@ -208,6 +224,143 @@
             const saveBtn = Atoms.button({ icon: 'check', label: 'Salvar', ariaLabel: 'Salvar', variant: 'primary', onClick: applyAndClose });
             footerEl.appendChild(cancelBtn);
             footerEl.appendChild(saveBtn);
+        }
+
+        function renderProvider() {
+            const form = document.createElement('div');
+            form.className = 'kpe-param-body';
+
+            const makeField = (labelText, type, placeholder, value, helperText, key) => {
+                const row = document.createElement('div');
+                row.className = 'kpe-param-row kpe-param-row--full';
+                const label = document.createElement('label');
+                label.className = 'kpe-param-label';
+                label.htmlFor = `kpe-provider-${key}`;
+                label.textContent = labelText;
+                const control = document.createElement('div');
+                control.className = 'kpe-param-control';
+                const input = document.createElement('input');
+                input.id = `kpe-provider-${key}`;
+                input.type = type;
+                input.className = 'kpe-param-input';
+                input.placeholder = placeholder;
+                input.value = value || '';
+                input.autocomplete = type === 'password' ? 'new-password' : 'off';
+                input.addEventListener('input', () => { providerDraft[key] = input.value; });
+                control.appendChild(input);
+                if (type === 'password') {
+                    const toggle = Atoms.buttonNode({
+                        label: 'Mostrar',
+                        ariaLabel: 'Mostrar ou ocultar API Key',
+                        variant: 'outline',
+                        onClick: (button) => {
+                            const visible = input.type === 'password';
+                            input.type = visible ? 'text' : 'password';
+                            button.querySelector('.kpe-label').textContent = visible ? 'Ocultar' : 'Mostrar';
+                        }
+                    });
+                    control.appendChild(toggle);
+                }
+                const helper = document.createElement('div');
+                helper.className = 'kpe-param-hint';
+                helper.textContent = helperText;
+                control.appendChild(helper);
+                row.append(label, control);
+                form.appendChild(row);
+                return input;
+            };
+
+            const baseUrlInput = makeField('Base URL', 'url', DEFAULT_PROVIDER.url, providerDraft.baseUrl, 'Deixe em branco para usar o endpoint padrão.', 'baseUrl');
+            const modelInput = makeField('Modelo', 'text', DEFAULT_PROVIDER.model, providerDraft.model, 'Deixe em branco para usar o modelo padrão.', 'model');
+            const apiKeyInput = makeField('API Key', 'password', 'anonymous', providerDraft.apiKey, "Deixe em branco para usar 'anonymous'.", 'apiKey');
+
+            const actions = document.createElement('div');
+            actions.className = 'kpe-provider-actions';
+            const testBtn = Atoms.buttonNode({ label: 'Testar conexão', ariaLabel: 'Testar conexão', variant: 'outline' });
+            const status = document.createElement('span');
+            status.className = 'kpe-provider-status';
+            status.setAttribute('role', 'status');
+            status.setAttribute('aria-live', 'polite');
+            let statusTimer;
+            let requestFinished = false;
+            const showResult = (message, isOk) => {
+                if (requestFinished) return;
+                requestFinished = true;
+                testBtn.querySelector('.kpe-label').textContent = 'Testar conexão';
+                status.className = `kpe-provider-status ${isOk ? 'is-ok' : 'is-error'}`;
+                status.textContent = message;
+                statusTimer = setTimeout(() => {
+                    testBtn.disabled = false;
+                    status.textContent = '';
+                    status.className = 'kpe-provider-status';
+                }, 5000);
+            };
+            testBtn.addEventListener('click', () => {
+                if (statusTimer) clearTimeout(statusTimer);
+                requestFinished = false;
+                testBtn.disabled = true;
+                testBtn.querySelector('.kpe-label').textContent = 'Testando…';
+                status.textContent = '';
+                status.className = 'kpe-provider-status';
+                const startedAt = Date.now();
+                const apiKey = apiKeyInput.value.trim() || 'anonymous';
+                try {
+                    GM_xmlhttpRequest({
+                        method: 'POST',
+                        url: baseUrlInput.value.trim() || DEFAULT_PROVIDER.url,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`,
+                            [CONFIG.PROVIDER_HEADER_NAME]: CONFIG.EDITOR_NAME
+                        },
+                        data: JSON.stringify({
+                            model: modelInput.value.trim() || DEFAULT_PROVIDER.model,
+                            messages: [{ role: 'user', content: 'hi' }],
+                            max_tokens: 1
+                        }),
+                        timeout: 15000,
+                        onload: (response) => {
+                            const elapsed = Date.now() - startedAt;
+                            const code = response.status;
+                            if (code >= 200 && code < 300) showResult(`✓ Conectado (${elapsed}ms)`, true);
+                            else if (code === 401 || code === 403) showResult(`✗ API key inválida (${code})`, false);
+                            else if (code === 404) showResult('✗ Endpoint não encontrado — verifique se inclui /v1', false);
+                            else if (code >= 500) showResult(`✗ Servidor indisponível (HTTP ${code})`, false);
+                            else showResult(`✗ Endpoint não acessível (HTTP ${code})`, false);
+                        },
+                        ontimeout: () => showResult('✗ Timeout', false),
+                        onerror: () => showResult('✗ Endpoint não acessível', false)
+                    });
+                } catch (_) {
+                    showResult('✗ Endpoint não acessível', false);
+                }
+            });
+            actions.append(testBtn, status);
+            form.appendChild(actions);
+
+            const restoreBtn = Atoms.buttonNode({
+                label: 'Restaurar padrão',
+                ariaLabel: 'Restaurar configuração de provider padrão',
+                variant: 'outline',
+                onClick: () => {
+                    GM_deleteValue('pe_api_url');
+                    GM_deleteValue('pe_model');
+                    GM_deleteValue('pe_api_key');
+                    providerDraft.baseUrl = '';
+                    providerDraft.model = '';
+                    providerDraft.apiKey = '';
+                    baseUrlInput.value = '';
+                    modelInput.value = '';
+                    apiKeyInput.value = '';
+                    Molecules.toast('Configuração de provider restaurada.', 'success');
+                }
+            });
+            form.appendChild(restoreBtn);
+            bodyEl.appendChild(form);
+
+            const cancelBtn = Atoms.button({ icon: 'x', label: 'Cancelar', ariaLabel: 'Cancelar', variant: 'outline', onClick: close });
+            const saveBtn = Atoms.button({ icon: 'check', label: 'Salvar', ariaLabel: 'Salvar', variant: 'primary', onClick: applyAndClose });
+            footerEl.append(cancelBtn, saveBtn);
         }
 
         function renderContext() {
@@ -710,4 +863,3 @@
         render();
         return { close };
     }
-
