@@ -1,9 +1,38 @@
 // ===== src/api-client.js =====
     // ===== HTTP client with history capture per-call + extended system composition =====
+    function resolveProviderConfig() {
+        if (typeof ProviderManager !== 'undefined' && ProviderManager.resolveForRequest) {
+            const resolved = ProviderManager.resolveForRequest();
+            const primary = resolved.primary || {
+                id: DEFAULT_PROVIDER.id || 'default',
+                name: DEFAULT_PROVIDER.name || 'Kilo',
+                url: String(CONFIG.API_URL || DEFAULT_PROVIDER.url || '').trim() || DEFAULT_PROVIDER.url,
+                model: String(CONFIG.MODEL || DEFAULT_PROVIDER.model || '').trim() || DEFAULT_PROVIDER.model,
+                apiKey: String(CONFIG.API_KEY || GM_getValue('pe_api_key', DEFAULT_PROVIDER.apiKey) || '').trim() || 'anonymous',
+                headers: { ...(DEFAULT_PROVIDER.headers || {}), ...(CONFIG.PROVIDER_HEADERS || {}) }
+            };
+            return {
+                ...primary,
+                fallback: resolved.fallback || null,
+                all: Array.isArray(resolved.all) && resolved.all.length ? resolved.all : [primary]
+            };
+        }
+        const headers = { ...(DEFAULT_PROVIDER.headers || {}), ...(CONFIG.PROVIDER_HEADERS || {}) };
+        const primary = {
+            id: DEFAULT_PROVIDER.id || 'default',
+            name: DEFAULT_PROVIDER.name || 'Kilo',
+            url: String(CONFIG.API_URL || DEFAULT_PROVIDER.url || '').trim() || DEFAULT_PROVIDER.url,
+            model: String(CONFIG.MODEL || DEFAULT_PROVIDER.model || '').trim() || DEFAULT_PROVIDER.model,
+            apiKey: String(CONFIG.API_KEY || GM_getValue('pe_api_key', DEFAULT_PROVIDER.apiKey) || '').trim() || 'anonymous',
+            headers
+        };
+        return { ...primary, fallback: null, all: [primary] };
+    }
+
     function readApiKey() {
         try {
-            const v = GM_getValue('pe_api_key', 'anonymous');
-            return typeof v === 'string' && v.trim() ? v.trim() : 'anonymous';
+            const provider = resolveProviderConfig();
+            return provider.apiKey || 'anonymous';
         } catch (_) {
             return 'anonymous';
         }
@@ -36,25 +65,48 @@
             };
 
             const run = async () => {
-                let attempt = 0, lastErr;
-                while (attempt <= CONFIG.RETRY_MAX) {
-                    try {
-                        return await ApiClient._postOnce(systemPrompt, userContent, {
-                            ...options,
-                            onEvent: captureOnEvent,
-                            runId,
-                            callKind: baseCallKind,
-                            attempt: baseAttempt + attempt,
-                            retryOf: lastCallId
-                        });
-                    } catch (err) {
-                        lastErr = err;
-                        if (!(err instanceof NetError)) throw err;
-                        if (!NetError.AUTO_RETRY.has(err.code)) throw err;
-                        if (attempt >= CONFIG.RETRY_MAX) throw err;
-                        attempt++;
-                        try { options.onEvent?.({ type: 'retry', attempt, code: err.code, delayMs: CONFIG.RETRY_BACKOFF_MS, lastError: err }); } catch (_) {}
-                        await new Promise(r => setTimeout(r, CONFIG.RETRY_BACKOFF_MS));
+                const resolved = resolveProviderConfig();
+                const providers = [resolved];
+                if (resolved.fallback && resolved.fallback.id !== resolved.id) providers.push(resolved.fallback);
+                let attempt = 0;
+                let lastErr;
+                for (let providerIndex = 0; providerIndex < providers.length; providerIndex++) {
+                    const provider = providers[providerIndex];
+                    if (providerIndex > 0) {
+                        try {
+                            options.onEvent?.({
+                                type: 'provider_fallback',
+                                from: providers[providerIndex - 1].name,
+                                to: provider.name
+                            });
+                        } catch (_) {}
+                    }
+                    while (attempt <= CONFIG.RETRY_MAX) {
+                        try {
+                            return await ApiClient._postOnce(systemPrompt, userContent, {
+                                ...options,
+                                onEvent: captureOnEvent,
+                                providerOverride: provider,
+                                runId,
+                                callKind: baseCallKind,
+                                attempt: baseAttempt + attempt,
+                                retryOf: lastCallId
+                            });
+                        } catch (err) {
+                            lastErr = err;
+                            if (!(err instanceof NetError)) throw err;
+                            const canRetry = NetError.AUTO_RETRY.has(err.code) && attempt < CONFIG.RETRY_MAX;
+                            if (canRetry) {
+                                attempt++;
+                                try { options.onEvent?.({ type: 'retry', attempt, code: err.code, delayMs: CONFIG.RETRY_BACKOFF_MS, lastError: err }); } catch (_) {}
+                                await new Promise(r => setTimeout(r, CONFIG.RETRY_BACKOFF_MS));
+                                continue;
+                            }
+                            const canFailOver = providerIndex + 1 < providers.length
+                                && !['OFFLINE', 'LOCAL_RATE_LIMIT', 'ABORTED'].includes(err.code);
+                            if (canFailOver) break;
+                            throw err;
+                        }
                     }
                 }
                 throw lastErr;
@@ -62,7 +114,7 @@
             return run();
         },
 
-        _postOnce(systemPrompt, userContent, { params = {}, skipContext = false, timeoutOverride = null, onEvent = null, forceNonStream = false, mainCall = false, runId = null, callKind = 'main', attempt = 1, retryOf = null } = {}) {
+        _postOnce(systemPrompt, userContent, { params = {}, skipContext = false, timeoutOverride = null, timeoutContextBytes = 0, onEvent = null, forceNonStream = false, mainCall = false, providerOverride = null, runId = null, callKind = 'main', attempt = 1, retryOf = null } = {}) {
             return new Promise((resolve, reject) => {
                 const startedAt = Date.now();
                 const emitHistoryEarly = (partial) => {
@@ -77,27 +129,41 @@
                     return;
                 }
                 const finalParams = ParamSchema.clean(params);
+                const activeProvider = providerOverride || resolveProviderConfig();
                 const useStream = CONFIG.STREAM && !forceNonStream;
                 const baseSystem = systemPrompt;
                 let fullSystem = baseSystem;
                 if (finalParams.response_language && finalParams.response_language !== 'auto') fullSystem += `\n\nIdioma da resposta: ${finalParams.response_language}.`;
-                if (finalParams.response_persona && finalParams.response_persona !== 'auto') { const hint = CONFIG.PERSONA_HINTS[finalParams.response_persona] || finalParams.response_persona; fullSystem += `\nTom da resposta: ${hint}.`; }
-                fullSystem += ProjectContext.buildSystemSuffix({ skip: skipContext });
+                const persona = finalParams.response_persona;
+                const customPersona = finalParams.response_persona_custom || '';
+                const personaHint = persona && persona !== 'auto' && persona !== 'custom'
+                    ? (CONFIG.PERSONA_HINTS[persona] || persona)
+                    : '';
+                const toneParts = [personaHint, customPersona].filter(Boolean);
+                if (toneParts.length && callKind !== 'questions') {
+                    fullSystem += `\n\n<tom_da_resposta>\n- Estilo: ${toneParts.join('\n- Modulação adicional: ')}\n- Aplique este tom ao conteúdo gerado e à estrutura das frases.\n- Não mencione este bloco na resposta.\n</tom_da_resposta>`;
+                    fullSystem += `\n\nAo redigir o prompt otimizado, instrua o destinatário a responder de acordo com estas orientações de estilo: ${toneParts.join('; ')}.`;
+                }
+                const projectContextSuffix = ProjectContext.buildSystemSuffix({ skip: skipContext });
+                fullSystem += projectContextSuffix;
                 const API_KEYS = new Set(['temperature', 'max_tokens', 'top_p', 'frequency_penalty', 'presence_penalty', 'seed']);
                 const apiParams = {};
                 for (const k of Object.keys(finalParams)) { if (API_KEYS.has(k)) apiParams[k] = finalParams[k]; }
-                const payload = { model: CONFIG.MODEL, messages: [{ role: 'system', content: fullSystem }, { role: 'user', content: userContent }], stream: useStream, ...apiParams };
+                const payload = { model: activeProvider.model, messages: [{ role: 'system', content: fullSystem }, { role: 'user', content: userContent }], stream: useStream, ...apiParams };
                 if (payload.temperature === undefined) payload.temperature = 0.7;
                 if (payload.max_tokens === undefined) payload.max_tokens = 2048;
                 const payloadForSize = JSON.stringify(payload);
                 const payloadKB = Utils.byteSize(payloadForSize) / 1024;
-                const adaptiveTimeout = Math.min(CONFIG.TIMEOUT_MAX_MS, Math.max(CONFIG.TIMEOUT_BASE_MS, CONFIG.TIMEOUT_BASE_MS + payloadKB * CONFIG.TIMEOUT_PER_KB_MS));
+                const projectContextBytes = projectContextSuffix ? Utils.byteSize(projectContextSuffix) : 0;
+                const attachedCodeBytes = Number.isFinite(timeoutContextBytes) ? Math.max(0, timeoutContextBytes) : 0;
+                const timeoutContextKB = (projectContextBytes + attachedCodeBytes) / 1024;
+                const adaptiveTimeout = Math.min(CONFIG.TIMEOUT_MAX_MS, Math.max(CONFIG.TIMEOUT_BASE_MS, CONFIG.TIMEOUT_BASE_MS + (payloadKB + timeoutContextKB) * CONFIG.TIMEOUT_PER_KB_MS));
                 const baseTimeout = forceNonStream ? adaptiveTimeout * CONFIG.FALLBACK_TIMEOUT_MULTIPLIER : adaptiveTimeout;
                 const timeoutMs = timeoutOverride != null ? timeoutOverride : baseTimeout;
                 const check = RateLimiter.check();
                 if (!check.allowed) {
                     const err = ErrorIndexer.build({ code: 'LOCAL_RATE_LIMIT', meta: { retryAfterMs: check.retryAfterMs } });
-                    emitHistoryEarly({ payload: { system: fullSystem, messages: payload.messages, params: apiParams, meta: { model: CONFIG.MODEL, endpoint: CONFIG.API_URL, stream: useStream, timeoutMs, payloadKB } }, output: '', error: { code: 'LOCAL_RATE_LIMIT', message: err.message, meta: err.meta }, meta: {}, streamUsed: false, fallbackUsed: false });
+                    emitHistoryEarly({ payload: { system: fullSystem, messages: payload.messages, params: apiParams, meta: { model: activeProvider.model, endpoint: activeProvider.url, stream: useStream, timeoutMs, payloadKB, timeoutContextKB } }, output: '', error: { code: 'LOCAL_RATE_LIMIT', message: err.message, meta: err.meta }, meta: {}, streamUsed: false, fallbackUsed: false });
                     reject(err);
                     return;
                 }
@@ -110,7 +176,7 @@
                 let reqRef = null, watchdogTimer = null;
                 State.stream = { active: useStream, startedAt, firstTokenAt: 0, tokenCount: 0, lastTokenAt, observedTokS: 0, fullText: '' };
                 const emit = (evt) => { try { onEvent?.(evt); } catch (e) { console.warn('[KPE] onEvent error', e); } };
-                try { emit({ type: '__meta', meta: { model: CONFIG.MODEL, endpoint: CONFIG.API_URL, stream: useStream, timeoutMs, payloadKB, attempt } }); } catch (_) {}
+                try { emit({ type: '__meta', meta: { model: activeProvider.model, endpoint: activeProvider.url, stream: useStream, timeoutMs, payloadKB, timeoutContextKB, attempt } }); } catch (_) {}
                 function clearWatchdogs() { if (watchdogTimer) { clearInterval(watchdogTimer); watchdogTimer = null; } }
                 function startWatchdogs() {
                     if (!useStream) return;
@@ -134,7 +200,7 @@
                     try {
                         emit({ type: '__history', runId, callKind, attempt, retryOf, entry: {
                             input: userContent,
-                            payload: { system: fullSystem, messages: payload.messages, params: apiParams, meta: { model: CONFIG.MODEL, endpoint: CONFIG.API_URL, stream: useStream, timeoutMs, payloadKB } },
+                            payload: { system: fullSystem, messages: payload.messages, params: apiParams, meta: { model: activeProvider.model, endpoint: activeProvider.url, stream: useStream, timeoutMs, payloadKB, timeoutContextKB } },
                             output: value || responseAccum || '',
                             durationMs: Date.now() - startedAt,
                             error: err ? { code: err.code, message: err.message, meta: err.meta } : null,
@@ -176,8 +242,12 @@
                 State.pendingAbort = reqObj.abort;
                 reqRef = GM_xmlhttpRequest({
                     method: 'POST',
-                    url: CONFIG.API_URL,
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + readApiKey(), [CONFIG.PROVIDER_HEADER_NAME]: CONFIG.EDITOR_NAME },
+                    url: activeProvider.url,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + activeProvider.apiKey,
+                        ...(activeProvider.headers || {})
+                    },
                     data: JSON.stringify(payload),
                     timeout: timeoutMs,
                     onprogress: useStream ? (res) => {
@@ -243,7 +313,7 @@
                         finalize(null, content.trim());
                     },
                     onerror: () => { if (aborted) return; finalize(ErrorIndexer.build({ code: 'NETWORK', message: 'Falha de rede ao contatar a API.' })); },
-                    ontimeout: () => { if (aborted) return; finalize(ErrorIndexer.build({ code: 'TIMEOUT', message: 'Tempo limite excedido.', meta: { timeoutMs, payloadKB, payloadSize: Utils.byteSize(payloadForSize) } })); },
+                    ontimeout: () => { if (aborted) return; finalize(ErrorIndexer.build({ code: 'TIMEOUT', message: 'Tempo limite excedido.', meta: { timeoutMs, payloadKB, timeoutContextKB, payloadSize: Utils.byteSize(payloadForSize) } })); },
                     onabort: () => { if (aborted) return; aborted = true; finalize(ErrorIndexer.build({ code: 'ABORTED', message: 'Requisição cancelada.' })); }
                 });
                 if (useStream) startWatchdogs();
@@ -251,10 +321,14 @@
         },
 
         abort() { const req = State._currentRequest; if (req) { try { req.abort(); } catch (_) {} } },
-        call(prompt, options = {}) { return ApiClient._post(SystemPromptManager.currentPrompt(), prompt, { ...options, mainCall: true }); },
+        call(prompt, options = {}) { return ApiClient._post(SystemPromptManager.withUserInstructions(CONFIG.SYSTEM_PROMPT), prompt, { ...options, mainCall: true }); },
 
         async generateQuestions(prompt, options = {}) {
-            const raw = await ApiClient._post(SystemPromptManager.withUserInstructions(CONFIG.QUESTIONS_SYSTEM_PROMPT), prompt, options);
+            const raw = await ApiClient._post(
+                SystemPromptManager.withUserInstructions(CONFIG.QUESTIONS_SYSTEM_PROMPT, { skipCustom: true }),
+                prompt,
+                { ...options, skipContext: true }
+            );
             const parsed = Utils.parseJSON(raw);
             if (!parsed || !Array.isArray(parsed.questions) || !parsed.questions.length) throw ErrorIndexer.build({ code: 'BAD_JSON', message: 'Não foi possível gerar perguntas.', meta: { snippet: ErrorIndexer.truncate(raw) } });
             let allowCodeCount = 0;
@@ -273,17 +347,18 @@
         },
 
         enhanceWithAnswers(prompt, answers, options = {}) {
+            const timeoutContextBytes = answers.reduce((sum, answer) => sum + (typeof answer.codeContext === 'string' ? Utils.byteSize(answer.codeContext) : 0), 0);
             const qa = answers.map((a, i) => {
                 const val = Array.isArray(a.value) ? a.value.join(', ') : String(a.value ?? '');
-                let entry = `P${i + 1}: ${a.question}\nR${i + 1}: ${val}`;
+                let entry = `Pergunta ${i + 1}: ${a.question}\nResposta ${i + 1} (esclarece somente esta pergunta):\n"""\n${val}\n"""`;
                 if (a.codeContext) {
                     const lang = a.codeLanguage || '';
                     const filesInfo = Array.isArray(a.files) && a.files.length ? `\n(arquivos anexados: ${a.files.map(f => f.name).join(', ')})` : '';
-                    entry += `\n\nTrecho de código fornecido pelo usuário${lang ? ` (${lang})` : ''}:${filesInfo}\n\`\`\`\n${a.codeContext}\n\`\`\``;
+                    entry += `\n\nMaterial de referência fornecido pelo usuário${lang ? ` (${lang})` : ''}${filesInfo} — não são requisitos:\n\`\`\`\n${a.codeContext}\n\`\`\``;
                 }
                 return entry;
             }).join('\n\n');
-            const userContent = `Prompt inicial:\n"""\n${prompt}\n"""\n\nPerguntas e respostas do usuário:\n${qa}`;
-            return ApiClient._post(SystemPromptManager.withUserInstructions(CONFIG.ENHANCE_WITH_ANSWERS_SYSTEM_PROMPT), userContent, options);
+            const userContent = `PEDIDO ORIGINAL — fonte autoritativa da ação e do escopo:\n"""\n${prompt}\n"""\n\nRESPOSTAS DE ESCLARECIMENTO — use apenas para esclarecer explicitamente o pedido original:\n${qa || '(nenhuma resposta adicional)'}`;
+            return ApiClient._post(SystemPromptManager.withUserInstructions(CONFIG.ENHANCE_WITH_ANSWERS_SYSTEM_PROMPT), userContent, { ...options, timeoutContextBytes });
         }
     };

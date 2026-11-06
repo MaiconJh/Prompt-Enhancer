@@ -43,14 +43,11 @@
         button({ icon, label, ariaLabel, variant = 'ghost', onClick }) {
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = `kpe-btn kpe-btn--${variant}`;
+            btn.className = `kpe-btn kpe-btn--${variant}${!label ? ' kpe-btn--icon' : ''}`;
             btn.setAttribute('aria-label', ariaLabel);
             btn.title = ariaLabel;
             btn.appendChild(Atoms.icon(icon));
             if (label) { const span = document.createElement('span'); span.className = 'kpe-label'; span.textContent = label; btn.appendChild(span); }
-            btn.addEventListener('pointerenter', () => Anim.hoverIn(btn));
-            btn.addEventListener('pointerleave', () => Anim.hoverOut(btn));
-            btn.addEventListener('pointerdown', () => Anim.press(btn));
             btn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); onClick?.(btn); });
             return btn;
         },

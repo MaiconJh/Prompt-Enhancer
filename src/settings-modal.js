@@ -3,10 +3,12 @@
     function settingsModal({ initialTab = 'params', onSave, onClose } = {}) {
         const previouslyFocused = document.activeElement;
         const draft = { ...ParamSchema.defaults(), ...(State.params || ParamSchema.load()) };
+        const activeProvider = typeof ProviderManager !== 'undefined' ? ProviderManager.getActive() : null;
         const providerDraft = {
-            baseUrl: GM_getValue('pe_api_url', ''),
-            model: GM_getValue('pe_model', ''),
-            apiKey: GM_getValue('pe_api_key', '')
+            id: activeProvider?.id || '',
+            baseUrl: (activeProvider?.url || GM_getValue('pe_api_url', '') || '').trim(),
+            model: (activeProvider?.model || GM_getValue('pe_model', '') || '').trim(),
+            apiKey: (activeProvider?.apiKey || GM_getValue('pe_api_key', '') || '').trim()
         };
         let systemPromptDraft;
         try {
@@ -19,6 +21,9 @@
         let activeTab = initialTab;
         let selectedSystemPreset = '';
         let closed = false;
+        let openFrame;
+        let providerTimer;
+        let providerRequest;
 
         const backdrop = document.createElement('div');
         backdrop.className = 'kpe-modal-backdrop kpe-scope';
@@ -31,9 +36,14 @@
 
         const header = document.createElement('div');
         header.className = 'kpe-panel__header';
+        const heading = document.createElement('div');
+        heading.className = 'kpe-modal-heading';
         const h4 = document.createElement('h4');
         h4.textContent = 'Configurações';
-        header.appendChild(h4);
+        const headingHint = document.createElement('p');
+        headingHint.textContent = 'Personalize como o Prompt Enhancer trabalha.';
+        heading.append(h4, headingHint);
+        header.appendChild(heading);
         const closeBtn = document.createElement('button');
         closeBtn.type = 'button';
         closeBtn.className = 'kpe-panel__close';
@@ -48,37 +58,46 @@
         tabsBar.setAttribute('role', 'tablist');
         tabsBar.setAttribute('aria-label', 'Abas de configurações');
         const tabDefs = [
-            { key: 'params', label: 'Parâmetros' },
-            { key: 'context', label: 'Contexto & Idioma' },
-            { key: 'systemPrompt', label: 'System prompt' },
-            { key: 'history', label: 'Histórico' },
-            { key: 'provider', label: 'Provider' }
+            { key: 'params', label: 'Parâmetros', icon: 'sliders', title: 'Parâmetros de aprimoramento', description: 'Defina os limites e a intensidade usados nas respostas.' },
+            { key: 'context', label: 'Contexto & Idioma', icon: 'folder', title: 'Contexto e idioma', description: 'Configure o contexto do projeto e o estilo das respostas.' },
+            { key: 'systemPrompt', label: 'System prompt', icon: 'doc', title: 'System prompt', description: 'Edite as instruções e gerencie seus presets pessoais.' },
+            { key: 'history', label: 'Histórico', icon: 'guide', title: 'Histórico de execuções', description: 'Revise resultados e detalhes das chamadas anteriores.' },
+            { key: 'provider', label: 'Provider', icon: 'gear', title: 'Provedor de API', description: 'Configure e teste o endpoint usado pelo script.' }
         ];
+        if (!tabDefs.some(tab => tab.key === activeTab)) activeTab = 'params';
         const tabButtons = {};
         tabDefs.forEach(t => {
             const b = document.createElement('button');
             b.type = 'button';
             b.className = 'kpe-modal-tab';
-            b.textContent = t.label;
             b.id = `kpe-settings-tab-${t.key}`;
             b.setAttribute('role', 'tab');
             b.setAttribute('aria-controls', 'kpe-settings-panel-body');
+            b.setAttribute('aria-label', t.label);
+            b.append(Atoms.icon(t.icon), Object.assign(document.createElement('span'), {
+                className: 'kpe-modal-tab__label',
+                textContent: t.label
+            }));
             b.addEventListener('click', () => { if (activeTab !== t.key) { activeTab = t.key; render(); } });
             tabsBar.appendChild(b);
             tabButtons[t.key] = b;
         });
-        panel.appendChild(tabsBar);
 
         const bodyEl = document.createElement('div');
         bodyEl.className = 'kpe-panel__body';
         bodyEl.id = 'kpe-settings-panel-body';
         bodyEl.setAttribute('role', 'tabpanel');
         bodyEl.tabIndex = 0;
-        panel.appendChild(bodyEl);
 
         const footerEl = document.createElement('div');
         footerEl.className = 'kpe-panel__footer';
-        panel.appendChild(footerEl);
+        const main = document.createElement('div');
+        main.className = 'kpe-modal-main';
+        main.append(bodyEl, footerEl);
+        const layout = document.createElement('div');
+        layout.className = 'kpe-modal-layout';
+        layout.append(tabsBar, main);
+        panel.appendChild(layout);
 
         backdrop.appendChild(panel);
         document.body.appendChild(backdrop);
@@ -93,7 +112,7 @@
                 const first = focusable[0], last = focusable[focusable.length - 1];
                 if (e.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
                 else if (!e.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
-            } else if (e.target.closest('[role="tab"]') && ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) {
+            } else if (e.target instanceof Element && e.target.closest('[role="tab"]') && ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) {
                 e.preventDefault();
                 const keys = tabDefs.map(tab => tab.key);
                 const current = keys.indexOf(activeTab);
@@ -107,17 +126,27 @@
         document.addEventListener('keydown', onKey, true);
         backdrop.addEventListener('click', onBackdropClick);
 
-        requestAnimationFrame(() => { backdrop.classList.add('is-open'); closeBtn.focus(); });
+        openFrame = requestAnimationFrame(() => {
+            if (closed) return;
+            backdrop.classList.add('is-open');
+            closeBtn.focus();
+        });
 
         function close() {
             if (closed) return;
             closed = true;
+            cancelAnimationFrame(openFrame);
+            clearTimeout(providerTimer);
+            providerRequest?.abort?.();
+            providerRequest = null;
             document.removeEventListener('keydown', onKey, true);
             backdrop.removeEventListener('click', onBackdropClick);
+            panel.inert = true;
+            panel.setAttribute('aria-hidden', 'true');
             backdrop.classList.remove('is-open');
+            if (previouslyFocused?.isConnected && !previouslyFocused.closest('[inert]')) previouslyFocused.focus();
             setTimeout(() => {
                 backdrop.remove();
-                if (previouslyFocused?.isConnected) previouslyFocused.focus();
             }, 220);
             try { onClose?.(); } catch (_) {}
         }
@@ -138,6 +167,24 @@
             persistProviderValue('pe_api_url', providerDraft.baseUrl);
             persistProviderValue('pe_model', providerDraft.model);
             persistProviderValue('pe_api_key', providerDraft.apiKey);
+            try {
+                if (typeof ProviderManager !== 'undefined' && ProviderManager.getActive) {
+                    const active = ProviderManager.getActive();
+                    const next = {
+                        ...(active || { id: providerDraft.id || Utils.uid('prov'), name: 'Kilo', url: DEFAULT_PROVIDER.url, model: DEFAULT_PROVIDER.model, apiKey: 'anonymous', headers: { ...(DEFAULT_PROVIDER.headers || {}) }, builtin: false }),
+                        id: providerDraft.id || active?.id || Utils.uid('prov'),
+                        name: (active?.name || 'Kilo').trim() || 'Kilo',
+                        url: (providerDraft.baseUrl || DEFAULT_PROVIDER.url).trim(),
+                        model: (providerDraft.model || DEFAULT_PROVIDER.model).trim(),
+                        apiKey: (providerDraft.apiKey || 'anonymous').trim(),
+                        headers: { ...(DEFAULT_PROVIDER.headers || {}) }
+                    };
+                    if (active && active.id === next.id) ProviderManager.update(next.id, next);
+                    else if (active) ProviderManager.update(active.id, next);
+                    else ProviderManager.add(next);
+                    ProviderManager.setActive(next.id);
+                }
+            } catch (_) {}
             try { GM_setValue('kpe_params_configured', true); } catch (_) {}
             Molecules.toast('Configurações salvas.', 'success');
             try { onSave?.(cleaned); } catch (_) {}
@@ -183,6 +230,21 @@
             bodyEl.innerHTML = '';
             bodyEl.scrollTop = 0;
             footerEl.innerHTML = '';
+            const tab = tabDefs.find(item => item.key === activeTab);
+            const intro = document.createElement('div');
+            intro.className = 'kpe-settings-intro';
+            const icon = document.createElement('span');
+            icon.className = 'kpe-settings-intro__icon';
+            icon.appendChild(Atoms.icon(tab.icon));
+            const text = document.createElement('div');
+            text.className = 'kpe-settings-intro__text';
+            const title = document.createElement('h5');
+            title.textContent = tab.title;
+            const description = document.createElement('p');
+            description.textContent = tab.description;
+            text.append(title, description);
+            intro.append(icon, text);
+            bodyEl.appendChild(intro);
             if (activeTab === 'params') renderParams();
             else if (activeTab === 'context') renderContext();
             else if (activeTab === 'systemPrompt') renderSystemPrompt();
@@ -195,28 +257,49 @@
             form.className = 'kpe-param-body';
             const presetsRow = document.createElement('div');
             presetsRow.className = 'kpe-param-presets';
+            presetsRow.setAttribute('role', 'group');
+            presetsRow.setAttribute('aria-label', 'Predefinições de parâmetros');
+            const presetButtons = [];
+            const updatePresetSelection = () => {
+                const matchingPreset = ParamSchema.PRESETS.find(preset =>
+                    Object.entries(preset.values).every(([key, value]) => Number(draft[key]) === value)
+                );
+                presetButtons.forEach(({ button, preset }) => {
+                    const selected = preset === matchingPreset;
+                    button.classList.toggle('is-active', selected);
+                    button.setAttribute('aria-pressed', String(selected));
+                });
+            };
             ParamSchema.PRESETS.forEach(p => {
                 const b = document.createElement('button');
                 b.type = 'button';
                 b.className = 'kpe-param-preset';
                 b.textContent = p.label;
+                presetButtons.push({ button: b, preset: p });
                 b.addEventListener('click', () => {
                     Object.assign(draft, p.values);
                     ParamSchema.SCHEMA.filter(f => f.type === 'number').forEach(f => {
                         const inp = form.querySelector(`#kpe-param-${f.key}`);
                         if (inp) inp.value = draft[f.key] == null ? '' : String(draft[f.key]);
                     });
+                    updatePresetSelection();
                 });
                 presetsRow.appendChild(b);
             });
+            updatePresetSelection();
             form.appendChild(presetsRow);
 
             ParamSchema.SCHEMA.filter(f => f.type === 'number').forEach(f => {
                 const row = document.createElement('div');
                 row.className = 'kpe-param-row';
-                row.innerHTML = `<label class="kpe-param-label" for="kpe-param-${f.key}">${Utils.escapeHtml(f.label)}</label><div class="kpe-param-control"><input type="number" id="kpe-param-${f.key}" class="kpe-param-input" min="${f.min}" max="${f.max}" step="${f.step}" value="${draft[f.key] == null ? '' : String(draft[f.key])}" placeholder="${f.default == null ? '—' : f.default}">${f.hint ? `<div class="kpe-param-hint">${Utils.escapeHtml(f.hint)}</div>` : ''}</div>`;
+                const placeholder = f.key === 'seed' ? 'Aleatório' : (f.default == null ? '' : f.default);
+                row.innerHTML = `<label class="kpe-param-label" for="kpe-param-${f.key}">${Utils.escapeHtml(f.label)}</label><div class="kpe-param-control"><input type="number" id="kpe-param-${f.key}" class="kpe-param-input" min="${f.min}" max="${f.max}" step="${f.step}" value="${draft[f.key] == null ? '' : String(draft[f.key])}" placeholder="${placeholder}">${f.hint ? `<div class="kpe-param-hint">${Utils.escapeHtml(f.hint)}</div>` : ''}</div>`;
                 form.appendChild(row);
-                row.querySelector('input').addEventListener('input', (e) => { const v = e.target.value.trim(); draft[f.key] = v === '' ? null : Number(v); });
+                row.querySelector('input').addEventListener('input', (e) => {
+                    const v = e.target.value.trim();
+                    draft[f.key] = v === '' ? null : Number(v);
+                    updatePresetSelection();
+                });
             });
 
             bodyEl.appendChild(form);
@@ -228,141 +311,361 @@
 
         function renderProvider() {
             const form = document.createElement('div');
-            form.className = 'kpe-param-body';
+            form.className = 'kpe-param-body kpe-provider-settings';
 
-            const makeField = (labelText, type, placeholder, value, helperText, key) => {
-                const row = document.createElement('div');
-                row.className = 'kpe-param-row kpe-param-row--full';
-                const label = document.createElement('label');
-                label.className = 'kpe-param-label';
-                label.htmlFor = `kpe-provider-${key}`;
-                label.textContent = labelText;
-                const control = document.createElement('div');
-                control.className = 'kpe-param-control';
-                const input = document.createElement('input');
-                input.id = `kpe-provider-${key}`;
-                input.type = type;
-                input.className = 'kpe-param-input';
-                input.placeholder = placeholder;
-                input.value = value || '';
-                input.autocomplete = type === 'password' ? 'new-password' : 'off';
-                input.addEventListener('input', () => { providerDraft[key] = input.value; });
-                control.appendChild(input);
-                if (type === 'password') {
-                    const toggle = Atoms.buttonNode({
-                        label: 'Mostrar',
-                        ariaLabel: 'Mostrar ou ocultar API Key',
-                        variant: 'outline',
-                        onClick: (button) => {
-                            const visible = input.type === 'password';
-                            input.type = visible ? 'text' : 'password';
-                            button.querySelector('.kpe-label').textContent = visible ? 'Ocultar' : 'Mostrar';
-                        }
-                    });
-                    control.appendChild(toggle);
-                }
-                const helper = document.createElement('div');
-                helper.className = 'kpe-param-hint';
-                helper.textContent = helperText;
-                control.appendChild(helper);
-                row.append(label, control);
-                form.appendChild(row);
-                return input;
-            };
+            const listWrap = document.createElement('div');
+            listWrap.className = 'kpe-provider-list';
+            const editorWrap = document.createElement('div');
+            editorWrap.className = 'kpe-provider-editor-wrap';
 
-            const baseUrlInput = makeField('Base URL', 'url', DEFAULT_PROVIDER.url, providerDraft.baseUrl, 'Deixe em branco para usar o endpoint padrão.', 'baseUrl');
-            const modelInput = makeField('Modelo', 'text', DEFAULT_PROVIDER.model, providerDraft.model, 'Deixe em branco para usar o modelo padrão.', 'model');
-            const apiKeyInput = makeField('API Key', 'password', 'anonymous', providerDraft.apiKey, "Deixe em branco para usar 'anonymous'.", 'apiKey');
+            function createSectionLabel(icon, text) {
+                const label = document.createElement('div');
+                label.className = 'kpe-section-label';
+                label.append(Atoms.icon(icon));
+                const title = document.createElement('span');
+                title.textContent = text;
+                label.appendChild(title);
+                return label;
+            }
 
-            const actions = document.createElement('div');
-            actions.className = 'kpe-provider-actions';
-            const testBtn = Atoms.buttonNode({ label: 'Testar conexão', ariaLabel: 'Testar conexão', variant: 'outline' });
-            const status = document.createElement('span');
-            status.className = 'kpe-provider-status';
-            status.setAttribute('role', 'status');
-            status.setAttribute('aria-live', 'polite');
-            let statusTimer;
-            let requestFinished = false;
-            const showResult = (message, isOk) => {
-                if (requestFinished) return;
-                requestFinished = true;
-                testBtn.querySelector('.kpe-label').textContent = 'Testar conexão';
-                status.className = `kpe-provider-status ${isOk ? 'is-ok' : 'is-error'}`;
-                status.textContent = message;
-                statusTimer = setTimeout(() => {
-                    testBtn.disabled = false;
-                    status.textContent = '';
-                    status.className = 'kpe-provider-status';
-                }, 5000);
-            };
-            testBtn.addEventListener('click', () => {
-                if (statusTimer) clearTimeout(statusTimer);
-                requestFinished = false;
-                testBtn.disabled = true;
-                testBtn.querySelector('.kpe-label').textContent = 'Testando…';
-                status.textContent = '';
-                status.className = 'kpe-provider-status';
-                const startedAt = Date.now();
-                const apiKey = apiKeyInput.value.trim() || 'anonymous';
+            function parseHeaders(raw) {
+                const txt = String(raw || '').trim();
+                if (!txt || txt === '{}') return {};
                 try {
-                    GM_xmlhttpRequest({
-                        method: 'POST',
-                        url: baseUrlInput.value.trim() || DEFAULT_PROVIDER.url,
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${apiKey}`,
-                            [CONFIG.PROVIDER_HEADER_NAME]: CONFIG.EDITOR_NAME
-                        },
-                        data: JSON.stringify({
-                            model: modelInput.value.trim() || DEFAULT_PROVIDER.model,
-                            messages: [{ role: 'user', content: 'hi' }],
-                            max_tokens: 1
-                        }),
-                        timeout: 15000,
-                        onload: (response) => {
-                            const elapsed = Date.now() - startedAt;
-                            const code = response.status;
-                            if (code >= 200 && code < 300) showResult(`✓ Conectado (${elapsed}ms)`, true);
-                            else if (code === 401 || code === 403) showResult(`✗ API key inválida (${code})`, false);
-                            else if (code === 404) showResult('✗ Endpoint não encontrado — verifique se inclui /v1', false);
-                            else if (code >= 500) showResult(`✗ Servidor indisponível (HTTP ${code})`, false);
-                            else showResult(`✗ Endpoint não acessível (HTTP ${code})`, false);
-                        },
-                        ontimeout: () => showResult('✗ Timeout', false),
-                        onerror: () => showResult('✗ Endpoint não acessível', false)
-                    });
-                } catch (_) {
-                    showResult('✗ Endpoint não acessível', false);
+                    const parsed = JSON.parse(txt);
+                    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Headers devem ser um JSON objeto.');
+                    return parsed;
+                } catch (error) {
+                    throw new Error(error?.message || 'JSON de headers inválido.');
                 }
-            });
-            actions.append(testBtn, status);
-            form.appendChild(actions);
+            }
 
-            const restoreBtn = Atoms.buttonNode({
-                label: 'Restaurar padrão',
-                ariaLabel: 'Restaurar configuração de provider padrão',
-                variant: 'outline',
-                onClick: () => {
-                    GM_deleteValue('pe_api_url');
-                    GM_deleteValue('pe_model');
-                    GM_deleteValue('pe_api_key');
-                    providerDraft.baseUrl = '';
-                    providerDraft.model = '';
-                    providerDraft.apiKey = '';
-                    baseUrlInput.value = '';
-                    modelInput.value = '';
-                    apiKeyInput.value = '';
-                    Molecules.toast('Configuração de provider restaurada.', 'success');
+            function renderEditor(provider = null) {
+                const draft = provider ? {
+                    id: provider.id,
+                    name: provider.name || '',
+                    url: provider.url || '',
+                    model: provider.model || '',
+                    apiKey: provider.apiKey || '',
+                    headers: JSON.stringify(provider.headers || {}, null, 2),
+                    fallback: !!provider.fallback
+                } : {
+                    id: '',
+                    name: '',
+                    url: '',
+                    model: '',
+                    apiKey: '',
+                    headers: '{\n  "HTTP-Referer": "https://github.com/EdgeTypE/better-deepseek",\n  "X-Title": "Prompt-Enhancer"\n}',
+                    fallback: false
+                };
+
+                editorWrap.innerHTML = '';
+                const card = document.createElement('div');
+                card.className = 'kpe-provider-editor';
+
+                const title = document.createElement('div');
+                title.className = 'kpe-field-title';
+                title.textContent = provider ? 'Editar provider' : 'Adicionar provider';
+                card.appendChild(title);
+
+                const rows = [
+                    ['Nome', 'text', 'name', draft.name, 'Nome visível do provedor'],
+                    ['URL', 'url', 'url', draft.url, 'Endpoint completo do chat completions'],
+                    ['Modelo', 'text', 'model', draft.model, 'Ex.: gpt-4o-mini / llama3.2 / openai/gpt-4o-mini'],
+                    ['API Key', 'password', 'apiKey', draft.apiKey, 'Opcional para provedor público ou local'],
+                    ['Headers extras (JSON)', 'textarea', 'headers', draft.headers, 'Ex.: {"X-Title": "Prompt-Enhancer"}']
+                ];
+
+                rows.forEach(([labelText, type, field, value, hint]) => {
+                    const row = document.createElement('div');
+                    row.className = 'kpe-param-row kpe-param-row--full';
+                    const label = document.createElement('label');
+                    label.className = 'kpe-param-label';
+                    label.htmlFor = `kpe-provider-${field}`;
+                    label.textContent = labelText;
+                    const control = document.createElement('div');
+                    control.className = 'kpe-param-control';
+                    const input = document.createElement(type === 'textarea' ? 'textarea' : 'input');
+                    input.className = 'kpe-param-input';
+                    input.id = `kpe-provider-${field}`;
+                    input.name = field;
+                    input.value = String(value || '');
+                    if (['name', 'url', 'model'].includes(field)) {
+                        input.required = true;
+                        input.setAttribute('aria-required', 'true');
+                    }
+                    if (type !== 'textarea') {
+                        input.type = type;
+                        input.autocomplete = type === 'password' ? 'new-password' : 'off';
+                    } else {
+                        input.rows = 5;
+                    }
+                    control.appendChild(input);
+                    if (hint) {
+                        const helper = document.createElement('div');
+                        helper.className = 'kpe-param-hint';
+                        helper.textContent = hint;
+                        control.appendChild(helper);
+                    }
+                    row.append(label, control);
+                    card.appendChild(row);
+                    draft[field] = input;
+                });
+
+                const fallbackRow = document.createElement('label');
+                fallbackRow.className = 'kpe-check-row';
+                const fallbackCheck = document.createElement('input');
+                fallbackCheck.type = 'checkbox';
+                fallbackCheck.checked = !!draft.fallback;
+                fallbackCheck.disabled = provider?.id === ProviderManager.getActive()?.id;
+                const fallbackText = document.createElement('span');
+                fallbackText.textContent = 'Definir como provedor de fallback';
+                if (fallbackCheck.disabled) fallbackText.title = 'Escolha outro provider como principal antes de defini-lo como fallback.';
+                fallbackRow.append(fallbackCheck, fallbackText);
+                card.appendChild(fallbackRow);
+
+                const actions = document.createElement('div');
+                actions.className = 'kpe-provider-actions';
+                const saveBtn = Atoms.buttonNode({ label: provider ? 'Salvar alterações' : 'Adicionar provider', ariaLabel: provider ? 'Salvar alterações do provider' : 'Adicionar novo provider', variant: 'primary' });
+                const cancelBtn = Atoms.buttonNode({ label: 'Cancelar', ariaLabel: 'Cancelar edição', variant: 'outline' });
+                saveBtn.addEventListener('click', () => {
+                    try {
+                        const payload = {
+                            name: draft.name.value.trim(),
+                            url: draft.url.value.trim(),
+                            model: draft.model.value.trim(),
+                            apiKey: draft.apiKey.value.trim(),
+                            headers: parseHeaders(draft.headers.value),
+                            fallback: !!fallbackCheck.checked
+                        };
+                        if (!payload.name) throw new Error('Informe um nome para o provider.');
+                        if (!payload.url) throw new Error('Informe a URL do provider.');
+                        if (!payload.model) throw new Error('Informe o modelo do provider.');
+                        const saved = provider ? ProviderManager.update(provider.id, payload) : ProviderManager.add(payload);
+                        const targetId = saved?.id || provider?.id || '';
+                        if (fallbackCheck.checked) ProviderManager.setFallback(targetId);
+                        else if (provider && provider.id === (ProviderManager.getFallback?.()?.id || '')) ProviderManager.setFallback('');
+                        Molecules.toast(provider ? 'Provider atualizado.' : 'Provider adicionado.', 'success');
+                        render();
+                    } catch (error) {
+                        Molecules.toast(error?.message || 'Não foi possível salvar o provider.', 'error');
+                    }
+                });
+                cancelBtn.addEventListener('click', () => render());
+                actions.append(saveBtn, cancelBtn);
+                card.appendChild(actions);
+                editorWrap.appendChild(card);
+                card.querySelector('[name="name"]')?.focus();
+            }
+
+            function renderList() {
+                listWrap.innerHTML = '';
+                const list = ProviderManager && ProviderManager.list ? ProviderManager.list() : [];
+                const active = ProviderManager && ProviderManager.getActive ? ProviderManager.getActive() : null;
+                const fallback = ProviderManager && ProviderManager.getFallback ? ProviderManager.getFallback() : null;
+
+                if (!list.length) {
+                    const empty = document.createElement('div');
+                    empty.className = 'kpe-provider-empty';
+                    empty.textContent = 'Nenhum provider salvo. Adicione o primeiro para configurar a API.';
+                    listWrap.appendChild(empty);
+                    return;
                 }
+
+                list.forEach((provider) => {
+                    const card = document.createElement('div');
+                    card.className = `kpe-provider-card ${provider.id === active?.id ? 'is-active' : ''}`;
+                    card.setAttribute('role', 'group');
+                    card.setAttribute('aria-label', `Provider ${provider.name || 'sem nome'}`);
+
+                    const header = document.createElement('div');
+                    header.className = 'kpe-provider-card__header';
+                    const title = document.createElement('strong');
+                    title.textContent = provider.name || 'Provider';
+                    const badge = document.createElement('span');
+                    badge.className = 'kpe-provider-badge';
+                    badge.textContent = provider.builtin ? 'Padrão' : 'Custom';
+                    const badges = document.createElement('div');
+                    badges.className = 'kpe-provider-card__badges';
+                    badges.appendChild(badge);
+                    if (provider.id === active?.id) {
+                        const activeBadge = document.createElement('span');
+                        activeBadge.className = 'kpe-provider-role is-active';
+                        activeBadge.textContent = 'Principal';
+                        badges.appendChild(activeBadge);
+                    }
+                    if (provider.id === fallback?.id) {
+                        const fallbackBadge = document.createElement('span');
+                        fallbackBadge.className = 'kpe-provider-role is-fallback';
+                        fallbackBadge.textContent = 'Fallback';
+                        badges.appendChild(fallbackBadge);
+                    }
+                    header.append(title, badges);
+
+                    const meta = document.createElement('div');
+                    meta.className = 'kpe-provider-card__meta';
+                    meta.textContent = `${provider.model || 'sem modelo'} · ${provider.url || 'sem URL'}`;
+
+                    const actions = document.createElement('div');
+                    actions.className = 'kpe-provider-actions';
+
+                    const activeBtn = Atoms.buttonNode({
+                        label: provider.id === active?.id ? 'Ativo' : 'Ativar',
+                        ariaLabel: provider.id === active?.id ? `${provider.name} é o provider principal` : `Ativar ${provider.name}`,
+                        variant: provider.id === active?.id ? 'primary' : 'outline'
+                    });
+                    activeBtn.setAttribute('aria-pressed', String(provider.id === active?.id));
+                    activeBtn.addEventListener('click', () => {
+                        ProviderManager.setActive(provider.id);
+                        render();
+                    });
+
+                    const fallbackBtn = Atoms.buttonNode({
+                        label: provider.id === fallback?.id ? 'Fallback' : 'Definir fallback',
+                        ariaLabel: provider.id === fallback?.id ? `${provider.name} é o provider de fallback` : `Definir ${provider.name} como fallback`,
+                        variant: provider.id === fallback?.id ? 'primary' : 'outline'
+                    });
+                    fallbackBtn.disabled = provider.id === active?.id;
+                    fallbackBtn.title = provider.id === active?.id ? 'Escolha outro provider como principal antes de defini-lo como fallback.' : '';
+                    fallbackBtn.setAttribute('aria-pressed', String(provider.id === fallback?.id));
+                    fallbackBtn.addEventListener('click', () => {
+                        if (provider.id === fallback?.id) ProviderManager.setFallback('');
+                        else ProviderManager.setFallback(provider.id);
+                        render();
+                    });
+
+                    const editBtn = Atoms.buttonNode({ label: 'Editar', ariaLabel: 'Editar provider', variant: 'outline' });
+                    editBtn.addEventListener('click', () => renderEditor(provider));
+
+                    const removeBtn = Atoms.buttonNode({ label: 'Remover', ariaLabel: 'Remover provider', variant: 'outline' });
+                    removeBtn.disabled = !!provider.builtin;
+                    removeBtn.title = provider.builtin ? 'O provedor padrão não pode ser removido.' : 'Remover provider';
+                    removeBtn.addEventListener('click', () => {
+                        if (provider.builtin) return;
+                        if (!confirm(`Remover o provider "${provider.name}"?`)) return;
+                        ProviderManager.remove(provider.id);
+                        render();
+                    });
+
+                    actions.append(activeBtn, fallbackBtn, editBtn, removeBtn);
+                    card.append(header, meta, actions);
+                    listWrap.appendChild(card);
+                });
+            }
+
+            const providers = ProviderManager && ProviderManager.list ? ProviderManager.list() : [];
+            const active = ProviderManager && ProviderManager.getActive ? ProviderManager.getActive() : null;
+            const fallback = ProviderManager && ProviderManager.getFallback ? ProviderManager.getFallback() : null;
+
+            const activeSection = document.createElement('div');
+            activeSection.appendChild(createSectionLabel('sliders', 'Modelo padrão'));
+            const activeRow = document.createElement('div');
+            activeRow.className = 'kpe-param-row kpe-param-row--full';
+            const activeLabel = document.createElement('label');
+            activeLabel.className = 'kpe-param-label';
+            activeLabel.htmlFor = 'kpe-provider-active';
+            activeLabel.textContent = 'Provedor principal';
+            const activeControl = document.createElement('div');
+            activeControl.className = 'kpe-param-control';
+            const activeSelect = document.createElement('select');
+            activeSelect.className = 'kpe-param-input';
+            activeSelect.id = 'kpe-provider-active';
+            const activePlaceholder = document.createElement('option');
+            activePlaceholder.value = '';
+            activePlaceholder.textContent = 'Selecione um provider';
+            activeSelect.appendChild(activePlaceholder);
+            providers.forEach(provider => {
+                const option = document.createElement('option');
+                option.value = provider.id;
+                option.textContent = `${provider.name || 'Provider'} (${provider.model || 'sem modelo'})`;
+                activeSelect.appendChild(option);
             });
-            form.appendChild(restoreBtn);
+            activeSelect.value = active?.id || '';
+            activeSelect.addEventListener('change', () => {
+                if (!activeSelect.value) return;
+                ProviderManager.setActive(activeSelect.value);
+                render();
+            });
+            activeControl.appendChild(activeSelect);
+            const activeHint = document.createElement('div');
+            activeHint.className = 'kpe-param-hint';
+            activeHint.textContent = 'Provedor principal usado em todas as chamadas.';
+            activeControl.appendChild(activeHint);
+            activeRow.append(activeLabel, activeControl);
+            activeSection.appendChild(activeRow);
+
+            const fallbackSection = document.createElement('div');
+            fallbackSection.appendChild(createSectionLabel('undo', 'Fallback'));
+            const fallbackBadge = document.createElement('span');
+            fallbackBadge.className = 'kpe-provider-role is-fallback';
+            fallbackBadge.setAttribute('aria-live', 'polite');
+            fallbackBadge.textContent = fallback?.name || 'Nenhum fallback definido';
+            fallbackSection.appendChild(fallbackBadge);
+            const fallbackRow = document.createElement('div');
+            fallbackRow.className = 'kpe-param-row kpe-param-row--full';
+            const fallbackLabel = document.createElement('label');
+            fallbackLabel.className = 'kpe-param-label';
+            fallbackLabel.htmlFor = 'kpe-provider-fallback';
+            fallbackLabel.textContent = 'Provedor de fallback';
+            const fallbackControl = document.createElement('div');
+            fallbackControl.className = 'kpe-param-control';
+            const fallbackSelect = document.createElement('select');
+            fallbackSelect.className = 'kpe-param-input';
+            fallbackSelect.id = 'kpe-provider-fallback';
+            const fallbackPlaceholder = document.createElement('option');
+            fallbackPlaceholder.value = '';
+            fallbackPlaceholder.textContent = 'Nenhum fallback definido';
+            fallbackSelect.appendChild(fallbackPlaceholder);
+            providers.forEach(provider => {
+                const option = document.createElement('option');
+                option.value = provider.id;
+                option.textContent = `${provider.name || 'Provider'} (${provider.model || 'sem modelo'})`;
+                if (provider.id === active?.id) {
+                    option.disabled = true;
+                    option.title = 'O provedor principal não pode ser usado como fallback.';
+                }
+                fallbackSelect.appendChild(option);
+            });
+            fallbackSelect.value = fallback?.id || '';
+            fallbackSelect.addEventListener('change', () => {
+                ProviderManager.setFallback(fallbackSelect.value);
+                render();
+            });
+            fallbackControl.appendChild(fallbackSelect);
+            const fallbackHint = document.createElement('div');
+            fallbackHint.className = 'kpe-param-hint';
+            fallbackHint.textContent = 'Usado automaticamente se o principal falhar.';
+            fallbackControl.appendChild(fallbackHint);
+            fallbackRow.append(fallbackLabel, fallbackControl);
+            fallbackSection.appendChild(fallbackRow);
+            const fallbackButton = Atoms.buttonNode({
+                label: fallback ? 'Remover fallback' : 'Definir fallback',
+                ariaLabel: fallback ? 'Remover provedor de fallback' : 'Definir provedor de fallback',
+                variant: 'outline'
+            });
+            fallbackButton.addEventListener('click', () => {
+                ProviderManager.setFallback(fallback ? '' : fallbackSelect.value);
+                render();
+            });
+            fallbackSection.appendChild(fallbackButton);
+
+            const addSection = document.createElement('div');
+            addSection.appendChild(createSectionLabel('upload', 'Adicionar provedor'));
+            const addBtn = Atoms.buttonNode({ label: 'Adicionar provider', ariaLabel: 'Adicionar novo provider', variant: 'primary' });
+            addBtn.addEventListener('click', () => renderEditor(null));
+            const toolbar = document.createElement('div');
+            toolbar.className = 'kpe-provider-toolbar';
+            toolbar.appendChild(addBtn);
+            addSection.append(toolbar, editorWrap);
+
+            form.append(activeSection, fallbackSection, addSection, listWrap);
+            renderList();
             bodyEl.appendChild(form);
 
             const cancelBtn = Atoms.button({ icon: 'x', label: 'Cancelar', ariaLabel: 'Cancelar', variant: 'outline', onClick: close });
             const saveBtn = Atoms.button({ icon: 'check', label: 'Salvar', ariaLabel: 'Salvar', variant: 'primary', onClick: applyAndClose });
             footerEl.append(cancelBtn, saveBtn);
         }
-
         function renderContext() {
             const form = document.createElement('div');
             form.className = 'kpe-param-body';
@@ -386,8 +689,22 @@
                 const opts = f.options.map(o => `<option value="${o.value}" ${draft[key] === o.value ? 'selected' : ''}>${Utils.escapeHtml(o.label)}</option>`).join('');
                 row.innerHTML = `<label class="kpe-param-label" for="kpe-param-${key}">${Utils.escapeHtml(f.label)}</label><div class="kpe-param-control"><select id="kpe-param-${key}" class="kpe-param-input">${opts}</select><div class="kpe-param-hint">${Utils.escapeHtml(f.hint)}</div></div>`;
                 form.appendChild(row);
-                row.querySelector('select').addEventListener('change', (e) => { draft[key] = e.target.value; });
+                row.querySelector('select').addEventListener('change', (e) => {
+                    draft[key] = e.target.value;
+                    if (key === 'response_persona') updateCustomToneVisibility();
+                });
             });
+
+            const customTone = ParamSchema.SCHEMA.find(f => f.key === 'response_persona_custom');
+            const customToneRow = document.createElement('div');
+            customToneRow.className = 'kpe-param-row';
+            customToneRow.innerHTML = `<label class="kpe-param-label" for="kpe-param-${customTone.key}">${Utils.escapeHtml(customTone.label)}</label><div class="kpe-param-control"><input type="text" id="kpe-param-${customTone.key}" class="kpe-param-input" maxlength="${customTone.maxLength}" value="${Utils.escapeHtml(draft[customTone.key] || '')}" placeholder="Ex: sarcástico, mas didático"><div class="kpe-param-hint">${Utils.escapeHtml(customTone.hint)}</div></div>`;
+            form.appendChild(customToneRow);
+            customToneRow.querySelector('input').addEventListener('input', (e) => { draft[customTone.key] = e.target.value; });
+            function updateCustomToneVisibility() {
+                customToneRow.style.display = draft.response_persona === 'auto' ? 'none' : '';
+            }
+            updateCustomToneVisibility();
 
             bodyEl.appendChild(form);
             const cancelBtn = Atoms.button({ icon: 'x', label: 'Cancelar', ariaLabel: 'Cancelar', variant: 'outline', onClick: close });
@@ -678,7 +995,10 @@
         function renderHistory() {
             const runs = EnhancementHistory.listRuns();
             if (!runs.length) {
-                bodyEl.innerHTML = '<div class="kpe-history-empty">Nenhuma execução registrada ainda. Cada execução (Aprimorar ou Guiado) aparecerá aqui com suas chamadas à API aninhadas.</div>';
+                const empty = document.createElement('div');
+                empty.className = 'kpe-history-empty';
+                empty.textContent = 'Nenhuma execução registrada ainda. Cada execução (Aprimorar ou Guiado) aparecerá aqui com suas chamadas à API aninhadas.';
+                bodyEl.appendChild(empty);
                 const closeBtn = Atoms.button({ icon: 'x', label: 'Fechar', ariaLabel: 'Fechar', variant: 'primary', onClick: close });
                 footerEl.appendChild(closeBtn);
                 return;
@@ -686,10 +1006,32 @@
             const container = document.createElement('div');
             const statusIconMap = { success: '✓', error: '✗', aborted: '⏸', pending: '○' };
             const outcomeLabels = { applied: 'Aplicado', cancelled: 'Cancelado', error: 'Erro', aborted: 'Abortado', pending: 'Pendente' };
+            const copyRunJson = async (run) => {
+                const json = JSON.stringify(run, null, 2);
+                if (navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(json);
+                } else {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = json;
+                    textarea.setAttribute('readonly', '');
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    textarea.style.pointerEvents = 'none';
+                    document.body.appendChild(textarea);
+                    try {
+                        textarea.select();
+                        if (!document.execCommand('copy')) throw new Error('O navegador não permitiu copiar para a área de transferência.');
+                    } finally {
+                        textarea.remove();
+                    }
+                }
+            };
             runs.forEach((run) => {
                 const card = document.createElement('div');
                 card.className = 'kpe-history-item';
 
+                const heading = document.createElement('div');
+                heading.className = 'kpe-history-item__heading';
                 const header = document.createElement('button');
                 header.type = 'button';
                 header.className = 'kpe-history-item__header';
@@ -726,7 +1068,26 @@
                     const isExpanded = card.classList.toggle('is-expanded');
                     header.setAttribute('aria-expanded', String(isExpanded));
                 });
-                card.appendChild(header);
+                heading.appendChild(header);
+
+                const copyBtn = Atoms.buttonNode({
+                    label: 'Copiar JSON',
+                    ariaLabel: `Copiar execução ${typeBadge} como JSON`,
+                    variant: 'outline',
+                    onClick: async () => {
+                        try {
+                            await copyRunJson(run);
+                            Molecules.toast('Execução copiada como JSON.', 'success');
+                        } catch (error) {
+                            console.error('[KPE] Falha ao copiar execução do histórico:', error);
+                            Molecules.toast('Não foi possível copiar o JSON desta execução.', 'error', { details: error.message });
+                        }
+                    }
+                });
+                copyBtn.classList.add('kpe-history-item__copy');
+                copyBtn.prepend(Atoms.icon('copy'));
+                heading.appendChild(copyBtn);
+                card.appendChild(heading);
 
                 const details = document.createElement('div');
                 details.className = 'kpe-history-item__details';

@@ -1,2 +1,6 @@
+agent/
 dist/
 node_modules/
+src/tests/
+!src/tests/
+!src/tests/*-tests.js

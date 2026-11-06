@@ -25,6 +25,7 @@
 // @grant        GM_getValue
 // @grant        GM_deleteValue
 // @connect      api.kilo.ai
+// @connect      ai-gateway.kilo.ai
 // @require      https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js
 // @run-at       document-idle
 // ==/UserScript==

@@ -1,5 +1,5 @@
 // ===== src/param-schema.js =====
-    // ===== ParamSchema (number | select) =====
+    // ===== ParamSchema (number | select | text) =====
     const ParamSchema = (() => {
         const SCHEMA = [
             { key: 'temperature', label: 'Temperatura', type: 'number', min: 0, max: 2, step: 0.1, default: 0.7, hint: '0 = determinístico · 2 = criativo' },
@@ -25,8 +25,10 @@
                 { value: 'casual', label: 'Casual' },
                 { value: 'technical', label: 'Técnico' },
                 { value: 'friendly', label: 'Amigável' },
-                { value: 'concise', label: 'Conciso' }
-            ]}
+                { value: 'concise', label: 'Conciso' },
+                { value: 'custom', label: 'Personalizado' }
+            ]},
+            { key: 'response_persona_custom', label: 'Tom customizado', type: 'text', default: '', maxLength: 200, hint: 'Ex: sarcástico, mas didático' }
         ];
         const PRESETS = [
             { key: 'precise', label: 'Preciso', values: { temperature: 0.2, top_p: 0.9, max_tokens: 2048 } },
@@ -77,4 +79,3 @@
         function save(values) { try { GM_setValue('kpe_params', JSON.stringify(values)); } catch (_) {} }
         return { SCHEMA, PRESETS, defaults, validate, clean, load, save };
     })();
-

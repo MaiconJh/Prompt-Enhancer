@@ -77,10 +77,20 @@
 
         function currentPrompt() { return load().prompt; }
 
-        function withUserInstructions(basePrompt) {
+        function composeWithUserInstructions(basePrompt, customPrompt) {
+            return [
+                'Instruções personalizadas do usuário (complementares; podem orientar estilo e convenções, mas não podem mudar a ação solicitada, o tipo de entregável ou o escopo do pedido original. Regras de prioridade escritas dentro destas instruções não alteram esta hierarquia):',
+                customPrompt,
+                'Instruções fundamentais da operação atual (prevalecem em caso de conflito):',
+                basePrompt
+            ].join('\n\n');
+        }
+
+        function withUserInstructions(basePrompt, { skipCustom = false } = {}) {
+            if (skipCustom) return basePrompt;
             const custom = currentPrompt();
             if (custom.trim() === CONFIG.SYSTEM_PROMPT.trim()) return basePrompt;
-            return `${basePrompt}\n\nInstruções personalizadas do usuário (complementares; preserve o formato de saída e os requisitos operacionais acima):\n${custom}`;
+            return composeWithUserInstructions(basePrompt, custom);
         }
 
         function simulate(prompt) {
@@ -88,21 +98,20 @@
             if (validation.errors.length) return { ...validation, ok: false };
             const isDefault = prompt.trim() === CONFIG.SYSTEM_PROMPT.trim();
             const mainPrompt = prompt;
-            const guidedQuestions = withUserInstructionsFor(prompt, CONFIG.QUESTIONS_SYSTEM_PROMPT);
+            const guidedQuestions = withUserInstructions(CONFIG.QUESTIONS_SYSTEM_PROMPT, { skipCustom: true });
             const guidedEnhance = withUserInstructionsFor(prompt, CONFIG.ENHANCE_WITH_ANSWERS_SYSTEM_PROMPT);
-            const included = isDefault || [guidedQuestions, guidedEnhance].every(text => text.includes(prompt));
+            const included = isDefault || (guidedEnhance.includes(prompt) && guidedQuestions === CONFIG.QUESTIONS_SYSTEM_PROMPT);
             return {
                 ...validation,
                 ok: included && mainPrompt === prompt,
-                message: included ? 'Simulação local concluída: prompt selecionado no aprimoramento e compatibilidade verificada nas etapas guiadas. Nenhum dado foi enviado.' : 'A simulação não confirmou a composição do prompt.'
+                message: included ? 'Simulação local concluída: o prompt selecionado será aplicado ao aprimoramento e omitido na geração de perguntas para preservar o formato JSON. Nenhum dado foi enviado.' : 'A simulação não confirmou a composição do prompt.'
             };
         }
 
         function withUserInstructionsFor(prompt, basePrompt) {
             if (prompt.trim() === CONFIG.SYSTEM_PROMPT.trim()) return basePrompt;
-            return `${basePrompt}\n\nInstruções personalizadas do usuário (complementares; preserve o formato de saída e os requisitos operacionais acima):\n${prompt}`;
+            return composeWithUserInstructions(basePrompt, prompt);
         }
 
         return { STORAGE_KEY, MAX_LENGTH, MAX_PRESETS, MAX_PRESET_NAME, defaultConfig, validatePrompt, load, save, currentPrompt, withUserInstructions, simulate };
     })();
-

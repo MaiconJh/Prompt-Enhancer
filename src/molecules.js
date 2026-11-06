@@ -28,13 +28,18 @@
             }
             refreshContextBtn();
 
-            const paramsBtn = Atoms.button({ icon: 'sliders', label: 'Parâmetros', ariaLabel: 'Configurar parâmetros de geração', variant: 'ghost', onClick: () => onParams?.(paramsBtn) });
-            const settingsBtn = Atoms.button({ icon: 'gear', label: 'Config', ariaLabel: 'Abrir configurações (histórico, parâmetros, contexto)', variant: 'ghost', onClick: () => onSettings?.(settingsBtn) });
-            const undoBtn = Atoms.button({ icon: 'undo', label: 'Desfazer', ariaLabel: 'Desfazer último aprimoramento', variant: 'ghost', onClick: () => onUndo() });
+            const paramsBtn = Atoms.button({ icon: 'sliders', label: '', ariaLabel: 'Configurar parâmetros de geração', variant: 'ghost', onClick: () => onParams?.(paramsBtn) });
+            const settingsBtn = Atoms.button({ icon: 'gear', label: '', ariaLabel: 'Abrir configurações (histórico, parâmetros, contexto)', variant: 'ghost', onClick: () => onSettings?.(settingsBtn) });
+            const undoBtn = Atoms.button({ icon: 'undo', label: '', ariaLabel: 'Desfazer último aprimoramento', variant: 'ghost', onClick: () => onUndo() });
             undoBtn.disabled = true;
 
             bar.appendChild(enhanceBtn);
             bar.appendChild(guidedBtn);
+
+            const spacer = document.createElement('span');
+            spacer.style.flex = '1 1 auto';
+            bar.appendChild(spacer);
+
             bar.appendChild(contextBtn);
             bar.appendChild(paramsBtn);
             bar.appendChild(settingsBtn);

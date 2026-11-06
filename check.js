@@ -32,7 +32,10 @@ try {
 
 try {
     const expectedFiles = [...structuralFiles, ...manifest].sort();
-    const actualFiles = (await readdir(sourceDir)).sort();
+    const actualFiles = (await readdir(sourceDir, { withFileTypes: true }))
+        .filter((entry) => entry.isFile())
+        .map((entry) => entry.name)
+        .sort();
     const missingFiles = expectedFiles.filter((name) => !actualFiles.includes(name));
     const extraFiles = actualFiles.filter((name) => !expectedFiles.includes(name));
     if (missingFiles.length || extraFiles.length) {

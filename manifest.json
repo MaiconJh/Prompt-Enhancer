@@ -4,6 +4,7 @@
   "utils.js",
   "providers-project-context.js",
   "migration.js",
+  "provider-manager.js",
   "network-errors.js",
   "enhancement-history.js",
   "rate-limiter.js",

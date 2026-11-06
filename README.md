@@ -77,9 +77,11 @@ Works on **DeepSeek**, **ChatGPT**, **Claude**, **Gemini** and **Perplexity**.
 | `presence_penalty` | −2 – 2 | 0.0 |
 | `seed` | 0 – 2147483647 | random |
 | `response_language` | auto, pt-BR, en, es, fr, de, it, ja, zh | auto |
-| `response_persona` | auto, formal, casual, technical, friendly, concise | auto |
+| `response_persona` | auto, formal, casual, technical, friendly, concise, custom | auto |
+| `response_persona_custom` | Free-form style, up to 200 characters | empty |
 
 Presets: **Precise**, **Balanced**, **Creative**.
+Selected tones guide both the generated prompt and its requested response style.
 
 ### Execution history
 
@@ -101,7 +103,8 @@ Presets: **Precise**, **Balanced**, **Creative**.
   context", "Retry without streaming" or "Open parameters" based on the
   failure type.
 - **Local rate limit** — 10 requests per 60 s per host.
-- **Adaptive timeout** — 30 s base, scaling with payload size up to 120 s.
+- **Adaptive timeout** — 30 s base, scaling with payload size and an additional
+  per-KB allowance for attached project context and code, up to 120 s.
 - **Streaming watchdogs** — warn if no first byte arrives within 8 s or if
   the stream stalls for 5 s.
 
@@ -197,13 +200,21 @@ Editable system prompt, stored in `kpe_system_prompt_v1`. Local presets are
 stored alongside the prompt and can be loaded, renamed or deleted
 individually.
 
+### Provider
+
+Open **Configurações → Provider** to set a custom Base URL, model and API
+key. Leave a field blank to use its default value (the default endpoint,
+model, or anonymous API key). Use **Testar conexão** to send a minimal
+request and see the connection result, or **Restaurar padrão** to clear
+all provider overrides. Provider settings are stored locally.
+
 ### Menu commands
 
 Accessible from the userscript manager's menu:
 
 - **Sobre** — version, context stats, history counts and current provider.
 - **Configurações** — full settings modal (params, context, system prompt,
-  history).
+  history and provider).
 - **Limpar arquivos de contexto** — remove all project context files.
 - **Gerenciar contexto** — open the context popover from the menu.
 - **Histórico de erros** — list the last 20 errors with codes and messages.
@@ -287,6 +298,9 @@ SYSTEM_PROMPT
 | `kpe_system_prompt_v1` | System prompt and presets |
 | `kpe_runs` | Enhancement history |
 | `kpe_error_history` | Error catalog history (last 20) |
+| `pe_api_url` | Optional provider endpoint override |
+| `pe_model` | Optional provider model override |
+| `pe_api_key` | Provider API key (defaults to `anonymous`) |
 
 ---
 
