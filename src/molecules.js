@@ -8,7 +8,7 @@
             bar.setAttribute('role', 'toolbar');
             bar.setAttribute('aria-label', 'Ações do prompt');
 
-            const enhanceBtn = Atoms.button({ icon: 'sparkles', label: 'Aprimorar', ariaLabel: 'Aprimorar prompt com Kilo Code', variant: 'primary', onClick: () => onEnhance(enhanceBtn) });
+            const enhanceBtn = Atoms.button({ icon: 'sparkles', label: 'Aprimorar', ariaLabel: 'Aprimorar prompt', variant: 'primary', onClick: () => onEnhance(enhanceBtn) });
             const guidedBtn = Atoms.button({ icon: 'guide', label: 'Guiado', ariaLabel: 'Iniciar aprimoramento guiado', variant: 'outline', onClick: () => onGuided(guidedBtn) });
             const contextBtn = Atoms.button({ icon: 'agentDoc', label: 'Contexto', ariaLabel: 'Gerenciar arquivos de contexto', variant: 'ghost', onClick: () => contextPopoverInst?.toggle() });
             contextBtn.classList.add('kpe-btn--agents');
@@ -283,7 +283,7 @@
                 if (cancelBtn.disabled) return;
                 cancelBtn.textContent = 'Cancelando…';
                 cancelBtn.disabled = true;
-                try { if (cancelFn) cancelFn(); else KiloApi.abort(); } catch (_) {}
+                try { if (cancelFn) cancelFn(); else ApiClient.abort(); } catch (_) {}
             });
 
             return {
@@ -685,7 +685,7 @@
             document.body.appendChild(t);
             Anim.toastIn(t);
             setTimeout(() => Anim.toastOut(t), finalTimeout);
-            if (document.hidden && typeof GM_notification === 'function') { try { GM_notification({ text: message, title: 'Kilo Prompt Enhancer', timeout: 3000 }); } catch (_) {} }
+            if (document.hidden && typeof GM_notification === 'function') { try { GM_notification({ text: message, title: 'Prompt-Enhancer', timeout: 3000 }); } catch (_) {} }
         },
 
         floatLoading({ onCancel } = {}) {
@@ -713,4 +713,3 @@
             };
         }
     };
-

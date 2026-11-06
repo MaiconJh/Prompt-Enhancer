@@ -73,12 +73,12 @@
         State.activeComposer?.actionbar.setBusy(true);
         closeAll();
 
-        const overlay = Molecules.floatLoading({ onCancel: () => KiloApi.abort() });
+        const overlay = Molecules.floatLoading({ onCancel: () => ApiClient.abort() });
         const overlayHandler = wireOverlayToEvents(overlay);
         overlay.setState('connecting');
 
         try {
-            const enhanced = await KiloApi.call(original, {
+            const enhanced = await ApiClient.call(original, {
                 params, skipContext, forceNonStream,
                 runId: capturedRunId,
                 callKind: 'main',
@@ -138,13 +138,13 @@
         const capturedRunId = runId;
         let wizardSubmitted = false;
 
-        const questionsOverlay = Molecules.floatLoading({ onCancel: () => KiloApi.abort() });
+        const questionsOverlay = Molecules.floatLoading({ onCancel: () => ApiClient.abort() });
         const questionsHandler = wireOverlayToEvents(questionsOverlay);
         questionsOverlay.setState('connecting');
 
         let questions;
         try {
-            questions = await KiloApi.generateQuestions(base, {
+            questions = await ApiClient.generateQuestions(base, {
                 params,
                 runId: capturedRunId,
                 callKind: 'questions',
@@ -180,7 +180,7 @@
             onSubmit: async (answers, { onEvent } = {}) => {
                 wizardSubmitted = true;
                 try {
-                    const enhanced = await KiloApi.enhanceWithAnswers(base, answers, {
+                    const enhanced = await ApiClient.enhanceWithAnswers(base, answers, {
                         params,
                         runId: capturedRunId,
                         callKind: 'enhance-with-answers',

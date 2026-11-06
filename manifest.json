@@ -19,7 +19,7 @@
   "settings-modal.js",
   "overlay-events.js",
   "molecules.js",
-  "kilo-api.js",
+  "api-client.js",
   "composer.js",
   "orchestration.js",
   "bootstrap.js"

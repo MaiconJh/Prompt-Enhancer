@@ -1,6 +1,6 @@
-// ===== src/kilo-api.js =====
-    // ===== KiloApi (with history capture per-call + extended system composition) =====
-    const KiloApi = {
+// ===== src/api-client.js =====
+    // ===== HTTP client with history capture per-call + extended system composition =====
+    const ApiClient = {
         _post(systemPrompt, userContent, options = {}) {
             const runId = options.runId || null;
             const baseCallKind = options.callKind || 'main';
@@ -30,7 +30,7 @@
                 let attempt = 0, lastErr;
                 while (attempt <= CONFIG.RETRY_MAX) {
                     try {
-                        return await KiloApi._postOnce(systemPrompt, userContent, {
+                        return await ApiClient._postOnce(systemPrompt, userContent, {
                             ...options,
                             onEvent: captureOnEvent,
                             runId,
@@ -168,7 +168,7 @@
                 reqRef = GM_xmlhttpRequest({
                     method: 'POST',
                     url: CONFIG.API_URL,
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer anonymous', 'X-KILOCODE-EDITORNAME': CONFIG.EDITOR_NAME },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer anonymous', [CONFIG.PROVIDER_HEADER_NAME]: CONFIG.EDITOR_NAME },
                     data: JSON.stringify(payload),
                     timeout: timeoutMs,
                     onprogress: useStream ? (res) => {
@@ -233,7 +233,7 @@
                         }
                         finalize(null, content.trim());
                     },
-                    onerror: () => { if (aborted) return; finalize(ErrorIndexer.build({ code: 'NETWORK', message: 'Falha de rede ao contatar o Kilo Code.' })); },
+                    onerror: () => { if (aborted) return; finalize(ErrorIndexer.build({ code: 'NETWORK', message: 'Falha de rede ao contatar a API.' })); },
                     ontimeout: () => { if (aborted) return; finalize(ErrorIndexer.build({ code: 'TIMEOUT', message: 'Tempo limite excedido.', meta: { timeoutMs, payloadKB, payloadSize: Utils.byteSize(payloadForSize) } })); },
                     onabort: () => { if (aborted) return; aborted = true; finalize(ErrorIndexer.build({ code: 'ABORTED', message: 'Requisição cancelada.' })); }
                 });
@@ -242,10 +242,10 @@
         },
 
         abort() { const req = State._currentRequest; if (req) { try { req.abort(); } catch (_) {} } },
-        call(prompt, options = {}) { return KiloApi._post(SystemPromptManager.currentPrompt(), prompt, { ...options, mainCall: true }); },
+        call(prompt, options = {}) { return ApiClient._post(SystemPromptManager.currentPrompt(), prompt, { ...options, mainCall: true }); },
 
         async generateQuestions(prompt, options = {}) {
-            const raw = await KiloApi._post(SystemPromptManager.withUserInstructions(CONFIG.QUESTIONS_SYSTEM_PROMPT), prompt, options);
+            const raw = await ApiClient._post(SystemPromptManager.withUserInstructions(CONFIG.QUESTIONS_SYSTEM_PROMPT), prompt, options);
             const parsed = Utils.parseJSON(raw);
             if (!parsed || !Array.isArray(parsed.questions) || !parsed.questions.length) throw ErrorIndexer.build({ code: 'BAD_JSON', message: 'Não foi possível gerar perguntas.', meta: { snippet: ErrorIndexer.truncate(raw) } });
             let allowCodeCount = 0;
@@ -275,7 +275,6 @@
                 return entry;
             }).join('\n\n');
             const userContent = `Prompt inicial:\n"""\n${prompt}\n"""\n\nPerguntas e respostas do usuário:\n${qa}`;
-            return KiloApi._post(SystemPromptManager.withUserInstructions(CONFIG.ENHANCE_WITH_ANSWERS_SYSTEM_PROMPT), userContent, options);
+            return ApiClient._post(SystemPromptManager.withUserInstructions(CONFIG.ENHANCE_WITH_ANSWERS_SYSTEM_PROMPT), userContent, options);
         }
     };
-

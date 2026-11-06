@@ -11,14 +11,14 @@
         document.addEventListener('keydown', onKeydown, true);
 
         if (typeof GM_registerMenuCommand === 'function') {
-            GM_registerMenuCommand('ℹ️ Sobre o Kilo Prompt Enhancer', () => {
+            GM_registerMenuCommand('ℹ️ Sobre o Prompt-Enhancer', () => {
                 const files = ProjectContext.list();
                 const activeFiles = files.filter(f => f.enabled);
                 const total = ProjectContext.getTotalSize();
                 const ctx = files.length ? `${activeFiles.length}/${files.length} arquivo(s) ativo(s) · ${Utils.formatBytes(total)} / ${Utils.formatBytes(CONFIG.MAX_CONTEXT_TOTAL_SIZE)} (${ProjectContext.isEnabled() ? 'ON' : 'OFF'})` : 'nenhum arquivo';
                 const histCount = EnhancementHistory.listRuns().length;
                 alert(
-                    'Kilo Prompt Enhancer v4.5.2\n\n' +
+                    'Prompt-Enhancer v1.0.0\n\n' +
                     'Contexto: ' + ctx + '\n' +
                     'Provider detectado: ' + Providers.detect() + '\n' +
                     'Streaming: ' + (CONFIG.STREAM ? 'ativo' : 'inativo') + '\n' +

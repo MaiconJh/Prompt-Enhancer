@@ -1,8 +1,18 @@
 // ===== src/config.js =====
+    // Default provider configuration. Override these values, or add a
+    // provider abstraction layer, to point at another API.
+    const DEFAULT_PROVIDER = {
+        url: 'https://api.kilo.ai/api/openrouter/chat/completions',
+        model: 'kilo-auto/free',
+        headerName: 'X-KILOCODE-EDITORNAME',
+        editorName: 'PromptEnhancer',
+    };
+
     const CONFIG = {
-        API_URL: 'https://api.kilo.ai/api/openrouter/chat/completions',
-        MODEL: 'kilo-auto/free',
-        EDITOR_NAME: 'KiloPromptEnhancer',
+        API_URL: DEFAULT_PROVIDER.url,
+        MODEL: DEFAULT_PROVIDER.model,
+        EDITOR_NAME: DEFAULT_PROVIDER.editorName,
+        PROVIDER_HEADER_NAME: DEFAULT_PROVIDER.headerName,
         DEBOUNCE_MS: 500,
         RATE_LIMIT: { max: 10, window: 60_000 },
         MIN_TEXT_LENGTH: 3,
@@ -93,4 +103,3 @@
 
     const DUR = { instant: 0.12, fast: 0.2, base: 0.26, slow: 0.26, slower: 0.42 };
     const EASE = { enter: 'power3.out', exit: 'power3.in', spring: 'back.out(1.4)', smooth: 'power2.inOut' };
-

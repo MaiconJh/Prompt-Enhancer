@@ -255,7 +255,7 @@ src/
 ├── settings-modal.js       settingsModal (params, context, prompt, history)
 ├── overlay-events.js       wireOverlayToEvents (loading overlay events)
 ├── molecules.js            Molecules (toolbar, overlays, panels, wizard, toast)
-├── kilo-api.js             KiloApi (HTTP client with streaming + history)
+├── api-client.js           ApiClient (HTTP client with streaming + history)
 ├── composer.js             Composer (toolbar mounting per input)
 ├── orchestration.js        Event handlers, flow orchestration, menu
 ├── bootstrap.js            DOMContentLoaded / init dispatch

@@ -82,7 +82,7 @@ const requiredSymbols = [
     'ErrorIndexer', 'EnhancementHistory', 'RateLimiter', 'ParamSchema',
     'SystemPromptManager', 'StreamParser', 'Anim', 'GEAR_STATES', 'createGear',
     'injectStyles', 'ICONS', 'Atoms', 'codeAttachment', 'contextPopover', 'State',
-    'settingsModal', 'wireOverlayToEvents', 'Molecules', 'KiloApi', 'Composer',
+    'settingsModal', 'wireOverlayToEvents', 'Molecules', 'ApiClient', 'Composer',
     'init'
 ];
 
