@@ -1,13 +1,926 @@
 {
   "summary": {
     "files_analyzed": 1,
-    "total_findings": 0,
+    "total_findings": 101,
     "by_severity": {
       "critical": 0,
-      "warning": 0,
-      "suggestion": 0
+      "warning": 94,
+      "suggestion": 7
     },
-    "by_lens": {}
+    "by_lens": {
+      "specificity": 94,
+      "hygiene": 7
+    }
   },
-  "findings": []
+  "findings": [
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 36,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 2) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-mount *,.kpe-mount *::before,.kpe-mount *::after"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 72,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-btn--agents.is-loaded .kpe-ico"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 73,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-btn--agents.is-loaded .kpe-status-dot"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 75,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 6, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-btn.is-loading .kpe-ico,.kpe-btn.is-loading .kpe-label"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 158,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-prompt-base.is-expanded .kpe-prompt-base__chevron"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 160,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-prompt-base.is-expanded .kpe-prompt-base__content"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 171,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-q-item.is-answered .kpe-q-num"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 172,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 1) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-q-item.is-answered .kpe-q-num span"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 173,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 1) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-q-item.is-answered .kpe-q-num svg"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 182,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 4, 1) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-q-item.is-answered:not(.is-open) .kpe-q-hint"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 183,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 4, 1) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-q-item.is-answered:not(.is-open) .kpe-q-summary"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 185,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-q-item.is-open .kpe-q-chevron"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 187,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-q-item.is-open .kpe-q-content"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 197,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-option.is-checked .kpe-radio"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 198,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 1) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-option.is-checked .kpe-radio::after"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 199,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-option.is-checked .kpe-checkbox"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 200,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 1) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-option.is-checked .kpe-checkbox::after"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 206,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-free-text.is-active .kpe-free-text__row"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 207,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 1) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-free-text.is-active .kpe-radio::after"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 208,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-free-text.is-active .kpe-checkbox"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 209,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 1) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-free-text.is-active .kpe-checkbox::after"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 212,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-free-text.is-active .kpe-free-text__input-wrap"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 326,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-debug__log-line.is-warn .kpe-debug__log-ev"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 327,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-debug__log-line.is-err .kpe-debug__log-ev"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 328,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-debug__log-line.is-ok .kpe-debug__log-ev"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 335,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-panel-loading.is-float .kpe-panel-loading__card"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 395,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 4, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-toast.has-action,.kpe-toast.has-details"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 412,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-modal-backdrop.is-open .kpe-modal"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 414,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-panel__body"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 439,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-history-item.is-expanded .kpe-history-item__chevron"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 441,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-history-item.is-expanded .kpe-history-item__details"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 468,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-history-call.is-expanded .kpe-history-call__chevron"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 470,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-history-call.is-expanded .kpe-history-call__details"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 506,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-system-prompt__feedback.is-error"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 507,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-system-prompt__feedback.is-warning"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 508,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-system-prompt__feedback.is-valid"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 512,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 4, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-system-prompt__select,.kpe-scope .kpe-system-prompt__name"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 515,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-system-prompt__preset-actions .kpe-btn"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 516,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 1) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-system-prompt__preset-actions .kpe-btn[disabled]"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 521,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-system-prompt__default .kpe-system-prompt__helper"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 529,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-panel__footer"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 530,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 4, 1) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-panel__footer .kpe-btn:first-child"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 531,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 4, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-panel__footer .kpe-btn--primary"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 532,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 4, 3) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-panel__footer .kpe-btn--primary:hover:not([disabled])"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 533,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 5, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-panel__footer .kpe-btn--primary .kpe-ico"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 554,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-modal-backdrop.is-open .kpe-modal"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 580,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-panel__header"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 587,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 1) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-panel__header h4"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 594,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-panel__close"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 595,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 1) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-panel__close:hover"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 596,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 1) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-panel__close:focus-visible"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 598,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-modal-tabs"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 613,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 1) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-modal-tabs::before"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 622,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-modal-tab"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 640,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 1) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-modal-tab:hover"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 645,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 1) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-modal-tab:focus-visible"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 650,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 4, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-modal-tab.is-active"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 658,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-panel__body"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 669,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-panel__footer"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 711,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 4, 1) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-param-body:not(.kpe-system-prompt)"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 719,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 4, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-param-body.kpe-provider-settings"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 768,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 6, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-routing-chain,.kpe-routing-chain__step,.kpe-routing-chain__label,.kpe-routing-chain__arrow,.kpe-routing-chain__condition,.kpe-routing-chain__none"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 769,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 8, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-model-row,.kpe-model-row__provider,.kpe-model-row__name,.kpe-model-row__badges,.kpe-model-row__badge,.kpe-model-details__title,.kpe-model-details__id,.kpe-model-details__metadata"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 870,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-provider-editor .kpe-provider-actions .kpe-btn"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 871,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 5, 2) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-param-body:not(.kpe-system-prompt) .kpe-param-row:last-child"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 872,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-param-presets"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 873,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-param-preset"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 874,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 1) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-param-preset:hover"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 875,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-param-input"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 876,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-param-label"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 877,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-param-hint"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 878,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-context-info"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 885,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-system-prompt__card"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 891,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-history-item"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 897,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-history-empty"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 903,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-panel__footer"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 910,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 4, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-panel__footer .kpe-btn"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 917,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 4, 3) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-panel__footer .kpe-btn:hover:not([disabled])"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 918,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 4, 1) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-panel__footer .kpe-btn[disabled]"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 919,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 4, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-panel__footer .kpe-btn--primary"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 1007,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 6, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-param-hint, .kpe-scope .kpe-modal .kpe-system-prompt__helper"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 1009,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 4, 1) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-param-body:not(.kpe-system-prompt)"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 1010,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-param-input"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 1014,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 1) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-param-input::placeholder"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 1015,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 1) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-param-input:focus"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 1016,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-param-presets"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 1017,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-param-preset"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 1023,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 7, 2) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-param-preset.is-active, .kpe-scope .kpe-modal .kpe-param-preset[aria-pressed=\"true\"]"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 1031,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 1) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-param-preset:focus-visible"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 1036,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 4, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-panel__footer .kpe-btn"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 1041,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 5, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-scope .kpe-modal .kpe-panel__footer .kpe-btn .kpe-ico"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 1102,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-model-card.is-active .kpe-model-header"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 1110,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-model-card.is-active .kpe-chevron"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 1116,
+      "lens": "specificity",
+      "severity": "warning",
+      "rule": "high-specificity-selector",
+      "message": "Specificity (0, 3, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
+      "selector": ".kpe-model-card.is-active .kpe-model-expand"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 828,
+      "lens": "hygiene",
+      "severity": "suggestion",
+      "rule": "duplicate-selector",
+      "message": "Selector also defined at line 222; merge or verify intentional split.",
+      "selector": ".kpe-provider-empty"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 903,
+      "lens": "hygiene",
+      "severity": "suggestion",
+      "rule": "duplicate-selector",
+      "message": "Selector also defined at line 120; merge or verify intentional split.",
+      "selector": ".kpe-scope .kpe-modal .kpe-panel__footer"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 1009,
+      "lens": "hygiene",
+      "severity": "suggestion",
+      "rule": "duplicate-selector",
+      "message": "Selector also defined at line 162; merge or verify intentional split.",
+      "selector": ".kpe-scope .kpe-modal .kpe-param-body:not(.kpe-system-prompt)"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 1010,
+      "lens": "hygiene",
+      "severity": "suggestion",
+      "rule": "duplicate-selector",
+      "message": "Selector also defined at line 326; merge or verify intentional split.",
+      "selector": ".kpe-scope .kpe-modal .kpe-param-input"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 1016,
+      "lens": "hygiene",
+      "severity": "suggestion",
+      "rule": "duplicate-selector",
+      "message": "Selector also defined at line 323; merge or verify intentional split.",
+      "selector": ".kpe-scope .kpe-modal .kpe-param-presets"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 1017,
+      "lens": "hygiene",
+      "severity": "suggestion",
+      "rule": "duplicate-selector",
+      "message": "Selector also defined at line 324; merge or verify intentional split.",
+      "selector": ".kpe-scope .kpe-modal .kpe-param-preset"
+    },
+    {
+      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
+      "line": 1036,
+      "lens": "hygiene",
+      "severity": "suggestion",
+      "rule": "duplicate-selector",
+      "message": "Selector also defined at line 361; merge or verify intentional split.",
+      "selector": ".kpe-scope .kpe-modal .kpe-panel__footer .kpe-btn"
+    }
+  ]
 }
