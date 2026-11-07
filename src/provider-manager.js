@@ -3,6 +3,8 @@
         const KEY_PROVIDERS = 'pe_providers';
         const KEY_ACTIVE = 'pe_active_provider';
         const KEY_FALLBACK = 'pe_fallback_provider';
+        const KEY_PINNED = 'pe_pinned_route';
+        const KEY_VIRTUAL_FALLBACK_ENABLED = 'kpe_virtual_fallback_enabled';
         const KEY_MIGRATED = 'pe_providers_migrated';
         const KEY_KILO_GATEWAY_MIGRATED = 'pe_kilo_gateway_migrated';
         const LEGACY_DEFAULT_URL = 'https://api.kilo.ai/api/openrouter/chat/completions';
@@ -163,6 +165,10 @@
 
         function list() {
             migrate();
+            if (typeof ProviderRegistry !== 'undefined') {
+                const catalog = ProviderRegistry.getCached();
+                if (Array.isArray(catalog) && catalog.length) return catalog;
+            }
             return _load() || [];
         }
 
@@ -221,7 +227,7 @@
             const entry = {
                 id: Utils.uid('prov'),
                 name: String(input.name || 'Novo provider').trim().slice(0, 60),
-                url: String(input.url || '').trim(),
+                url: _chatUrl(input.url || ''),
                 model: String(input.model || '').trim(),
                 apiKey: String(input.apiKey || ''),
                 headers: input.headers && typeof input.headers === 'object' ? input.headers : {},
@@ -243,7 +249,7 @@
             const next = {
                 ...cur,
                 name: patch.name !== undefined ? String(patch.name).trim().slice(0, 60) : cur.name,
-                url: patch.url !== undefined ? String(patch.url).trim() : cur.url,
+                url: patch.url !== undefined ? _chatUrl(patch.url) : cur.url,
                 model: patch.model !== undefined ? String(patch.model).trim() : cur.model,
                 apiKey: patch.apiKey !== undefined ? String(patch.apiKey) : cur.apiKey,
                 headers: patch.headers && typeof patch.headers === 'object' ? patch.headers : cur.headers,
@@ -281,40 +287,121 @@
             return seeded[0];
         }
 
+        function _chatUrl(baseUrl) {
+            const base = String(baseUrl || '').trim().replace(/\/+$/, '');
+            return base.endsWith('/chat/completions') ? base : `${base}/chat/completions`;
+        }
+
+        function pin(entryOrId) {
+            const entry = typeof entryOrId === 'string'
+                ? (typeof ProviderRegistry !== 'undefined' ? ProviderRegistry.get(entryOrId) : null)
+                : entryOrId;
+            if (!entry || !entry.id || !entry.baseUrl || !entry.modelId) return false;
+            let provider = (_load() || []).find((item) =>
+                item.url.replace(/\/+$/, '') === _chatUrl(entry.baseUrl)
+                && item.model === entry.modelId);
+            if (!provider) {
+                provider = add({
+                    name: entry.providerLabel,
+                    url: _chatUrl(entry.baseUrl),
+                    model: entry.modelId,
+                    apiKey: entry.auth?.key || (entry.auth?.type === 'none' ? '' : safeGet('pe_api_key', '')),
+                    headers: {
+                        ...(entry.headers || {}),
+                        ...(entry.auth?.headerName ? { [entry.auth.headerName]: CONFIG.EDITOR_NAME } : {})
+                    }
+                });
+            }
+            setActive(provider.id);
+            if (!safeSet(KEY_PINNED, JSON.stringify({ entryId: entry.id, pinnedAt: Date.now() }))) return false;
+            return true;
+        }
+
+        function getPinned() {
+            try {
+                if (typeof ProviderRegistry === 'undefined') return null;
+                const raw = safeGet(KEY_PINNED, null);
+                if (!raw) return null;
+                const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                return parsed && typeof parsed.entryId === 'string' ? ProviderRegistry.get(parsed.entryId) : null;
+            } catch (_) {
+                return null;
+            }
+        }
+
+        function unpin() {
+            try { GM_deleteValue(KEY_PINNED); } catch (_) {}
+        }
+
+        function _entryToProvider(entry) {
+            if (!entry) return null;
+            return {
+                id: entry.id,
+                name: entry.providerLabel,
+                url: _chatUrl(entry.baseUrl),
+                model: entry.modelId,
+                apiKey: entry.auth?.key || (entry.auth?.type === 'none' ? '' : 'anonymous'),
+                authType: entry.auth?.type || 'bearer',
+                headers: {
+                    ...(entry.headers || {}),
+                    ...(entry.auth?.headerName ? { [entry.auth.headerName]: CONFIG.EDITOR_NAME } : {})
+                },
+                virtual: !!entry.virtual
+            };
+        }
+
         function resolveForRequest() {
-            const primary = getActive() || { ...DEFAULT_TEMPLATE };
-            const fallback = getFallback();
+            const pinned = getPinned();
+            const primary = pinned ? _entryToProvider(pinned) : (getActive() || { ...DEFAULT_TEMPLATE });
+            let fallback = getFallback();
+            if (pinned && !fallback && safeGet(KEY_VIRTUAL_FALLBACK_ENABLED, false)
+                && Array.isArray(CONFIG.VIRTUAL_FALLBACK_MODELS)
+                && typeof ProviderRegistry !== 'undefined') {
+                for (const modelId of CONFIG.VIRTUAL_FALLBACK_MODELS) {
+                    const candidate = ProviderRegistry.list().find((entry) => entry.virtual && entry.modelId === modelId);
+                    if (candidate && (candidate.auth.type === 'none' || candidate.auth.key || candidate.providerId !== 'openrouter')) {
+                        fallback = _entryToProvider(candidate);
+                        break;
+                    }
+                }
+            }
             const sequence = [primary].concat((fallback && fallback.id !== primary.id) ? [fallback] : []);
             return {
                 primary: {
                     id: primary.id || 'default',
                     name: primary.name || 'Kilo',
-                    url: String(primary.url || '').trim() || DEFAULT_PROVIDER.url,
+                    url: _chatUrl(primary.url || DEFAULT_PROVIDER.url),
                     model: String(primary.model || '').trim() || DEFAULT_PROVIDER.model,
-                    apiKey: String(primary.apiKey || '').trim() || 'anonymous',
-                    headers: { ...(DEFAULT_PROVIDER.headers || {}), ...(primary.headers || {}) },
+                    apiKey: primary.authType === 'none' ? '' : (String(primary.apiKey || '').trim() || 'anonymous'),
+                    authType: primary.authType || 'bearer',
+                    headers: pinned ? { ...(primary.headers || {}) } : { ...(DEFAULT_PROVIDER.headers || {}), ...(primary.headers || {}) },
                     builtin: !!primary.builtin,
-                    fallback: !!primary.fallback
+                    fallback: !!primary.fallback,
+                    virtual: !!primary.virtual
                 },
                 fallback: fallback && fallback.id !== primary.id ? {
                     id: fallback.id || 'fallback',
                     name: fallback.name || 'Fallback',
-                    url: String(fallback.url || '').trim() || DEFAULT_PROVIDER.url,
+                    url: _chatUrl(fallback.url || DEFAULT_PROVIDER.url),
                     model: String(fallback.model || '').trim() || DEFAULT_PROVIDER.model,
-                    apiKey: String(fallback.apiKey || '').trim() || 'anonymous',
-                    headers: { ...(DEFAULT_PROVIDER.headers || {}), ...(fallback.headers || {}) },
+                    apiKey: fallback.authType === 'none' ? '' : (String(fallback.apiKey || '').trim() || 'anonymous'),
+                    authType: fallback.authType || 'bearer',
+                    headers: fallback.virtual ? { ...(fallback.headers || {}) } : { ...(DEFAULT_PROVIDER.headers || {}), ...(fallback.headers || {}) },
                     builtin: !!fallback.builtin,
-                    fallback: !!fallback.fallback
+                    fallback: !!fallback.fallback,
+                    virtual: !!fallback.virtual
                 } : null,
                 all: sequence.map((provider) => ({
                     id: provider.id || 'default',
                     name: provider.name || 'Provider',
-                    url: String(provider.url || '').trim() || DEFAULT_PROVIDER.url,
+                    url: _chatUrl(provider.url || DEFAULT_PROVIDER.url),
                     model: String(provider.model || '').trim() || DEFAULT_PROVIDER.model,
-                    apiKey: String(provider.apiKey || '').trim() || 'anonymous',
-                    headers: { ...(DEFAULT_PROVIDER.headers || {}), ...(provider.headers || {}) },
+                    apiKey: provider.authType === 'none' ? '' : (String(provider.apiKey || '').trim() || 'anonymous'),
+                    authType: provider.authType || 'bearer',
+                    headers: provider.virtual ? { ...(provider.headers || {}) } : { ...(DEFAULT_PROVIDER.headers || {}), ...(provider.headers || {}) },
                     builtin: !!provider.builtin,
-                    fallback: !!provider.fallback
+                    fallback: !!provider.fallback,
+                    virtual: !!provider.virtual
                 }))
             };
         }
@@ -324,6 +411,9 @@
             list,
             getActive,
             getFallback,
+            pin,
+            unpin,
+            getPinned,
             setActive,
             setFallback,
             add,

@@ -1,6 +1,34 @@
 // ===== src/api-client.js =====
     // ===== HTTP client with history capture per-call + extended system composition =====
+    function joinUrl(base, path) {
+        const normalizedBase = String(base || '').trim().replace(/\/+$/, '');
+        const normalizedPath = `/${String(path || '').replace(/^\/+/, '')}`;
+        if (normalizedBase.endsWith(normalizedPath)) return normalizedBase;
+        return normalizedBase + normalizedPath;
+    }
+
     function resolveProviderConfig() {
+        const pinned = typeof ProviderManager !== 'undefined' && ProviderManager.getPinned
+            ? ProviderManager.getPinned()
+            : null;
+        if (pinned) {
+            const resolved = ProviderManager.resolveForRequest();
+            const primary = {
+                id: pinned.id,
+                name: pinned.providerLabel,
+                url: joinUrl(pinned.baseUrl, 'chat/completions'),
+                model: pinned.modelId,
+                apiKey: pinned.auth.type === 'none' ? '' : (pinned.auth.key || GM_getValue('pe_api_key', 'anonymous')),
+                authType: pinned.auth.type,
+                headers: {
+                    ...(pinned.headers || {}),
+                    ...(pinned.auth.headerName ? { [pinned.auth.headerName]: CONFIG.EDITOR_NAME } : {})
+                },
+                virtual: !!pinned.virtual
+            };
+            const fallback = resolved.fallback || ProviderManager.getFallback();
+            return { ...primary, fallback, all: [primary].concat(fallback ? [fallback] : []) };
+        }
         if (typeof ProviderManager !== 'undefined' && ProviderManager.resolveForRequest) {
             const resolved = ProviderManager.resolveForRequest();
             const primary = resolved.primary || {
@@ -72,6 +100,8 @@
                 let lastErr;
                 for (let providerIndex = 0; providerIndex < providers.length; providerIndex++) {
                     const provider = providers[providerIndex];
+                    let partialOutput = '';
+                    let continuationCount = 0;
                     if (providerIndex > 0) {
                         try {
                             options.onEvent?.({
@@ -83,18 +113,33 @@
                     }
                     while (attempt <= CONFIG.RETRY_MAX) {
                         try {
-                            return await ApiClient._postOnce(systemPrompt, userContent, {
+                            const value = await ApiClient._postOnce(systemPrompt, userContent, {
                                 ...options,
                                 onEvent: captureOnEvent,
                                 providerOverride: provider,
                                 runId,
                                 callKind: baseCallKind,
-                                attempt: baseAttempt + attempt,
-                                retryOf: lastCallId
+                                attempt: baseAttempt + attempt + continuationCount,
+                                retryOf: lastCallId,
+                                continuation: partialOutput || null
                             });
+                            return partialOutput + value;
                         } catch (err) {
                             lastErr = err;
                             if (!(err instanceof NetError)) throw err;
+                            if (err.code === 'OUTPUT_TRUNCATED' && typeof err.meta?.partialOutput === 'string') {
+                                partialOutput += err.meta.partialOutput;
+                                if (continuationCount < CONFIG.MAX_OUTPUT_CONTINUATIONS) {
+                                    continuationCount++;
+                                    continue;
+                                }
+                                lastErr = ErrorIndexer.build({
+                                    code: 'OUTPUT_TRUNCATED',
+                                    message: 'A resposta continuou atingindo o limite de tokens.',
+                                    meta: { ...err.meta, partialOutput }
+                                });
+                                throw lastErr;
+                            }
                             const canRetry = NetError.AUTO_RETRY.has(err.code) && attempt < CONFIG.RETRY_MAX;
                             if (canRetry) {
                                 attempt++;
@@ -102,8 +147,11 @@
                                 await new Promise(r => setTimeout(r, CONFIG.RETRY_BACKOFF_MS));
                                 continue;
                             }
+                            const failureStatus = Number(err?.meta?.status) || 0;
+                            const isEligibleVirtualFailure = failureStatus === 429 || failureStatus >= 500;
                             const canFailOver = providerIndex + 1 < providers.length
-                                && !['OFFLINE', 'LOCAL_RATE_LIMIT', 'ABORTED'].includes(err.code);
+                                && !['OFFLINE', 'LOCAL_RATE_LIMIT', 'ABORTED'].includes(err.code)
+                                && (!providers[providerIndex + 1].virtual || isEligibleVirtualFailure);
                             if (canFailOver) break;
                             throw err;
                         }
@@ -114,7 +162,7 @@
             return run();
         },
 
-        _postOnce(systemPrompt, userContent, { params = {}, skipContext = false, timeoutOverride = null, timeoutContextBytes = 0, onEvent = null, forceNonStream = false, mainCall = false, providerOverride = null, runId = null, callKind = 'main', attempt = 1, retryOf = null } = {}) {
+        _postOnce(systemPrompt, userContent, { params = {}, skipContext = false, timeoutOverride = null, timeoutContextBytes = 0, onEvent = null, forceNonStream = false, mainCall = false, providerOverride = null, runId = null, callKind = 'main', attempt = 1, retryOf = null, continuation = null } = {}) {
             return new Promise((resolve, reject) => {
                 const startedAt = Date.now();
                 const emitHistoryEarly = (partial) => {
@@ -149,7 +197,14 @@
                 const API_KEYS = new Set(['temperature', 'max_tokens', 'top_p', 'frequency_penalty', 'presence_penalty', 'seed']);
                 const apiParams = {};
                 for (const k of Object.keys(finalParams)) { if (API_KEYS.has(k)) apiParams[k] = finalParams[k]; }
-                const payload = { model: activeProvider.model, messages: [{ role: 'system', content: fullSystem }, { role: 'user', content: userContent }], stream: useStream, ...apiParams };
+                const messages = continuation
+                    ? [
+                        { role: 'system', content: fullSystem },
+                        { role: 'assistant', content: continuation },
+                        { role: 'user', content: 'Continue exatamente do ponto em que a resposta anterior parou. Não repita nem reescreva o conteúdo anterior; produza somente a continuação.' }
+                    ]
+                    : [{ role: 'system', content: fullSystem }, { role: 'user', content: userContent }];
+                const payload = { model: activeProvider.model, messages, stream: useStream, ...apiParams };
                 if (payload.temperature === undefined) payload.temperature = 0.7;
                 if (payload.max_tokens === undefined) payload.max_tokens = 2048;
                 const payloadForSize = JSON.stringify(payload);
@@ -162,12 +217,16 @@
                 const timeoutMs = timeoutOverride != null ? timeoutOverride : baseTimeout;
                 const check = RateLimiter.check();
                 if (!check.allowed) {
+                    const emit = (evt) => { try { onEvent?.(evt); } catch (e) { console.warn('[KPE] onEvent error', e); } };
+                    emit({ type: 'phase', phase: 'rate_limiting' });
                     const err = ErrorIndexer.build({ code: 'LOCAL_RATE_LIMIT', meta: { retryAfterMs: check.retryAfterMs } });
                     emitHistoryEarly({ payload: { system: fullSystem, messages: payload.messages, params: apiParams, meta: { model: activeProvider.model, endpoint: activeProvider.url, stream: useStream, timeoutMs, payloadKB, timeoutContextKB } }, output: '', error: { code: 'LOCAL_RATE_LIMIT', message: err.message, meta: err.meta }, meta: {}, streamUsed: false, fallbackUsed: false });
                     reject(err);
                     return;
                 }
                 RateLimiter.consume();
+                const emit = (evt) => { try { onEvent?.(evt); } catch (e) { console.warn('[KPE] onEvent error', e); } };
+                emit({ type: 'phase', phase: 'preparing' });
                 let settled = false, aborted = false, receivedFirstToken = false, receivedAnyByte = false;
                 let firstTokenAt = 0, lastTokenAt = Date.now(), tokenCount = 0;
                 let responseAccum = '', lastProcessedIdx = 0, lastFinishReason = '';
@@ -175,7 +234,6 @@
                 let streamWarned = { noFirstByte: false, stall: false };
                 let reqRef = null, watchdogTimer = null;
                 State.stream = { active: useStream, startedAt, firstTokenAt: 0, tokenCount: 0, lastTokenAt, observedTokS: 0, fullText: '' };
-                const emit = (evt) => { try { onEvent?.(evt); } catch (e) { console.warn('[KPE] onEvent error', e); } };
                 try { emit({ type: '__meta', meta: { model: activeProvider.model, endpoint: activeProvider.url, stream: useStream, timeoutMs, payloadKB, timeoutContextKB, attempt } }); } catch (_) {}
                 function clearWatchdogs() { if (watchdogTimer) { clearInterval(watchdogTimer); watchdogTimer = null; } }
                 function startWatchdogs() {
@@ -195,7 +253,14 @@
                     State.stream.active = false;
                     if (State._currentRequest === reqObj) State._currentRequest = null;
                     if (err) {
-                        try { emit({ type: 'error', code: err.code, message: err.message, meta: err.meta }); } catch (_) {}
+                        try {
+                            emit({
+                                type: err.code === 'OUTPUT_TRUNCATED' ? 'warning' : 'error',
+                                code: err.code,
+                                message: err.message,
+                                meta: err.meta
+                            });
+                        } catch (_) {}
                     }
                     try {
                         emit({ type: '__history', runId, callKind, attempt, retryOf, entry: {
@@ -231,6 +296,13 @@
                         } else if (evt.type === 'usage') { emit({ type: 'usage', usage: evt.usage }); }
                         else if (evt.type === 'finish') { lastFinishReason = evt.reason || ''; }
                         else if (evt.type === 'done') {
+                            if (lastFinishReason === 'length') {
+                                finalize(ErrorIndexer.build({
+                                    code: 'OUTPUT_TRUNCATED',
+                                    meta: { finishReason: lastFinishReason, partialOutput: responseAccum }
+                                }));
+                                continue;
+                            }
                             try { emit({ type: 'stream_done', tokens: tokenCount }); } catch (_) {}
                             if (responseAccum.trim()) finalize(null, responseAccum.trim());
                             else finalize(ErrorIndexer.build({ code: 'EMPTY_RESPONSE', message: lastFinishReason === 'content_filter' ? 'Conteúdo bloqueado pelo filtro de segurança do provedor.' : 'A API não retornou conteúdo.', meta: { finishReason: lastFinishReason } }));
@@ -240,12 +312,13 @@
                 const reqObj = { abort: () => { if (aborted || settled) return; aborted = true; clearWatchdogs(); try { reqRef?.abort?.(); } catch (_) {} finalize(ErrorIndexer.build({ code: 'ABORTED', message: 'Requisição cancelada.' })); } };
                 State._currentRequest = reqObj;
                 State.pendingAbort = reqObj.abort;
+                emit({ type: 'phase', phase: 'dispatching' });
                 reqRef = GM_xmlhttpRequest({
                     method: 'POST',
                     url: activeProvider.url,
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + activeProvider.apiKey,
+                        ...(activeProvider.authType === 'none' ? {} : { Authorization: 'Bearer ' + activeProvider.apiKey }),
                         ...(activeProvider.headers || {})
                     },
                     data: JSON.stringify(payload),
@@ -260,6 +333,7 @@
                             if (!receivedAnyByte) {
                                 receivedAnyByte = true;
                                 try { emit({ type: 'first_byte', status: res.status || 0, bytes: full.length }); } catch (_) {}
+                                try { emit({ type: 'phase', phase: 'awaiting_token' }); } catch (_) {}
                             }
                             const events = parser.feed(delta);
                             handleStreamEvents(events);
@@ -287,13 +361,24 @@
                         if (!receivedAnyByte) {
                             receivedAnyByte = true;
                             try { emit({ type: 'first_byte', status: res.status, bytes: (res.responseText || '').length }); } catch (_) {}
+                            try { emit({ type: 'phase', phase: 'awaiting_token' }); } catch (_) {}
                         }
                         if (res.status < 200 || res.status >= 300) {
                             const data = ErrorIndexer.safeJsonParse(res.responseText);
                             finalize(ErrorIndexer.fromHttpResponse(res.status, data, res.responseHeaders, res.responseText));
                             return;
                         }
-                        if (responseAccum.trim()) { finalize(null, responseAccum.trim()); return; }
+                        if (responseAccum.trim()) {
+                            if (lastFinishReason === 'length') {
+                                finalize(ErrorIndexer.build({
+                                    code: 'OUTPUT_TRUNCATED',
+                                    meta: { status: res.status, finishReason: lastFinishReason, partialOutput: responseAccum }
+                                }));
+                            } else {
+                                finalize(null, responseAccum.trim());
+                            }
+                            return;
+                        }
                         let data;
                         try { data = JSON.parse(res.responseText); }
                         catch {
@@ -306,6 +391,13 @@
                         const finishReason = choice?.finish_reason || '';
                         const refusal = choice?.message?.refusal;
                         const content = choice?.message?.content;
+                        if (typeof content === 'string' && content.trim() && finishReason === 'length') {
+                            finalize(ErrorIndexer.build({
+                                code: 'OUTPUT_TRUNCATED',
+                                meta: { status: res.status, finishReason, partialOutput: content }
+                            }));
+                            return;
+                        }
                         if (typeof content !== 'string' || !content.trim()) {
                             finalize(ErrorIndexer.build({ code: 'EMPTY_RESPONSE', message: finishReason === 'content_filter' ? 'Conteúdo bloqueado por filtro de segurança.' : (refusal ? `Provedor recusou: ${refusal}` : 'A API não retornou conteúdo.'), meta: { status: res.status, finishReason, refusal, provider: ErrorIndexer.extractProviderError(data) } }));
                             return;
@@ -316,6 +408,7 @@
                     ontimeout: () => { if (aborted) return; finalize(ErrorIndexer.build({ code: 'TIMEOUT', message: 'Tempo limite excedido.', meta: { timeoutMs, payloadKB, timeoutContextKB, payloadSize: Utils.byteSize(payloadForSize) } })); },
                     onabort: () => { if (aborted) return; aborted = true; finalize(ErrorIndexer.build({ code: 'ABORTED', message: 'Requisição cancelada.' })); }
                 });
+                emit({ type: 'phase', phase: 'awaiting_ttfb' });
                 if (useStream) startWatchdogs();
             });
         },
@@ -331,7 +424,6 @@
             );
             const parsed = Utils.parseJSON(raw);
             if (!parsed || !Array.isArray(parsed.questions) || !parsed.questions.length) throw ErrorIndexer.build({ code: 'BAD_JSON', message: 'Não foi possível gerar perguntas.', meta: { snippet: ErrorIndexer.truncate(raw) } });
-            let allowCodeCount = 0;
             const cleaned = parsed.questions
                 .filter(q => q && typeof q.question === 'string' && q.question.trim())
                 .map((q, i) => {
@@ -339,7 +431,7 @@
                     if (!['text', 'choice', 'multi'].includes(type)) type = 'text';
                     const item = { id: String(q.id || `q${i + 1}`), type, question: String(q.question).trim(), placeholder: typeof q.placeholder === 'string' ? q.placeholder : '', options: Array.isArray(q.options) ? q.options.map(o => String(o)).filter(Boolean).slice(0, 6) : [] };
                     if ((type === 'choice' || type === 'multi') && item.options.length < 2) { item.type = 'text'; type = 'text'; }
-                    if (q.allowCode === true && allowCodeCount < 2) { item.allowCode = true; allowCodeCount++; }
+                    if (q.allowCode === true) item.allowCode = true;
                     return item;
                 }).slice(0, 5);
             if (!cleaned.length) throw ErrorIndexer.build({ code: 'EMPTY_RESPONSE', message: 'Nenhuma pergunta válida.', meta: { snippet: ErrorIndexer.truncate(raw) } });

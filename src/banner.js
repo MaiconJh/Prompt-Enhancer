@@ -24,8 +24,13 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
-// @connect      api.kilo.ai
+// @connect      *
+// @connect      openrouter.ai
 // @connect      ai-gateway.kilo.ai
+// @connect      gen.pollinations.ai
+// @connect      keylessai.thryx.workers.dev
+// @connect      api.groq.com
+// @connect      oai.endpoints.kepler.ai.cloud.ovh.net
 // @require      https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js
 // @run-at       document-idle
 // ==/UserScript==

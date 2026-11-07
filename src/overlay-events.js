@@ -16,7 +16,32 @@
                         overlay.setState('connecting');
                     }
                     break;
+                case 'phase':
+                    switch (evt.phase) {
+                        case 'rate_limiting':
+                            overlay.setState('waiting');
+                            overlay.logEvent('rate_limiting', '· Limite de requisições local');
+                            break;
+                        case 'preparing':
+                            overlay.setState('preparing');
+                            overlay.logEvent('preparing', '· Montando payload');
+                            break;
+                        case 'dispatching':
+                            overlay.setState('dispatching');
+                            overlay.logEvent('dispatching', '· Requisição em voo');
+                            break;
+                        case 'awaiting_ttfb':
+                            overlay.setState('awaiting_ttfb');
+                            overlay.logEvent('awaiting_ttfb', '· Sem dados recebidos');
+                            break;
+                        case 'awaiting_token':
+                            overlay.setState('awaiting_token');
+                            overlay.logEvent('awaiting_token', '· Primeiro byte recebido');
+                            break;
+                    }
+                    break;
                 case 'first_byte':
+                    overlay.cancelVirtualProgress?.();
                     overlay.setState('waiting');
                     overlay.logEvent('first_byte', `· HTTP ${evt.status || 200}`, 'ok');
                     overlay.setMetric('status', String(evt.status || 200), 'ok');

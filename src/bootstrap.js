@@ -54,7 +54,18 @@
                 if (!EnhancementHistory.listRuns().length) { alert('Nenhum aprimoramento registrado.'); return; }
                 if (confirm('Limpar histórico de aprimoramentos?')) { EnhancementHistory.clear(); alert('Histórico de aprimoramentos limpo.'); }
             });
+            GM_registerMenuCommand('🔄 Atualizar catálogo de provedores', () => {
+                ProviderRegistry.hydrate(true).then((entries) => {
+                    console.info(`[KPE] Catálogo hidratado: ${entries.length} entradas (${entries.filter((entry) => entry.source === 'dynamic').length} dinâmicas).`);
+                }).catch((err) => console.warn('[KPE] Falha na atualização do catálogo:', err));
+            });
         }
+
+        setTimeout(() => {
+            ProviderRegistry.hydrate().then((entries) => {
+                console.info(`[KPE] Catálogo hidratado: ${entries.length} entradas (${entries.filter((entry) => entry.source === 'dynamic').length} dinâmicas).`);
+            }).catch((err) => console.warn('[KPE] Falha na hidratação do catálogo:', err));
+        }, 100);
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });

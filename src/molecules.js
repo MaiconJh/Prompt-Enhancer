@@ -160,6 +160,10 @@
 
             const STATE_LABELS = {
                 connecting: { title: 'Conectando', sub: 'Estabelecendo conexão' },
+                preparing: { title: 'Montando payload', sub: 'Validando parâmetros e contexto' },
+                dispatching: { title: 'Enviando requisição', sub: 'Despachando para o provedor' },
+                awaiting_ttfb: { title: 'Aguardando 1º byte', sub: 'Esperando resposta do servidor' },
+                awaiting_token: { title: 'Recebendo resposta', sub: 'Primeiro byte chegou, aguardando tokens' },
                 waiting: { title: 'Aguardando dados', sub: 'Nenhum byte recebido ainda' },
                 streaming: { title: 'Recebendo conteúdo', sub: 'Tokens chegando' },
                 finalizing: { title: 'Processando resultado', sub: 'Preparando saída' },
@@ -167,6 +171,8 @@
             };
             const PHASE_TO_STATE = {
                 routing: 'connecting', connecting: 'connecting',
+                preparing: 'preparing', dispatching: 'dispatching',
+                awaiting_ttfb: 'awaiting_ttfb', awaiting_token: 'awaiting_token',
                 waiting: 'waiting', streaming: 'streaming',
                 finalizing: 'finalizing', retrying: 'retrying'
             };
@@ -179,6 +185,10 @@
             let gear = null;
             const events = [];
             let currentState = 'connecting';
+            const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+            let virtualTimer = null;
+            let virtualStartTime = 0;
+            let virtualStartProgress = 0;
 
             function tick() {
                 if (!startedAt) return;
@@ -189,6 +199,23 @@
             }
             function startTimer() { if (timer) return; startedAt = Date.now(); timer = setInterval(tick, 100); tick(); }
             function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
+
+            function startVirtualProgress(timeoutMs) {
+                if (virtualTimer || reducedMotion || !gear) return;
+                virtualStartTime = Date.now();
+                virtualStartProgress = gear.getMorphProgress();
+                const halfTimeout = timeoutMs / 2;
+                virtualTimer = setInterval(() => {
+                    const elapsed = Date.now() - virtualStartTime;
+                    const t = Math.min(elapsed / halfTimeout, 1);
+                    const progress = virtualStartProgress + (0.8 - virtualStartProgress) * t;
+                    gear.setMorphProgress(progress);
+                    if (t >= 1) { clearInterval(virtualTimer); virtualTimer = null; }
+                }, 50);
+            }
+            function cancelVirtualProgress() {
+                if (virtualTimer) { clearInterval(virtualTimer); virtualTimer = null; }
+            }
 
             function applyStateLabels(state, opts = {}) {
                 const labels = STATE_LABELS[state] || STATE_LABELS.connecting;
@@ -273,6 +300,7 @@
 
             function hide() {
                 stopTimer();
+                cancelVirtualProgress();
                 root.classList.remove('is-active');
                 if (gear) { gear.destroy(); gear = null; }
             }
@@ -307,6 +335,7 @@
                     }
                     if (meta.stream != null) setMetric('stream', meta.stream ? 'ON' : 'OFF', meta.stream ? 'accent' : '');
                     if (meta.timeoutMs) setMetric('timeout', (meta.timeoutMs / 1000).toFixed(0) + 's');
+                    if (meta.timeoutMs && !virtualTimer) startVirtualProgress(meta.timeoutMs);
                     if (meta.payloadKB) setMetric('payload', meta.payloadKB.toFixed(1) + ' KB');
                     if (meta.attempt != null) {
                         const total = CONFIG.RETRY_MAX + 1;

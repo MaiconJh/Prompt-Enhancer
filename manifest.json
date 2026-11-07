@@ -1,27 +1,312 @@
-[
-  "config.js",
-  "host-shield.js",
-  "utils.js",
-  "providers-project-context.js",
-  "migration.js",
-  "provider-manager.js",
-  "network-errors.js",
-  "enhancement-history.js",
-  "rate-limiter.js",
-  "param-schema.js",
-  "system-prompt-manager.js",
-  "stream-parser-anim.js",
-  "gear.js",
-  "styles.js",
-  "icons-atoms.js",
-  "code-attachment.js",
-  "context-popover.js",
-  "state.js",
-  "settings-modal.js",
-  "overlay-events.js",
-  "molecules.js",
-  "api-client.js",
-  "composer.js",
-  "orchestration.js",
-  "bootstrap.js"
-]
+{
+  "modules": [
+    {
+      "file": "config.js",
+      "description": "Defines provider defaults, runtime configuration, prompt templates, and animation constants.",
+      "interfaces": {
+        "provides": ["DEFAULT_PROVIDER", "CONFIG", "DUR", "EASE"],
+        "consumes": ["GM_getValue"]
+      },
+      "interactions": [
+        "Provides shared settings to provider, context, API, and UI modules."
+      ]
+    },
+    {
+      "file": "provider-catalog.js",
+      "description": "Defines curated free and local provider model entries.",
+      "interfaces": {
+        "provides": ["STATIC_CATALOG", "CATALOG_VERSION"],
+        "consumes": []
+      },
+      "interactions": [
+        "ProviderRegistry merges these curated entries with discovered provider models."
+      ]
+    },
+    {
+      "file": "provider-discovery.js",
+      "description": "Discovers free model catalogs through userscript cross-origin requests.",
+      "interfaces": {
+        "provides": ["discoverOpenRouter", "discoverKilo", "discoverPollinations", "discoverKeylessAI", "VIRTUAL_ROUTERS"],
+        "consumes": ["CONFIG", "GM_xmlhttpRequest"]
+      },
+      "interactions": [
+        "ProviderRegistry runs the adapters in parallel and normalizes their model entries."
+      ]
+    },
+    {
+      "file": "provider-registry.js",
+      "description": "Caches, normalizes, filters, and merges curated and discovered model entries.",
+      "interfaces": {
+        "provides": ["ProviderRegistry"],
+        "consumes": ["CONFIG", "STATIC_CATALOG", "VIRTUAL_ROUTERS", "GM_getValue", "GM_setValue"]
+      },
+      "interactions": [
+        "Settings UI reads cached entries synchronously; ProviderManager resolves pins against the registry."
+      ]
+    },
+    {
+      "file": "host-shield.js",
+      "description": "Isolates Prompt Enhancer events and UI behavior from the host chat page.",
+      "interfaces": {
+        "provides": ["HostShield"],
+        "consumes": ["DOM event APIs"]
+      },
+      "interactions": [
+        "Installed during bootstrap and used by UI modules that mount elements on host pages."
+      ]
+    },
+    {
+      "file": "utils.js",
+      "description": "Provides shared DOM, text, timing, identifier, and formatting helpers.",
+      "interfaces": {
+        "provides": ["Utils"],
+        "consumes": ["CONFIG"]
+      },
+      "interactions": [
+        "Used across context, composer, UI, and orchestration modules."
+      ]
+    },
+    {
+      "file": "providers-project-context.js",
+      "description": "Detects chat providers and manages project-context files and prompt suffixes.",
+      "interfaces": {
+        "provides": ["Providers", "ProjectContext"],
+        "consumes": ["CONFIG", "Utils", "GM_getValue", "GM_setValue"]
+      },
+      "interactions": [
+        "Composer and settings UI use ProjectContext; ApiClient uses provider detection and context wrapping."
+      ]
+    },
+    {
+      "file": "migration.js",
+      "description": "Migrates legacy settings and enhancement history into the current storage format.",
+      "interfaces": {
+        "provides": ["migrateLegacy", "migrateHistoryRuns"],
+        "consumes": ["GM_getValue", "GM_setValue", "EnhancementHistory"]
+      },
+      "interactions": [
+        "Bootstrap runs migrations before loading current application state."
+      ]
+    },
+    {
+      "file": "provider-manager.js",
+      "description": "Stores provider configurations and resolves the active provider and fallback.",
+      "interfaces": {
+        "provides": ["ProviderManager"],
+        "consumes": ["DEFAULT_PROVIDER", "ProviderRegistry", "CONFIG", "GM_getValue", "GM_setValue"]
+      },
+      "interactions": [
+        "Settings UI pins catalog routes; ApiClient resolves them while retaining legacy provider settings."
+      ]
+    },
+    {
+      "file": "network-errors.js",
+      "description": "Classifies network and provider failures and maintains error history.",
+      "interfaces": {
+        "provides": ["NetError", "ErrorIndexer"],
+        "consumes": ["CONFIG", "GM_getValue", "GM_setValue"]
+      },
+      "interactions": [
+        "ApiClient reports failures; orchestration and UI use classified messages and actions."
+      ]
+    },
+    {
+      "file": "enhancement-history.js",
+      "description": "Persists enhancement runs, nested API calls, outcomes, and history limits.",
+      "interfaces": {
+        "provides": ["EnhancementHistory"],
+        "consumes": ["CONFIG", "GM_getValue", "GM_setValue"]
+      },
+      "interactions": [
+        "Orchestration creates and updates runs while ApiClient records their individual calls."
+      ]
+    },
+    {
+      "file": "rate-limiter.js",
+      "description": "Limits API request frequency independently for each host.",
+      "interfaces": {
+        "provides": ["RateLimiter"],
+        "consumes": ["CONFIG"]
+      },
+      "interactions": [
+        "ApiClient checks the limiter before sending requests."
+      ]
+    },
+    {
+      "file": "param-schema.js",
+      "description": "Defines generation parameter fields, presets, defaults, validation, and storage.",
+      "interfaces": {
+        "provides": ["ParamSchema"],
+        "consumes": ["GM_getValue", "GM_setValue"]
+      },
+      "interactions": [
+        "Settings UI edits parameters; orchestration passes cleaned values to ApiClient."
+      ]
+    },
+    {
+      "file": "system-prompt-manager.js",
+      "description": "Validates, stores, and manages the base system prompt and user presets.",
+      "interfaces": {
+        "provides": ["SystemPromptManager"],
+        "consumes": ["GM_getValue", "GM_setValue"]
+      },
+      "interactions": [
+        "Settings UI manages prompts; ApiClient composes them into requests."
+      ]
+    },
+    {
+      "file": "stream-parser-anim.js",
+      "description": "Parses streamed responses and provides animation helpers with reduced-motion support.",
+      "interfaces": {
+        "provides": ["StreamParser", "Anim"],
+        "consumes": ["CONFIG", "DUR", "EASE", "GSAP"]
+      },
+      "interactions": [
+        "ApiClient consumes StreamParser; overlays and previews use Anim."
+      ]
+    },
+    {
+      "file": "gear.js",
+      "description": "Draws and updates the loading gear used by the progress overlay.",
+      "interfaces": {
+        "provides": ["GEAR_STATES", "createGear"],
+        "consumes": ["Anim", "HTMLCanvasElement"]
+      },
+      "interactions": [
+        "Molecules creates gear instances for loading UI."
+      ]
+    },
+    {
+      "file": "styles.js",
+      "description": "Injects the stylesheet for all Prompt Enhancer UI components.",
+      "interfaces": {
+        "provides": ["injectStyles"],
+        "consumes": ["DOM style APIs"]
+      },
+      "interactions": [
+        "Bootstrap injects these styles before mounting interface components."
+      ]
+    },
+    {
+      "file": "icons-atoms.js",
+      "description": "Defines reusable SVG icons and primitive buttons and controls.",
+      "interfaces": {
+        "provides": ["ICONS", "Atoms"],
+        "consumes": ["DOM APIs"]
+      },
+      "interactions": [
+        "Molecules, settings, and context interfaces use these shared UI primitives."
+      ]
+    },
+    {
+      "file": "code-attachment.js",
+      "description": "Handles code text and file attachments used by guided enhancement.",
+      "interfaces": {
+        "provides": ["codeAttachment"],
+        "consumes": ["CONFIG", "Utils", "DOM APIs"]
+      },
+      "interactions": [
+        "Guided-mode UI collects attachments and passes their content to ApiClient."
+      ]
+    },
+    {
+      "file": "context-popover.js",
+      "description": "Provides the anchored interface for loading and managing project-context files.",
+      "interfaces": {
+        "provides": ["contextPopover"],
+        "consumes": ["ProjectContext", "CONFIG", "Utils", "Atoms"]
+      },
+      "interactions": [
+        "Composer opens the popover; ProjectContext stores files later consumed by ApiClient."
+      ]
+    },
+    {
+      "file": "state.js",
+      "description": "Holds shared runtime state for the active composer, requests, and UI.",
+      "interfaces": {
+        "provides": ["State"],
+        "consumes": []
+      },
+      "interactions": [
+        "Composer, settings, and orchestration read and update the same state object."
+      ]
+    },
+    {
+      "file": "settings-modal.js",
+      "description": "Renders settings for parameters, context, system prompts, history, and providers.",
+      "interfaces": {
+        "provides": ["settingsModal"],
+        "consumes": ["State", "ParamSchema", "SystemPromptManager", "ProviderManager", "ProviderRegistry", "ProjectContext", "EnhancementHistory", "Atoms", "Molecules"]
+      },
+      "interactions": [
+        "Molecules exposes the modal; orchestration receives saved values and applies them to runtime state."
+      ]
+    },
+    {
+      "file": "overlay-events.js",
+      "description": "Connects API progress events to the loading overlay state and display.",
+      "interfaces": {
+        "provides": ["wireOverlayToEvents"],
+        "consumes": ["Molecules"]
+      },
+      "interactions": [
+        "Orchestration wires ApiClient events to overlays created by Molecules."
+      ]
+    },
+    {
+      "file": "molecules.js",
+      "description": "Composes reusable UI components including toolbars, overlays, previews, and wizards.",
+      "interfaces": {
+        "provides": ["Molecules"],
+        "consumes": ["State", "Atoms", "settingsModal", "contextPopover", "codeAttachment", "ProjectContext", "Utils"]
+      },
+      "interactions": [
+        "Composer mounts its toolbar; orchestration coordinates the overlays, preview, wizard, and notifications."
+      ]
+    },
+    {
+      "file": "api-client.js",
+      "description": "Builds provider requests, composes prompts and context, and handles streaming and retries.",
+      "interfaces": {
+        "provides": ["ApiClient"],
+        "consumes": ["CONFIG", "DEFAULT_PROVIDER", "ProviderManager", "ProviderRegistry", "Providers", "ProjectContext", "ParamSchema", "SystemPromptManager", "RateLimiter", "StreamParser", "NetError", "EnhancementHistory"]
+      },
+      "interactions": [
+        "Orchestration supplies user input and settings; ApiClient records nested calls and emits progress events."
+      ]
+    },
+    {
+      "file": "composer.js",
+      "description": "Detects supported chat inputs and mounts the enhancement toolbar for each composer.",
+      "interfaces": {
+        "provides": ["Composer"],
+        "consumes": ["State", "Utils", "Molecules", "HostShield"]
+      },
+      "interactions": [
+        "Connects host-page inputs to toolbar actions handled by orchestration."
+      ]
+    },
+    {
+      "file": "orchestration.js",
+      "description": "Coordinates direct and guided enhancement flows, requests, overlays, previews, and errors.",
+      "interfaces": {
+        "provides": ["onEnhance", "onGuided", "onParams", "onSettings"],
+        "consumes": ["State", "ApiClient", "Molecules", "ParamSchema", "ProjectContext", "EnhancementHistory", "ErrorIndexer", "wireOverlayToEvents", "Utils"]
+      },
+      "interactions": [
+        "Receives Composer actions and coordinates ApiClient, history, settings, and result interfaces."
+      ]
+    },
+    {
+      "file": "bootstrap.js",
+      "description": "Starts the application, restores state, registers host observers, and wires menu commands.",
+      "interfaces": {
+        "provides": ["init"],
+        "consumes": ["State", "ParamSchema", "Composer", "HostShield", "ProviderRegistry", "injectStyles", "migrateLegacy", "migrateHistoryRuns", "EnhancementHistory"]
+      },
+      "interactions": [
+        "Runs after all modules are concatenated and initializes the shared application interfaces."
+      ]
+    }
+  ]
+}

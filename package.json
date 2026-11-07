@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "sandbox": "node sandbox.cjs",
     "build": "node build.js",
     "check": "node check.js",
     "test": "npm run check && node --test src/tests/*-tests.js",
@@ -11,5 +12,8 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "playwright": "^1.65.0"
   }
 }

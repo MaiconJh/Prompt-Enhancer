@@ -1,11 +1,14 @@
 // ===== src/gear.js =====
     // ===== Gear canvas (loading overlay) =====
     const GEAR_STATES = {
-        connecting: { rgb: [124, 156, 255], rgb2: [168,  85, 247], morph: 0.0, speed: 1.0 },
-        waiting:    { rgb: [148, 154, 177], rgb2: [100, 116, 139], morph: 0.25, speed: 0.6 },
-        streaming:  { rgb: [ 56, 189, 248], rgb2: [124, 156, 255], morph: 0.65, speed: 1.8 },
-        finalizing: { rgb: [ 16, 185, 129], rgb2: [ 52, 211, 153], morph: 1.0, speed: 1.4 },
-        retrying:   { rgb: [245, 158,  11], rgb2: [239,  68,  68], morph: 0.4, speed: -0.7 }
+        connecting: { rgb: [124, 156, 255], rgb2: [168,  85, 247], morph: 0.0, speed: 1.0, minDisplayMs: 250 },
+        waiting:    { rgb: [148, 154, 177], rgb2: [100, 116, 139], morph: 0.25, speed: 0.6, minDisplayMs: 300 },
+        dispatching:{ rgb: [124, 156, 255], rgb2: [168,  85, 247], morph: 0.1, speed: 1.2, minDisplayMs: 250 },
+        awaiting_ttfb: { rgb: [148, 154, 177], rgb2: [100, 116, 139], morph: 0.3, speed: 0.8, minDisplayMs: 350 },
+        awaiting_token: { rgb: [148, 154, 177], rgb2: [100, 116, 139], morph: 0.45, speed: 1.0, minDisplayMs: 300 },
+        streaming:  { rgb: [ 56, 189, 248], rgb2: [124, 156, 255], morph: 0.65, speed: 1.8, minDisplayMs: 200 },
+        finalizing: { rgb: [ 16, 185, 129], rgb2: [ 52, 211, 153], morph: 1.0, speed: 1.4, minDisplayMs: 250 },
+        retrying:   { rgb: [245, 158,  11], rgb2: [239,  68,  68], morph: 0.4, speed: -0.7, minDisplayMs: 400 }
     };
 
     function createGear(canvas, initialState = 'connecting') {
@@ -20,6 +23,7 @@
         ctx.scale(dpr, dpr);
 
         const initial = GEAR_STATES[initialState] || GEAR_STATES.connecting;
+        const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
         const sim = {
             phase: 0, absTime: 0,
             speed: initial.speed,
@@ -28,6 +32,8 @@
             rgb2: [...initial.rgb2]
         };
         let target = initial;
+        let stateQueue = [];
+        let queueTimer = null;
         let last = performance.now();
         let rafId = null;
         let stopped = false;
@@ -138,13 +144,36 @@
         }
         rafId = requestAnimationFrame(loop);
 
+        function flushQueue() {
+            if (queueTimer) { clearTimeout(queueTimer); queueTimer = null; }
+            if (stateQueue.length === 0) return;
+            const next = stateQueue.shift();
+            const s = GEAR_STATES[next];
+            if (s) target = s;
+            const waitMs = reducedMotion ? 0 : (s?.minDisplayMs ?? 0);
+            queueTimer = setTimeout(flushQueue, waitMs);
+        }
+
         return {
             setState(state) {
                 const s = GEAR_STATES[state];
-                if (s) target = s;
+                if (!s) return;
+                if (target === s && stateQueue.length === 0) return;
+                stateQueue.push(state);
+                if (!queueTimer) flushQueue();
+            },
+            setMorphProgress(value) {
+                const v = Math.max(0, Math.min(1, Number(value)));
+                sim.morphProgress = v;
+                target.morph = v;
+            },
+            getMorphProgress() {
+                return sim.morphProgress;
             },
             destroy() {
                 stopped = true;
+                if (queueTimer) { clearTimeout(queueTimer); queueTimer = null; }
+                stateQueue = [];
                 if (rafId) cancelAnimationFrame(rafId);
                 rafId = null;
             }

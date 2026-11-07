@@ -1,3 +1,5 @@
+.kilo/
+.vscode/
 agent/
 dist/
 node_modules/

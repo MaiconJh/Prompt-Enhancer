@@ -229,6 +229,7 @@
             bodyEl.setAttribute('aria-labelledby', `kpe-settings-tab-${activeTab}`);
             bodyEl.innerHTML = '';
             bodyEl.scrollTop = 0;
+            bodyEl.style.overflowY = '';
             footerEl.innerHTML = '';
             const tab = tabDefs.find(item => item.key === activeTab);
             const intro = document.createElement('div');
@@ -313,358 +314,466 @@
             const form = document.createElement('div');
             form.className = 'kpe-param-body kpe-provider-settings';
 
-            const listWrap = document.createElement('div');
-            listWrap.className = 'kpe-provider-list';
-            const editorWrap = document.createElement('div');
-            editorWrap.className = 'kpe-provider-editor-wrap';
+            const heading = document.createElement('div');
+            heading.className = 'kpe-provider-section-heading';
+            heading.innerHTML = '<h6>Escolha um modelo</h6><p>Selecione um provedor ou busque diretamente pelo modelo. Abra um modelo para ver detalhes e gerenciar o roteamento.</p>';
+            form.appendChild(heading);
 
-            function createSectionLabel(icon, text) {
-                const label = document.createElement('div');
-                label.className = 'kpe-section-label';
-                label.append(Atoms.icon(icon));
-                const title = document.createElement('span');
-                title.textContent = text;
-                label.appendChild(title);
-                return label;
-            }
+            // Painel de roteamento (Principal + Fallback)
+            const routingPanel = document.createElement('div');
+            routingPanel.className = 'kpe-routing-panel';
+            routingPanel.setAttribute('aria-label', 'Roteamento de provedores');
 
-            function parseHeaders(raw) {
-                const txt = String(raw || '').trim();
-                if (!txt || txt === '{}') return {};
-                try {
-                    const parsed = JSON.parse(txt);
-                    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Headers devem ser um JSON objeto.');
-                    return parsed;
-                } catch (error) {
-                    throw new Error(error?.message || 'JSON de headers inválido.');
+            const primaryStep = document.createElement('div');
+            primaryStep.className = 'kpe-routing-step';
+            const primaryLabel = document.createElement('span');
+            primaryLabel.className = 'kpe-routing-label is-primary';
+            primaryLabel.textContent = 'Principal';
+            const primaryValue = document.createElement('span');
+            primaryValue.className = 'kpe-routing-value';
+            primaryValue.id = 'kpe-routing-primary';
+            primaryStep.append(primaryLabel, primaryValue);
+
+            const arrow = document.createElement('span');
+            arrow.className = 'kpe-routing-arrow';
+            arrow.textContent = '→';
+            arrow.setAttribute('aria-hidden', 'true');
+
+            const fallbackStep = document.createElement('div');
+            fallbackStep.className = 'kpe-routing-step';
+            const fallbackLabel = document.createElement('span');
+            fallbackLabel.className = 'kpe-routing-label is-fallback';
+            fallbackLabel.textContent = 'Fallback';
+            const fallbackValue = document.createElement('span');
+            fallbackValue.className = 'kpe-routing-value';
+            fallbackValue.id = 'kpe-routing-fallback';
+            fallbackStep.append(fallbackLabel, fallbackValue);
+
+            const clearBtn = Atoms.button({
+                icon: 'trash',
+                label: 'Limpar roteamento',
+                ariaLabel: 'Limpar rota principal e fallback',
+                variant: 'ghost',
+                onClick: () => {
+                    try {
+                        if (typeof ProviderManager !== 'undefined') {
+                            ProviderManager.unpin();
+                            ProviderManager.setFallback('');
+                            Molecules.toast('Roteamento limpo. O sistema usará a rota padrão.', 'success');
+                            renderList();
+                        }
+                    } catch (err) {
+                        console.warn('[KPE] Falha ao limpar roteamento:', err);
+                        Molecules.toast('Não foi possível limpar o roteamento.', 'error');
+                    }
                 }
+            });
+            clearBtn.className = 'kpe-routing-clear';
+
+            routingPanel.append(primaryStep, arrow, fallbackStep, clearBtn);
+            form.appendChild(routingPanel);
+
+            const loading = document.createElement('div');
+            loading.className = 'kpe-catalog-loading';
+            loading.textContent = 'Atualizando catálogo…';
+            loading.hidden = true;
+            form.appendChild(loading);
+
+            const filters = document.createElement('div');
+            filters.className = 'kpe-catalog-filters';
+            const search = document.createElement('input');
+            search.type = 'search';
+            search.className = 'kpe-param-input';
+            search.placeholder = 'Buscar modelo…';
+            search.setAttribute('aria-label', 'Buscar modelo');
+
+            const keylessLabel = document.createElement('label');
+            keylessLabel.className = 'kpe-catalog-toggle';
+            const keyless = document.createElement('input');
+            keyless.type = 'checkbox';
+            keylessLabel.append(keyless, document.createTextNode('Keyless'));
+
+            const streamLabel = document.createElement('label');
+            streamLabel.className = 'kpe-catalog-toggle';
+            const streaming = document.createElement('input');
+            streaming.type = 'checkbox';
+            streamLabel.append(streaming, document.createTextNode('Stream'));
+
+            filters.append(search, keylessLabel, streamLabel);
+            form.appendChild(filters);
+
+            const accordion = document.createElement('div');
+            accordion.className = 'kpe-provider-accordion';
+            accordion.setAttribute('aria-label', 'Modelos por provedor');
+            form.appendChild(accordion);
+
+            bodyEl.appendChild(form);
+
+            let expandedModelId = null;
+
+            function limitsLabel(entry) {
+                const parts = [];
+                if (entry.limits && entry.limits.rpm !== null && entry.limits.rpm !== undefined) parts.push(`${entry.limits.rpm} req/min`);
+                if (entry.limits && entry.limits.rpd !== null && entry.limits.rpd !== undefined) parts.push(`${entry.limits.rpd} req/dia`);
+                if (entry.limits && entry.limits.note) parts.push(entry.limits.note);
+                return parts.join(' · ') || 'Não informados';
             }
 
-            function renderEditor(provider = null) {
-                const draft = provider ? {
-                    id: provider.id,
-                    name: provider.name || '',
-                    url: provider.url || '',
-                    model: provider.model || '',
-                    apiKey: provider.apiKey || '',
-                    headers: JSON.stringify(provider.headers || {}, null, 2),
-                    fallback: !!provider.fallback
-                } : {
-                    id: '',
-                    name: '',
-                    url: '',
-                    model: '',
-                    apiKey: '',
-                    headers: '{\n  "HTTP-Referer": "https://github.com/EdgeTypE/better-deepseek",\n  "X-Title": "Prompt-Enhancer"\n}',
-                    fallback: false
+            function authLabel(entry) {
+                if (!entry.auth || entry.auth.type === 'none') return 'Sem autenticação';
+                return entry.auth.key === 'anonymous' ? 'Bearer anonymous' : 'Bearer';
+            }
+
+            function isFreeBadge(entry) {
+                return (entry.auth && (entry.auth.type === 'none' || entry.auth.key === 'anonymous'))
+                    || /free|gratuit/i.test((entry.limits && entry.limits.note) || '');
+            }
+
+            function fallbackMatchesEntry(fallback, entry) {
+                    if (!fallback || !entry) return false;
+                    // fallback is a ProviderManager entry (id, name, url, model)
+                    // entry is a ProviderRegistry entry (id, modelId, baseUrl)
+                    if (fallback.id === entry.id) return true;
+                    if (fallback.url && entry.baseUrl) {
+                        const normUrl = (s) => String(s || '').replace(/\/+$/, '').replace(/\/chat\/completions\/?$/, '');
+                        if (normUrl(fallback.url) === normUrl(entry.baseUrl) && fallback.model === entry.modelId) return true;
+                    }
+                    return false;
+                }
+
+                function renderDetails(entry, pinned, fallback) {
+                    const details = document.createElement('dl');
+                    details.className = 'kpe-model-details';
+
+                const addField = (label, value) => {
+                    const dt = document.createElement('dt');
+                    dt.textContent = label;
+                    const dd = document.createElement('dd');
+                    dd.textContent = value;
+                    details.append(dt, dd);
                 };
 
-                editorWrap.innerHTML = '';
-                const card = document.createElement('div');
-                card.className = 'kpe-provider-editor';
-
-                const title = document.createElement('div');
-                title.className = 'kpe-field-title';
-                title.textContent = provider ? 'Editar provider' : 'Adicionar provider';
-                card.appendChild(title);
-
-                const rows = [
-                    ['Nome', 'text', 'name', draft.name, 'Nome visível do provedor'],
-                    ['URL', 'url', 'url', draft.url, 'Endpoint completo do chat completions'],
-                    ['Modelo', 'text', 'model', draft.model, 'Ex.: gpt-4o-mini / llama3.2 / openai/gpt-4o-mini'],
-                    ['API Key', 'password', 'apiKey', draft.apiKey, 'Opcional para provedor público ou local'],
-                    ['Headers extras (JSON)', 'textarea', 'headers', draft.headers, 'Ex.: {"X-Title": "Prompt-Enhancer"}']
-                ];
-
-                rows.forEach(([labelText, type, field, value, hint]) => {
-                    const row = document.createElement('div');
-                    row.className = 'kpe-param-row kpe-param-row--full';
-                    const label = document.createElement('label');
-                    label.className = 'kpe-param-label';
-                    label.htmlFor = `kpe-provider-${field}`;
-                    label.textContent = labelText;
-                    const control = document.createElement('div');
-                    control.className = 'kpe-param-control';
-                    const input = document.createElement(type === 'textarea' ? 'textarea' : 'input');
-                    input.className = 'kpe-param-input';
-                    input.id = `kpe-provider-${field}`;
-                    input.name = field;
-                    input.value = String(value || '');
-                    if (['name', 'url', 'model'].includes(field)) {
-                        input.required = true;
-                        input.setAttribute('aria-required', 'true');
-                    }
-                    if (type !== 'textarea') {
-                        input.type = type;
-                        input.autocomplete = type === 'password' ? 'new-password' : 'off';
-                    } else {
-                        input.rows = 5;
-                    }
-                    control.appendChild(input);
-                    if (hint) {
-                        const helper = document.createElement('div');
-                        helper.className = 'kpe-param-hint';
-                        helper.textContent = hint;
-                        control.appendChild(helper);
-                    }
-                    row.append(label, control);
-                    card.appendChild(row);
-                    draft[field] = input;
-                });
-
-                const fallbackRow = document.createElement('label');
-                fallbackRow.className = 'kpe-check-row';
-                const fallbackCheck = document.createElement('input');
-                fallbackCheck.type = 'checkbox';
-                fallbackCheck.checked = !!draft.fallback;
-                fallbackCheck.disabled = provider?.id === ProviderManager.getActive()?.id;
-                const fallbackText = document.createElement('span');
-                fallbackText.textContent = 'Definir como provedor de fallback';
-                if (fallbackCheck.disabled) fallbackText.title = 'Escolha outro provider como principal antes de defini-lo como fallback.';
-                fallbackRow.append(fallbackCheck, fallbackText);
-                card.appendChild(fallbackRow);
+                addField('Provedor', entry.providerLabel || entry.providerId || 'Desconhecido');
+                addField('Autenticação', authLabel(entry));
+                addField('Limites', limitsLabel(entry));
+                addField('Contexto', entry.modelId || 'Não informado');
 
                 const actions = document.createElement('div');
-                actions.className = 'kpe-provider-actions';
-                const saveBtn = Atoms.buttonNode({ label: provider ? 'Salvar alterações' : 'Adicionar provider', ariaLabel: provider ? 'Salvar alterações do provider' : 'Adicionar novo provider', variant: 'primary' });
-                const cancelBtn = Atoms.buttonNode({ label: 'Cancelar', ariaLabel: 'Cancelar edição', variant: 'outline' });
-                saveBtn.addEventListener('click', () => {
+                actions.className = 'kpe-model-details__actions';
+
+                const copyButton = Atoms.buttonNode({
+                    label: 'Copiar JSON',
+                    ariaLabel: `Copiar configuração JSON de ${entry.label}`,
+                    variant: 'ghost'
+                });
+                copyButton.type = 'button';
+                copyButton.addEventListener('click', async (event) => {
+                    event.stopPropagation();
+                    if (!navigator.clipboard?.writeText) {
+                        Molecules.toast('A cópia para a área de transferência não está disponível.', 'error');
+                        return;
+                    }
+                    const safeEntry = {
+                        ...entry,
+                        auth: entry.auth ? { type: entry.auth.type, headerName: entry.auth.headerName } : undefined,
+                        headers: entry.headers ? Object.fromEntries(Object.entries(entry.headers).map(([name, value]) => [
+                            name,
+                            /authorization|api[-_]?key|token|secret/i.test(name) ? '[redigido]' : value
+                        ])) : undefined
+                    };
                     try {
-                        const payload = {
-                            name: draft.name.value.trim(),
-                            url: draft.url.value.trim(),
-                            model: draft.model.value.trim(),
-                            apiKey: draft.apiKey.value.trim(),
-                            headers: parseHeaders(draft.headers.value),
-                            fallback: !!fallbackCheck.checked
-                        };
-                        if (!payload.name) throw new Error('Informe um nome para o provider.');
-                        if (!payload.url) throw new Error('Informe a URL do provider.');
-                        if (!payload.model) throw new Error('Informe o modelo do provider.');
-                        const saved = provider ? ProviderManager.update(provider.id, payload) : ProviderManager.add(payload);
-                        const targetId = saved?.id || provider?.id || '';
-                        if (fallbackCheck.checked) ProviderManager.setFallback(targetId);
-                        else if (provider && provider.id === (ProviderManager.getFallback?.()?.id || '')) ProviderManager.setFallback('');
-                        Molecules.toast(provider ? 'Provider atualizado.' : 'Provider adicionado.', 'success');
-                        render();
-                    } catch (error) {
-                        Molecules.toast(error?.message || 'Não foi possível salvar o provider.', 'error');
+                        await navigator.clipboard.writeText(JSON.stringify(safeEntry, null, 2));
+                        Molecules.toast('Configuração copiada.', 'success');
+                    } catch (err) {
+                        console.warn('[KPE] Falha ao copiar a configuração do modelo.', err);
+                        Molecules.toast('Não foi possível copiar a configuração.', 'error');
                     }
                 });
-                cancelBtn.addEventListener('click', () => render());
-                actions.append(saveBtn, cancelBtn);
-                card.appendChild(actions);
-                editorWrap.appendChild(card);
-                card.querySelector('[name="name"]')?.focus();
+
+                const pinButton = Atoms.buttonNode({
+                    label: pinned && pinned.id === entry.id ? 'Rota fixada' : 'Fixar esta rota',
+                    ariaLabel: pinned && pinned.id === entry.id ? 'Esta rota já está fixada' : `Fixar ${entry.label}`,
+                    variant: 'primary'
+                });
+                pinButton.type = 'button';
+                pinButton.disabled = !!(pinned && pinned.id === entry.id);
+                pinButton.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    if (pinned && pinned.id === entry.id) return;
+                    if (entry.auth && entry.auth.type === 'bearer' && entry.auth.key === '') {
+                        const apiKey = prompt(`Informe a chave de API para ${entry.providerLabel || 'este provedor'}:`);
+                        if (apiKey === null) return;
+                        if (!apiKey.trim()) {
+                            Molecules.toast('A chave de API não pode ficar vazia.', 'error');
+                            return;
+                        }
+                        try {
+                            GM_setValue('pe_api_key', apiKey.trim());
+                        } catch (err) {
+                            Molecules.toast('Não foi possível salvar a chave de API.', 'error', { details: err && err.message });
+                            return;
+                        }
+                    }
+                    if (!ProviderManager.pin(entry.id)) {
+                        Molecules.toast('Não foi possível fixar esta rota.', 'error');
+                        return;
+                    }
+                    Molecules.toast(`Rota fixada: ${entry.label}`, 'success');
+                    renderList();
+                });
+
+                const isFallback = fallbackMatchesEntry(fallback, entry);
+                const isPinned = pinned && pinned.id === entry.id;
+                const fallbackButton = Atoms.buttonNode({
+                    label: isFallback ? 'Remover fallback' : 'Definir como fallback',
+                    ariaLabel: isFallback ? `Remover ${entry.label} do fallback` : `Definir ${entry.label} como fallback`,
+                    variant: isFallback ? 'ghost' : 'outline'
+                });
+                fallbackButton.type = 'button';
+                fallbackButton.disabled = !!isPinned;
+                if (isPinned) {
+                    fallbackButton.title = 'Este modelo já é a rota principal; não pode ser fallback.';
+                }
+                fallbackButton.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    if (isPinned) return;
+                    if (isFallback) {
+                        try {
+                            ProviderManager.setFallback('');
+                            Molecules.toast(`Fallback removido: ${entry.label}`, 'success');
+                            renderList();
+                        } catch (err) {
+                            console.warn('[KPE] Falha ao remover fallback:', err);
+                            Molecules.toast('Não foi possível remover o fallback.', 'error');
+                        }
+                        return;
+                    }
+                    // Definir como fallback
+                    if (entry.auth && entry.auth.type === 'bearer' && entry.auth.key === '') {
+                        const apiKey = prompt(`Informe a chave de API para ${entry.providerLabel || 'este provedor'}:`);
+                        if (apiKey === null) return;
+                        if (!apiKey.trim()) {
+                            Molecules.toast('A chave de API não pode ficar vazia.', 'error');
+                            return;
+                        }
+                        try {
+                            GM_setValue('pe_api_key', apiKey.trim());
+                        } catch (err) {
+                            Molecules.toast('Não foi possível salvar a chave de API.', 'error', { details: err && err.message });
+                            return;
+                        }
+                    }
+                    // Criar provider no ProviderManager a partir do entry do catálogo
+                    let ok = false;
+                    let errMsg = '';
+                    try {
+                        if (typeof ProviderManager === 'undefined') {
+                            errMsg = 'ProviderManager indisponível';
+                        } else if (typeof ProviderManager.add !== 'function') {
+                            errMsg = 'ProviderManager.add não é função';
+                        } else {
+                            const providerPayload = {
+                                name: String(entry.providerLabel || entry.label || 'Fallback').trim().slice(0, 60),
+                                url: String(entry.baseUrl || '').trim(),
+                                model: String(entry.modelId || '').trim(),
+                                apiKey: String(entry.auth?.key || (entry.auth?.type === 'none' ? '' : 'anonymous')).trim(),
+                                headers: { ...(entry.headers || {}) }
+                            };
+                            if (!providerPayload.url || !providerPayload.model) {
+                                errMsg = 'URL ou modelo vazio';
+                            } else {
+                                const newProvider = ProviderManager.add(providerPayload);
+                                if (newProvider && newProvider.id) {
+                                    ProviderManager.setFallback(newProvider.id);
+                                    ok = true;
+                                } else {
+                                    errMsg = 'add retornou: ' + JSON.stringify(newProvider);
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        console.warn('[KPE] Falha ao definir fallback:', err);
+                        errMsg = err && err.message ? err.message : String(err);
+                    }
+                    if (ok) {
+                        Molecules.toast(`Fallback definido: ${entry.label}`, 'success');
+                        renderList();
+                    } else {
+                        console.error('[KPE] Detalhes falha fallback:', errMsg);
+                        Molecules.toast('Não foi possível definir este modelo como fallback.' + (errMsg ? ' (' + errMsg + ')' : ''), 'error');
+                    }
+                });
+
+                actions.append(copyButton, pinButton, fallbackButton);
+                details.appendChild(actions);
+                return details;
             }
 
             function renderList() {
-                listWrap.innerHTML = '';
-                const list = ProviderManager && ProviderManager.list ? ProviderManager.list() : [];
-                const active = ProviderManager && ProviderManager.getActive ? ProviderManager.getActive() : null;
-                const fallback = ProviderManager && ProviderManager.getFallback ? ProviderManager.getFallback() : null;
+                const query = search.value.trim();
+                const pinned = ProviderManager.getPinned ? ProviderManager.getPinned() : null;
+                const fallback = ProviderManager.getFallback ? ProviderManager.getFallback() : null;
+                const activeProvider = ProviderManager.getActive ? ProviderManager.getActive() : null;
+                const groups = ProviderRegistry.groupByProvider(ProviderRegistry.list({
+                    keylessOnly: keyless.checked,
+                    streamingOnly: streaming.checked,
+                    search: query
+                }));
+                const entries = groups.flatMap((group) => group.entries || []);
+                if (expandedModelId && !entries.some((entry) => entry.id === expandedModelId)) {
+                    expandedModelId = null;
+                }
+                accordion.replaceChildren();
 
-                if (!list.length) {
+                // Atualizar painel de roteamento
+                const primaryEl = form.querySelector('#kpe-routing-primary');
+                const fallbackEl = form.querySelector('#kpe-routing-fallback');
+                if (primaryEl) {
+                    if (pinned) {
+                        primaryEl.textContent = `${pinned.label} (${pinned.modelId || pinned.id})`;
+                    } else if (activeProvider) {
+                        primaryEl.textContent = `${activeProvider.name || 'Kilo'} (${activeProvider.model || 'padrão'})`;
+                    } else {
+                        primaryEl.textContent = 'Padrão do sistema';
+                    }
+                }
+                if (fallbackEl) {
+                    if (fallback) {
+                        fallbackEl.textContent = `${fallback.name || 'Fallback'} (${fallback.model || ''})`.trim();
+                    } else {
+                        fallbackEl.textContent = 'Nenhum';
+                    }
+                }
+
+                if (!groups.length) {
                     const empty = document.createElement('div');
                     empty.className = 'kpe-provider-empty';
-                    empty.textContent = 'Nenhum provider salvo. Adicione o primeiro para configurar a API.';
-                    listWrap.appendChild(empty);
+                    empty.setAttribute('role', 'status');
+                    const message = document.createElement('p');
+                    message.textContent = query
+                        ? `Nenhum modelo corresponde à busca “${query}”.`
+                        : 'Nenhum modelo encontrado com os filtros atuais.';
+                    const clear = Atoms.buttonNode({ label: 'Limpar filtros', variant: 'ghost' });
+                    clear.type = 'button';
+                    clear.setAttribute('aria-label', 'Limpar busca e filtros');
+                    clear.addEventListener('click', () => {
+                        search.value = '';
+                        keyless.checked = false;
+                        streaming.checked = false;
+                        expandedModelId = null;
+                        renderList();
+                        search.focus({ preventScroll: true });
+                    });
+                    empty.append(message, clear);
+                    accordion.appendChild(empty);
                     return;
                 }
 
-                list.forEach((provider) => {
-                    const card = document.createElement('div');
-                    card.className = `kpe-provider-card ${provider.id === active?.id ? 'is-active' : ''}`;
-                    card.setAttribute('role', 'group');
-                    card.setAttribute('aria-label', `Provider ${provider.name || 'sem nome'}`);
+                groups.forEach((group) => {
+                    const title = document.createElement('h6');
+                    title.className = 'kpe-provider-group-title';
+                    title.textContent = group.providerLabel || group.providerId || 'Provedor';
+                    accordion.appendChild(title);
 
-                    const header = document.createElement('div');
-                    header.className = 'kpe-provider-card__header';
-                    const title = document.createElement('strong');
-                    title.textContent = provider.name || 'Provider';
-                    const badge = document.createElement('span');
-                    badge.className = 'kpe-provider-badge';
-                    badge.textContent = provider.builtin ? 'Padrão' : 'Custom';
-                    const badges = document.createElement('div');
-                    badges.className = 'kpe-provider-card__badges';
-                    badges.appendChild(badge);
-                    if (provider.id === active?.id) {
-                        const activeBadge = document.createElement('span');
-                        activeBadge.className = 'kpe-provider-role is-active';
-                        activeBadge.textContent = 'Principal';
-                        badges.appendChild(activeBadge);
-                    }
-                    if (provider.id === fallback?.id) {
-                        const fallbackBadge = document.createElement('span');
-                        fallbackBadge.className = 'kpe-provider-role is-fallback';
-                        fallbackBadge.textContent = 'Fallback';
-                        badges.appendChild(fallbackBadge);
-                    }
-                    header.append(title, badges);
+                    (group.entries || []).forEach((entry) => {
+                        const isActive = expandedModelId === entry.id;
+                        const card = document.createElement('div');
+                        card.className = 'kpe-model-card';
+                        if (isActive) card.classList.add('is-active');
 
-                    const meta = document.createElement('div');
-                    meta.className = 'kpe-provider-card__meta';
-                    meta.textContent = `${provider.model || 'sem modelo'} · ${provider.url || 'sem URL'}`;
+                        const header = document.createElement('div');
+                        header.className = 'kpe-model-header';
+                        header.setAttribute('role', 'button');
+                        header.tabIndex = 0;
+                        header.setAttribute('aria-expanded', String(isActive));
+                        header.setAttribute('aria-label', `${entry.label}, ${group.providerLabel || 'provedor'}. ${isActive ? 'Recolher detalhes' : 'Expandir detalhes'}.`);
 
-                    const actions = document.createElement('div');
-                    actions.className = 'kpe-provider-actions';
+                        const info = document.createElement('div');
+                        info.className = 'kpe-model-info';
+                        const name = document.createElement('span');
+                        name.className = 'kpe-model-info__name';
+                        name.textContent = entry.label;
+                        const id = document.createElement('span');
+                        id.className = 'kpe-model-info__id';
+                        id.textContent = entry.modelId || entry.id;
+                        info.append(name, id);
 
-                    const activeBtn = Atoms.buttonNode({
-                        label: provider.id === active?.id ? 'Ativo' : 'Ativar',
-                        ariaLabel: provider.id === active?.id ? `${provider.name} é o provider principal` : `Ativar ${provider.name}`,
-                        variant: provider.id === active?.id ? 'primary' : 'outline'
+                        const meta = document.createElement('div');
+                        meta.className = 'kpe-model-header__meta';
+                        const badges = document.createElement('div');
+                        badges.className = 'kpe-model-badges';
+                        const addBadge = (text, opts = {}) => {
+                            const badge = document.createElement('span');
+                            badge.className = 'kpe-model-badge';
+                            if (opts.isPrimary) badge.classList.add('is-primary');
+                            if (opts.isFallback) badge.classList.add('is-fallback');
+                            badge.textContent = text;
+                            badges.appendChild(badge);
+                        };
+                        if (isFreeBadge(entry)) addBadge('free');
+                        if (entry.capabilities && entry.capabilities.streaming) addBadge('stream');
+                        if (pinned && pinned.id === entry.id) addBadge('Principal', { isPrimary: true });
+                        if (fallback && fallbackMatchesEntry(fallback, entry)) addBadge('Fallback', { isFallback: true });
+                        const chevron = document.createElement('span');
+                        chevron.className = 'kpe-chevron';
+                        chevron.setAttribute('aria-hidden', 'true');
+                        chevron.textContent = '▾';
+                        meta.append(badges, chevron);
+
+                        header.append(info, meta);
+
+                        const expand = document.createElement('div');
+                        expand.className = 'kpe-model-expand';
+                        const clip = document.createElement('div');
+                        clip.className = 'kpe-model-expand__clip';
+                        if (isActive) clip.appendChild(renderDetails(entry, pinned, fallback));
+                        expand.appendChild(clip);
+
+                        const regionId = Utils.uid('kpe-model-region');
+                        header.setAttribute('aria-controls', regionId);
+                        expand.id = regionId;
+
+                        const toggle = () => {
+                            expandedModelId = expandedModelId === entry.id ? null : entry.id;
+                            renderList();
+                        };
+                        header.addEventListener('click', toggle);
+                        header.addEventListener('keydown', (event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                toggle();
+                            }
+                        });
+
+                        card.append(header, expand);
+                        accordion.appendChild(card);
                     });
-                    activeBtn.setAttribute('aria-pressed', String(provider.id === active?.id));
-                    activeBtn.addEventListener('click', () => {
-                        ProviderManager.setActive(provider.id);
-                        render();
-                    });
-
-                    const fallbackBtn = Atoms.buttonNode({
-                        label: provider.id === fallback?.id ? 'Fallback' : 'Definir fallback',
-                        ariaLabel: provider.id === fallback?.id ? `${provider.name} é o provider de fallback` : `Definir ${provider.name} como fallback`,
-                        variant: provider.id === fallback?.id ? 'primary' : 'outline'
-                    });
-                    fallbackBtn.disabled = provider.id === active?.id;
-                    fallbackBtn.title = provider.id === active?.id ? 'Escolha outro provider como principal antes de defini-lo como fallback.' : '';
-                    fallbackBtn.setAttribute('aria-pressed', String(provider.id === fallback?.id));
-                    fallbackBtn.addEventListener('click', () => {
-                        if (provider.id === fallback?.id) ProviderManager.setFallback('');
-                        else ProviderManager.setFallback(provider.id);
-                        render();
-                    });
-
-                    const editBtn = Atoms.buttonNode({ label: 'Editar', ariaLabel: 'Editar provider', variant: 'outline' });
-                    editBtn.addEventListener('click', () => renderEditor(provider));
-
-                    const removeBtn = Atoms.buttonNode({ label: 'Remover', ariaLabel: 'Remover provider', variant: 'outline' });
-                    removeBtn.disabled = !!provider.builtin;
-                    removeBtn.title = provider.builtin ? 'O provedor padrão não pode ser removido.' : 'Remover provider';
-                    removeBtn.addEventListener('click', () => {
-                        if (provider.builtin) return;
-                        if (!confirm(`Remover o provider "${provider.name}"?`)) return;
-                        ProviderManager.remove(provider.id);
-                        render();
-                    });
-
-                    actions.append(activeBtn, fallbackBtn, editBtn, removeBtn);
-                    card.append(header, meta, actions);
-                    listWrap.appendChild(card);
                 });
             }
 
-            const providers = ProviderManager && ProviderManager.list ? ProviderManager.list() : [];
-            const active = ProviderManager && ProviderManager.getActive ? ProviderManager.getActive() : null;
-            const fallback = ProviderManager && ProviderManager.getFallback ? ProviderManager.getFallback() : null;
+            [keyless, streaming].forEach((control) => control.addEventListener('change', () => {
+                expandedModelId = null;
+                renderList();
+            }));
+            search.addEventListener('input', () => {
+                expandedModelId = null;
+                renderList();
+            });
 
-            const activeSection = document.createElement('div');
-            activeSection.appendChild(createSectionLabel('sliders', 'Modelo padrão'));
-            const activeRow = document.createElement('div');
-            activeRow.className = 'kpe-param-row kpe-param-row--full';
-            const activeLabel = document.createElement('label');
-            activeLabel.className = 'kpe-param-label';
-            activeLabel.htmlFor = 'kpe-provider-active';
-            activeLabel.textContent = 'Provedor principal';
-            const activeControl = document.createElement('div');
-            activeControl.className = 'kpe-param-control';
-            const activeSelect = document.createElement('select');
-            activeSelect.className = 'kpe-param-input';
-            activeSelect.id = 'kpe-provider-active';
-            const activePlaceholder = document.createElement('option');
-            activePlaceholder.value = '';
-            activePlaceholder.textContent = 'Selecione um provider';
-            activeSelect.appendChild(activePlaceholder);
-            providers.forEach(provider => {
-                const option = document.createElement('option');
-                option.value = provider.id;
-                option.textContent = `${provider.name || 'Provider'} (${provider.model || 'sem modelo'})`;
-                activeSelect.appendChild(option);
-            });
-            activeSelect.value = active?.id || '';
-            activeSelect.addEventListener('change', () => {
-                if (!activeSelect.value) return;
-                ProviderManager.setActive(activeSelect.value);
-                render();
-            });
-            activeControl.appendChild(activeSelect);
-            const activeHint = document.createElement('div');
-            activeHint.className = 'kpe-param-hint';
-            activeHint.textContent = 'Provedor principal usado em todas as chamadas.';
-            activeControl.appendChild(activeHint);
-            activeRow.append(activeLabel, activeControl);
-            activeSection.appendChild(activeRow);
-
-            const fallbackSection = document.createElement('div');
-            fallbackSection.appendChild(createSectionLabel('undo', 'Fallback'));
-            const fallbackBadge = document.createElement('span');
-            fallbackBadge.className = 'kpe-provider-role is-fallback';
-            fallbackBadge.setAttribute('aria-live', 'polite');
-            fallbackBadge.textContent = fallback?.name || 'Nenhum fallback definido';
-            fallbackSection.appendChild(fallbackBadge);
-            const fallbackRow = document.createElement('div');
-            fallbackRow.className = 'kpe-param-row kpe-param-row--full';
-            const fallbackLabel = document.createElement('label');
-            fallbackLabel.className = 'kpe-param-label';
-            fallbackLabel.htmlFor = 'kpe-provider-fallback';
-            fallbackLabel.textContent = 'Provedor de fallback';
-            const fallbackControl = document.createElement('div');
-            fallbackControl.className = 'kpe-param-control';
-            const fallbackSelect = document.createElement('select');
-            fallbackSelect.className = 'kpe-param-input';
-            fallbackSelect.id = 'kpe-provider-fallback';
-            const fallbackPlaceholder = document.createElement('option');
-            fallbackPlaceholder.value = '';
-            fallbackPlaceholder.textContent = 'Nenhum fallback definido';
-            fallbackSelect.appendChild(fallbackPlaceholder);
-            providers.forEach(provider => {
-                const option = document.createElement('option');
-                option.value = provider.id;
-                option.textContent = `${provider.name || 'Provider'} (${provider.model || 'sem modelo'})`;
-                if (provider.id === active?.id) {
-                    option.disabled = true;
-                    option.title = 'O provedor principal não pode ser usado como fallback.';
-                }
-                fallbackSelect.appendChild(option);
-            });
-            fallbackSelect.value = fallback?.id || '';
-            fallbackSelect.addEventListener('change', () => {
-                ProviderManager.setFallback(fallbackSelect.value);
-                render();
-            });
-            fallbackControl.appendChild(fallbackSelect);
-            const fallbackHint = document.createElement('div');
-            fallbackHint.className = 'kpe-param-hint';
-            fallbackHint.textContent = 'Usado automaticamente se o principal falhar.';
-            fallbackControl.appendChild(fallbackHint);
-            fallbackRow.append(fallbackLabel, fallbackControl);
-            fallbackSection.appendChild(fallbackRow);
-            const fallbackButton = Atoms.buttonNode({
-                label: fallback ? 'Remover fallback' : 'Definir fallback',
-                ariaLabel: fallback ? 'Remover provedor de fallback' : 'Definir provedor de fallback',
-                variant: 'outline'
-            });
-            fallbackButton.addEventListener('click', () => {
-                ProviderManager.setFallback(fallback ? '' : fallbackSelect.value);
-                render();
-            });
-            fallbackSection.appendChild(fallbackButton);
-
-            const addSection = document.createElement('div');
-            addSection.appendChild(createSectionLabel('upload', 'Adicionar provedor'));
-            const addBtn = Atoms.buttonNode({ label: 'Adicionar provider', ariaLabel: 'Adicionar novo provider', variant: 'primary' });
-            addBtn.addEventListener('click', () => renderEditor(null));
-            const toolbar = document.createElement('div');
-            toolbar.className = 'kpe-provider-toolbar';
-            toolbar.appendChild(addBtn);
-            addSection.append(toolbar, editorWrap);
-
-            form.append(activeSection, fallbackSection, addSection, listWrap);
+            loading.hidden = false;
             renderList();
-            bodyEl.appendChild(form);
+            ProviderRegistry.hydrate().then(() => {
+                loading.hidden = true;
+                renderList();
+            }).catch((err) => {
+                console.warn('[KPE] Falha ao atualizar catálogo na aba Provedor.', err);
+                loading.hidden = false;
+                loading.textContent = 'Não foi possível atualizar o catálogo; exibindo entradas disponíveis.';
+                renderList();
+            });
 
-            const cancelBtn = Atoms.button({ icon: 'x', label: 'Cancelar', ariaLabel: 'Cancelar', variant: 'outline', onClick: close });
-            const saveBtn = Atoms.button({ icon: 'check', label: 'Salvar', ariaLabel: 'Salvar', variant: 'primary', onClick: applyAndClose });
-            footerEl.append(cancelBtn, saveBtn);
+            const closeBtn = Atoms.button({ icon: 'check', label: 'Concluir', ariaLabel: 'Fechar janela de configurações', variant: 'primary', onClick: close });
+            footerEl.appendChild(closeBtn);
         }
         function renderContext() {
             const form = document.createElement('div');

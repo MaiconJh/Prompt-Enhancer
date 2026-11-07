@@ -25,6 +25,7 @@
             HTTP_CLIENT:{category:'client',title:'Erro do cliente',description:'Requisição rejeitada pelo servidor (4xx).',retryable:false,actionKey:'retry'},
             TIMEOUT:{category:'timeout',title:'Tempo limite excedido',description:'Sem resposta no tempo esperado.',retryable:true,actionKey:'retry-no-context'},
             EMPTY_RESPONSE:{category:'content',title:'Resposta vazia',description:'O provedor não retornou conteúdo útil.',retryable:false,actionKey:'open-params'},
+            OUTPUT_TRUNCATED:{category:'content',title:'Resposta interrompida',description:'O modelo atingiu o limite de saída e a continuação automática não conseguiu concluir a resposta.',retryable:false,actionKey:'retry'},
             BAD_JSON:{category:'content',title:'Resposta inválida',description:'JSON malformado ou inesperado.',retryable:false,actionKey:'retry-nostream'},
             LOCAL_RATE_LIMIT:{category:'rate',title:'Limite local atingido',description:'Aguarde antes de novas chamadas.',retryable:false,actionKey:null},
             ABORTED:{category:'abort',title:'Cancelado',description:'Operação interrompida pelo usuário.',retryable:false,actionKey:null},
@@ -86,6 +87,7 @@
                 case 'HTTP_CLIENT': return `Requisição rejeitada${status ? ` (HTTP ${status})` : ''}.`;
                 case 'TIMEOUT': return 'Tempo limite excedido.';
                 case 'EMPTY_RESPONSE': return 'A API não retornou conteúdo.';
+                case 'OUTPUT_TRUNCATED': return 'A resposta atingiu o limite de tokens e não pôde ser concluída automaticamente.';
                 case 'BAD_JSON': return 'Resposta inválida da API.';
                 case 'LOCAL_RATE_LIMIT': return 'Limite local de requisições atingido.';
                 case 'ABORTED': return 'Requisição cancelada.';
@@ -114,6 +116,7 @@
             const provider = meta.provider || {};
             const providerMsg = provider.message || '';
             const providerName = provider.provider || '';
+            const providerCode = String(meta.providerCode || provider.type || '').toUpperCase();
             let title = entry.title, description = entry.description;
             if (meta.status && (code === 'PROVIDER_DOWN' || code === 'HTTP_CLIENT')) title = `${title} (${meta.status})`;
             if (code === 'PROVIDER_RATE_LIMIT' && meta.retryAfterMs) description = `${description} Aguarde ~${Math.ceil(meta.retryAfterMs / 1000)}s.`;
@@ -121,7 +124,13 @@
             if (code === 'TIMEOUT' && meta.timeoutMs) description = `Sem resposta em ${(meta.timeoutMs / 1000).toFixed(0)}s${meta.payloadKB ? ` (payload ${meta.payloadKB.toFixed(1)} KB)` : ''}.`;
             if (code === 'EMPTY_RESPONSE') { if (meta.finishReason === 'content_filter') description = 'Conteúdo bloqueado pelo filtro de segurança do provedor.'; else if (meta.refusal) description = `Provedor recusou: ${meta.refusal}`; }
             if (code === 'BAD_JSON' && meta.contentType) description = `Recebido "${meta.contentType}" em vez de JSON.`;
-            if (providerMsg) description = providerName ? `${providerName}: ${providerMsg}` : providerMsg;
+            if (providerMsg) {
+                if (providerCode === 'PROMOTION_MODEL_LIMIT_REACHED' || /sign up/i.test(providerMsg)) {
+                    description = providerMsg;
+                } else {
+                    description = providerName ? `${providerName}: ${providerMsg}` : providerMsg;
+                }
+            }
             return {
                 code, category: entry.category, title, description, retryable: entry.retryable, actionKey: entry.actionKey,
                 technical: { message: err?.message, status: meta.status, snippet: meta.snippet, contentType: meta.contentType, providerCode: meta.providerCode, provider, retryAfterMs: meta.retryAfterMs, finishReason: meta.finishReason, timeoutMs: meta.timeoutMs, payloadKB: meta.payloadKB },
@@ -143,4 +152,3 @@
         function clearHistory() { try { GM_setValue(KEY_HISTORY, '[]'); } catch (_) {} }
         return { CATALOG, fromHttpResponse, fromStreamError, build, classify, record, history: getHistory, clearHistory, defaultMessageFor, codeForStatus, safeJsonParse, truncate, parseHeaders, parseRetryAfterMs, extractProviderError };
     })();
-

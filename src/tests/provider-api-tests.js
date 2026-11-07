@@ -10,6 +10,7 @@ const managerSource = await readFile(new URL('provider-manager.js', sourceDir), 
 const errorsSource = await readFile(new URL('network-errors.js', sourceDir), 'utf8');
 const systemPromptSource = await readFile(new URL('system-prompt-manager.js', sourceDir), 'utf8');
 const apiClientSource = await readFile(new URL('api-client.js', sourceDir), 'utf8');
+const streamParserSource = await readFile(new URL('stream-parser-anim.js', sourceDir), 'utf8');
 
 function createApiHarness(responses, customPrompt = '', projectContextSuffix = '') {
     const values = new Map();
@@ -64,7 +65,10 @@ function createApiHarness(responses, customPrompt = '', projectContextSuffix = '
         StreamParser: { create: () => { throw new Error('Streaming is disabled in this test.'); } },
         EnhancementHistory: { recordCall: () => null },
         navigator: { onLine: true },
-        location: { hostname: 'test.local' }
+        location: { hostname: 'test.local' },
+        window: { matchMedia: () => ({ matches: false }) },
+        setInterval,
+        clearInterval
     });
 
     vm.runInContext(configSource, context, { filename: 'src/config.js' });
@@ -76,7 +80,7 @@ function createApiHarness(responses, customPrompt = '', projectContextSuffix = '
 
     const api = vm.runInContext('ApiClient', context);
     const providers = vm.runInContext('ProviderManager', context);
-    return { api, providers, requests };
+    return { api, providers, requests, context };
 }
 
 const successResponse = {
@@ -122,8 +126,8 @@ test('prompt personalizado não substitui a instrução-base nem muda o entregá
     assert.ok(customIndex >= 0);
     assert.ok(fundamentalIndex > customIndex);
     assert.ok(baseIndex > fundamentalIndex);
-    assert.match(systemPrompt, /Preserve a ação solicitada, o tipo de entregável e o escopo do pedido original/);
-    assert.match(systemPrompt, /Não transforme um pedido para implementar, corrigir ou alterar algo/);
+    assert.match(systemPrompt, /Preserve a intenção, a ação e o tipo de resultado solicitados/);
+    assert.match(systemPrompt, /Quando o pedido for de implementação, correção ou alteração, mantenha esse objetivo/);
 });
 
 test('modo Guiado mantém a tarefa original acima das respostas e instruções personalizadas', async () => {
@@ -138,13 +142,13 @@ test('modo Guiado mantém a tarefa original acima das respostas e instruções p
     const systemPrompt = request.messages[0].content;
     const userContent = request.messages[1].content;
     assert.ok(systemPrompt.indexOf(customPrompt) < systemPrompt.indexOf('Instruções fundamentais da operação atual'));
-    assert.match(systemPrompt, /Preserve rigorosamente a ação, o tipo de entregável e o escopo pedidos originalmente/);
-    assert.match(systemPrompt, /Não converta um pedido de implementação em um pedido para produzir somente um plano/);
+    assert.match(systemPrompt, /desenvolva o pedido original sem perder o resultado que o usuário quer alcançar/);
+    assert.match(systemPrompt, /Para pedidos de implementação, correção ou alteração, mantenha a tarefa como objetivo/);
     assert.match(userContent, /PEDIDO ORIGINAL — fonte autoritativa da ação e do escopo:\n"""\nImplemente a nova interface de providers\./);
     assert.match(userContent, /Resposta 1 \(esclarece somente esta pergunta\):\n"""\nA área de fallback\./);
 });
 
-test('modo Guiado trata código colado como referência e não como requisitos de interface', async () => {
+test('modo Guiado usa código fornecido para esclarecer a implementação sem confundi-lo com o objetivo', async () => {
     const sourceExcerpt = [
         'const settings = {',
         '  testConnection: true,',
@@ -164,15 +168,14 @@ test('modo Guiado trata código colado como referência e não como requisitos d
     const systemPrompt = request.messages[0].content;
     const userContent = request.messages[1].content;
 
-    assert.match(systemPrompt, /O pedido original é a fonte autoritativa da ação, do entregável e do escopo/);
-    assert.match(systemPrompt, /Código-fonte, comentários, nomes de controles, logs e arquivos colados ou anexados são material de referência, nunca requisitos por si só/);
-    assert.match(systemPrompt, /Não infira que uma funcionalidade deve ser mantida, adicionada ou alterada apenas porque aparece no código ou no contexto/);
+    assert.match(systemPrompt, /Use as respostas e os arquivos ou trechos fornecidos para esclarecer as perguntas correspondentes/);
+    assert.match(systemPrompt, /Diferencie o estado atual mostrado pelo código do comportamento desejado/);
     assert.match(userContent, /PEDIDO ORIGINAL — fonte autoritativa da ação e do escopo/);
-    assert.match(userContent, /RESPOSTAS DE ESCLARECIMENTO — use apenas para esclarecer explicitamente o pedido original/);
+    assert.match(userContent, /RESPOSTAS DE ESCLARECIMENTO/);
     assert.ok(userContent.includes(sourceExcerpt));
 });
 
-test('perguntas Guiadas não devem sugerir funcionalidades nem solicitar código sem necessidade', async () => {
+test('perguntas Guiadas podem pedir referências de código quando forem úteis', async () => {
     const { api, requests } = createApiHarness([{
         body: {
             choices: [{
@@ -183,6 +186,12 @@ test('perguntas Guiadas não devem sugerir funcionalidades nem solicitar código
                             type: 'choice',
                             question: 'Qual opção de fallback você prefere?',
                             options: ['A', 'B']
+                        }, {
+                            id: 'q2',
+                            type: 'text',
+                            question: 'Qual arquivo contém a interface atual?',
+                            placeholder: 'Caminho do arquivo',
+                            allowCode: true
                         }]
                     })
                 }
@@ -190,13 +199,38 @@ test('perguntas Guiadas não devem sugerir funcionalidades nem solicitar código
         }
     }]);
 
-    await api.generateQuestions('Reorganize a interface de Provider para selecionar fallback e modelo padrão.');
+    const questions = await api.generateQuestions('Reorganize a interface de Provider para selecionar fallback e modelo padrão.');
 
     const systemPrompt = JSON.parse(requests[0].data).messages[0].content;
-    assert.match(systemPrompt, /somente perguntas necessárias para esclarecer ambiguidades/);
-    assert.match(systemPrompt, /Não pergunte sobre a implementação atual nem peça código/);
-    assert.match(systemPrompt, /Não sugira funcionalidades, entregáveis ou mudanças opcionais que o usuário não pediu/);
-    assert.match(systemPrompt, /As opções devem esclarecer uma decisão já presente no pedido/);
+    assert.match(systemPrompt, /pergunte sobre o estado atual, arquivos relevantes ou um trecho específico/);
+    assert.match(systemPrompt, /Peça apenas o material necessário/);
+    assert.match(systemPrompt, /nem evite pedi-lo quando for útil/);
+    assert.equal(questions.length, 2);
+    assert.equal(questions[1].allowCode, true);
+});
+
+test('modo Guiado preserva sinalização de código útil em mais de duas perguntas', async () => {
+    const { api } = createApiHarness([{
+        body: {
+            choices: [{
+                message: {
+                    content: JSON.stringify({
+                        questions: Array.from({ length: 4 }, (_, index) => ({
+                            id: `q${index + 1}`,
+                            type: 'text',
+                            question: `Pergunta ${index + 1}`,
+                            allowCode: true
+                        }))
+                    })
+                }
+            }]
+        }
+    }]);
+
+    const questions = await api.generateQuestions('Corrija a interface existente.');
+
+    assert.equal(questions.length, 4);
+    assert.ok(questions.every(question => question.allowCode === true));
 });
 
 test('geração de perguntas omite o contexto do projeto para evitar truncamento de saída', async () => {
@@ -263,4 +297,55 @@ test('resposta sem choices.message.content rejeita com erro de resposta vazia', 
         api._post('system prompt', 'prompt de teste', { forceNonStream: true }),
         (error) => error.code === 'EMPTY_RESPONSE'
     );
+});
+
+test('resposta interrompida por limite de tokens é continuada e concatenada', async () => {
+    const { api, requests } = createApiHarness([
+        { body: { choices: [{ message: { content: 'Parte inicial ' }, finish_reason: 'length' }] } },
+        { body: { choices: [{ message: { content: 'continuação final.' }, finish_reason: 'stop' }] } }
+    ]);
+
+    const result = await api._post('system prompt', 'prompt original', { forceNonStream: true });
+
+    assert.equal(result, 'Parte inicial continuação final.');
+    assert.equal(requests.length, 2);
+    const continuationMessages = JSON.parse(requests[1].data).messages;
+    assert.equal(continuationMessages[1].role, 'assistant');
+    assert.equal(continuationMessages[1].content, 'Parte inicial ');
+    assert.match(continuationMessages[2].content, /Não repita nem reescreva/);
+});
+
+test('resposta ainda truncada após continuações falha explicitamente sem retornar texto parcial', async () => {
+    const partialResponse = (content) => ({
+        body: { choices: [{ message: { content }, finish_reason: 'length' }] }
+    });
+    const { api, requests } = createApiHarness([
+        partialResponse('Parte 1 '),
+        partialResponse('Parte 2 '),
+        partialResponse('Parte 3')
+    ]);
+
+    await assert.rejects(
+        api._post('system prompt', 'prompt original', { forceNonStream: true }),
+        (error) => error.code === 'OUTPUT_TRUNCATED' && error.meta.partialOutput === 'Parte 1 Parte 2 Parte 3'
+    );
+    assert.equal(requests.length, 3);
+});
+
+test('stream encerrado com finish_reason length recebe continuação sem perder o primeiro trecho', async () => {
+    const streamChunk = (content, finishReason = null) =>
+        `data: ${JSON.stringify({ choices: [{ delta: { content }, finish_reason: finishReason }] })}\n\n`;
+    const responses = [
+        { body: streamChunk('Parte inicial ') + streamChunk('', 'length') + 'data: [DONE]\n\n' },
+        { body: streamChunk('continuação final.') + streamChunk('', 'stop') + 'data: [DONE]\n\n' }
+    ];
+    const { api, requests, context } = createApiHarness(responses);
+    vm.runInContext(streamParserSource, context, { filename: 'src/stream-parser-anim.js' });
+    vm.runInContext('CONFIG.STREAM = true;', context);
+
+    const result = await api._post('system prompt', 'prompt original');
+
+    assert.equal(result, 'Parte inicial continuação final.');
+    assert.equal(requests.length, 2);
+    assert.equal(JSON.parse(requests[1].data).messages[1].content, 'Parte inicial ');
 });

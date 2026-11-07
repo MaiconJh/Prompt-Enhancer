@@ -2,24 +2,12 @@ import { readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { renderModuleMetadata, STRUCTURAL_FILES, validateManifest } from './manifest-schema.js';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const bundlePath = path.join(root, 'dist', 'prompt-enhancer.user.js');
 const failures = [];
 const sourceDir = path.join(root, 'src');
-const structuralFiles = ['banner.js', 'open.js', 'close.js'];
-
-function validateManifest(manifest) {
-    if (!Array.isArray(manifest) || manifest.length === 0 || !manifest.every((name) => typeof name === 'string')) {
-        throw new Error('manifest.json deve conter um array não vazio de strings.');
-    }
-    if (new Set(manifest).size !== manifest.length) {
-        throw new Error('manifest.json contém nomes de módulos duplicados.');
-    }
-    if (manifest.some((name) => !name || path.basename(name) !== name || !name.endsWith('.js') || structuralFiles.includes(name))) {
-        throw new Error('manifest.json deve listar apenas nomes de módulos .js, sem caminhos ou arquivos estruturais.');
-    }
-}
 
 let manifest;
 try {
@@ -31,7 +19,7 @@ try {
 }
 
 try {
-    const expectedFiles = [...structuralFiles, ...manifest].sort();
+    const expectedFiles = [...STRUCTURAL_FILES, ...manifest.modules.map(({ file }) => file)].sort();
     const actualFiles = (await readdir(sourceDir, { withFileTypes: true }))
         .filter((entry) => entry.isFile())
         .map((entry) => entry.name)
@@ -68,11 +56,19 @@ try {
 const bytes = Buffer.byteLength(source, 'utf8');
 if (bytes <= 50 * 1024) failures.push(`Tamanho inválido: ${bytes} bytes (deve ser maior que 51200).`);
 
+for (const module of manifest.modules) {
+    const metadata = `${renderModuleMetadata(module)}\n// ===== src/${module.file} =====`;
+    if (!source.includes(metadata)) {
+        failures.push(`Metadados do módulo ${module.file} ausentes ou fora da posição esperada no bundle.`);
+    }
+}
+
 const requiredLines = [
     ['@name Prompt-Enhancer', /^\/\/ @name\s+Prompt-Enhancer\s*$/m],
     ['@version 1.0.0', /^\/\/ @version\s+1\.0\.0\s*$/m],
     ['@match *://chat.deepseek.com/*', /^\/\/ @match\s+\*:\/\/chat\.deepseek\.com\/\*\s*$/m],
     ['@grant GM_xmlhttpRequest', /^\/\/ @grant\s+GM_xmlhttpRequest\s*$/m],
+    ['@connect *', /^\/\/ @connect\s+\*\s*$/m],
     ['@require GSAP', /^\/\/ @require\s+https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/gsap\/3\.12\.5\/gsap\.min\.js\s*$/m]
 ];
 
@@ -94,8 +90,8 @@ for (const symbol of requiredSymbols) {
 }
 
 const markerCount = (source.match(/^\/\/ ===== src\/[^/]+\.js =====$/gm) || []).length;
-if (markerCount !== manifest.length + 3) {
-    failures.push(`Quantidade de marcadores inválida no bundle: ${markerCount} (esperado ${manifest.length + 3}).`);
+if (markerCount !== manifest.modules.length + STRUCTURAL_FILES.length) {
+    failures.push(`Quantidade de marcadores inválida no bundle: ${markerCount} (esperado ${manifest.modules.length + STRUCTURAL_FILES.length}).`);
 }
 
 const syntax = spawnSync(process.execPath, ['--check', bundlePath], {

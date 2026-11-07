@@ -99,6 +99,9 @@ Selected tones guide both the generated prompt and its requested response style.
   `LOCAL_RATE_LIMIT`, `STREAM_PARSE_ERROR`, and more.
 - **Selective retry** — only retryable codes trigger automatic retry
   (1 attempt, 2.5 s backoff).
+- **Truncated output** — when a provider ends with `finish_reason: length`,
+  the client requests up to two continuations; if still incomplete, it reports
+  `OUTPUT_TRUNCATED` instead of returning a partial result as successful.
 - **Contextual actions** — error toasts offer "Retry", "Retry without
   context", "Retry without streaming" or "Open parameters" based on the
   failure type.
@@ -202,11 +205,13 @@ individually.
 
 ### Provider
 
-Open **Configurações → Provider** to set a custom Base URL, model and API
-key. Leave a field blank to use its default value (the default endpoint,
-model, or anonymous API key). Use **Testar conexão** to send a minimal
-request and see the connection result, or **Restaurar padrão** to clear
-all provider overrides. Provider settings are stored locally.
+Open **Configurações → Provider** to browse the curated model catalog and
+models discovered from supported providers. Search by model or provider,
+filter by provider, keyless access, and streaming capability, then select
+**Fixar** to route API calls through that model. Models requiring a key ask
+for it when pinned. Catalog discovery is cached locally; existing provider
+settings remain active until a catalog route is pinned. The optional virtual
+fallback can route requests to an automatic free model after HTTP 429 or 5xx.
 
 ### Menu commands
 
@@ -273,9 +278,15 @@ src/
 └── close.js                IIFE close
 ```
 
-The concatenation order of the 24 middle modules is controlled by the
+The concatenation order of the 25 middle modules is controlled by the
 root-level `manifest.json`; `banner.js`, `open.js` and `close.js` remain in
 fixed structural positions.
+
+Each `manifest.json` module entry includes a `description`, `interfaces`
+(`provides` and `consumes`), and `interactions`. The build validates these
+fields and writes them as a metadata block immediately before the module's
+source in the generated userscript. This documents the module boundary and
+its connections without changing runtime behavior.
 
 **Composition order for every request:**
 
@@ -301,6 +312,9 @@ SYSTEM_PROMPT
 | `pe_api_url` | Optional provider endpoint override |
 | `pe_model` | Optional provider model override |
 | `pe_api_key` | Provider API key (defaults to `anonymous`) |
+| `pe_pinned_route` | Optional selected catalog route |
+| `kpe_provider_catalog_cache` | Cached curated and discovered model catalog |
+| `kpe_virtual_fallback_enabled` | Whether virtual 429/5xx fallback is enabled |
 
 ---
 
@@ -325,10 +339,12 @@ external dependencies.
 ### Editing workflow
 
 1. Edit the relevant module in `src/`.
-2. Run `npm run build`.
-3. Paste the new `dist/prompt-enhancer.user.js` into your userscript
+2. Keep the module's description and interface/interactions metadata in
+   `manifest.json` up to date.
+3. Run `npm run build`.
+4. Paste the new `dist/prompt-enhancer.user.js` into your userscript
    manager.
-4. Reload the target chat and test.
+5. Reload the target chat and test.
 
 ### Testing checklist
 
