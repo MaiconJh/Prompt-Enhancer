@@ -6,7 +6,8 @@
   "scripts": {
     "sandbox": "node sandbox.cjs",
     "build": "node build.js",
-    "check": "node check.js",
+    "check:i18n": "bash scripts/check-i18n.sh",
+    "check": "node check.js && npm run check:i18n",
     "test": "npm run check && node --test src/tests/*-tests.js",
     "test:api": "PE_API_SMOKE=1 node --test src/tests/provider-api-integration-tests.js"
   },

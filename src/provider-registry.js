@@ -29,7 +29,8 @@
                     rpm: Number.isFinite(limits.rpm) ? limits.rpm : null,
                     rpd: Number.isFinite(limits.rpd) ? limits.rpd : null,
                     tpm: Number.isFinite(limits.tpm) ? limits.tpm : null,
-                    note: String(limits.note || '')
+                    note: String(limits.note || ''),
+                    noteKey: typeof limits.noteKey === 'string' ? limits.noteKey : null
                 },
                 capabilities: {
                     streaming: !!capabilities.streaming,

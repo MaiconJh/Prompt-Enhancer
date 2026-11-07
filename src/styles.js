@@ -559,7 +559,7 @@ function injectStyles() {
             border-bottom:0;background:linear-gradient(180deg,var(--pe-surface-2),var(--pe-surface));
         }
         .pe-scope .pe-modal .pe-modal-tabs::before{
-            content:"SEÇÕES";padding:0 10px 9px;color:var(--pe-text-faint);font-size:var(--pe-fs-3xs);
+            content:attr(data-section-label);padding:0 10px 9px;color:var(--pe-text-faint);font-size:var(--pe-fs-3xs);
             line-height:1.2;font-weight:700;letter-spacing:.12em;
         }
         .pe-scope .pe-modal .pe-modal-tab{

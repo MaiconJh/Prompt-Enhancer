@@ -10,54 +10,82 @@
         document.addEventListener('focusin', onFocusIn, true);
         document.addEventListener('keydown', onKeydown, true);
 
-        if (typeof GM_registerMenuCommand === 'function') {
-            GM_registerMenuCommand('ℹ️ Sobre o Prompt-Enhancer', () => {
+        let menuIds = [];
+        function registerMenus() {
+            if (typeof GM_registerMenuCommand !== 'function') return;
+            if (Array.isArray(menuIds) && typeof GM_unregisterMenuCommand === 'function') {
+                menuIds.forEach((id) => { try { GM_unregisterMenuCommand(id); } catch (e) {} });
+                menuIds = [];
+            }
+            const reg = (label, cb) => {
+                const id = GM_registerMenuCommand(label, cb);
+                if (id != null) menuIds.push(id);
+                return id;
+            };
+            reg(I18n.t('bs.menu.about'), () => {
                 const files = ProjectContext.list();
                 const activeFiles = files.filter(f => f.enabled);
                 const total = ProjectContext.getTotalSize();
-                const ctx = files.length ? `${activeFiles.length}/${files.length} arquivo(s) ativo(s) · ${Utils.formatBytes(total)} / ${Utils.formatBytes(CONFIG.MAX_CONTEXT_TOTAL_SIZE)} (${ProjectContext.isEnabled() ? 'ON' : 'OFF'})` : 'nenhum arquivo';
+                const ctx = files.length ? `${activeFiles.length}/${files.length} ${I18n.t('bs.about.activeFiles')} · ${Utils.formatBytes(total)} / ${Utils.formatBytes(CONFIG.MAX_CONTEXT_TOTAL_SIZE)} (${ProjectContext.isEnabled() ? 'ON' : 'OFF'})` : I18n.t('bs.about.noFiles');
                 const histCount = EnhancementHistory.listRuns().length;
+                const codes = Object.keys(ErrorIndexer.CATALOG).length;
+                const n = ErrorIndexer.history().length;
                 alert(
                     'Prompt-Enhancer v1.0.0\n\n' +
-                    'Contexto: ' + ctx + '\n' +
-                    'Provider detectado: ' + Providers.detect() + '\n' +
-                    'Streaming: ' + (CONFIG.STREAM ? 'ativo' : 'inativo') + '\n' +
-                    'ErrorIndexer: ' + Object.keys(ErrorIndexer.CATALOG).length + ' códigos · ' + ErrorIndexer.history().length + ' no histórico de erros\n' +
-                    'Histórico de aprimoramentos (runs): ' + histCount + ' / ' + CONFIG.HISTORY_MAX + '\n' +
-                    'GSAP: ' + (Anim.hasGsap ? 'carregado' : 'indisponível') + '\n' +
-                    'Movimento reduzido: ' + (Anim.reduced() ? 'ativo' : 'inativo') + '\n\n' +
-                    'Endpoint: ' + CONFIG.API_URL + '\n' +
-                    'Modelo: ' + CONFIG.MODEL + '\n' +
-                    'Rate limit: ' + CONFIG.RATE_LIMIT.max + ' req / ' + (CONFIG.RATE_LIMIT.window / 1000) + 's por domínio\n' +
-                    'Retry automático: ' + CONFIG.RETRY_MAX + ' tentativa(s), backoff ' + (CONFIG.RETRY_BACKOFF_MS / 1000) + 's\n\n' +
-                    'Atalhos: Ctrl+Shift+E (aprimorar) · Ctrl+Shift+P (parâmetros) · Ctrl+Shift+S (configurações) · Esc (fechar)'
+                    I18n.t('bs.about.contextLabel') + ctx + '\n' +
+                    I18n.t('bs.about.detectedProvider') + Providers.detect() + '\n' +
+                    I18n.t('bs.about.streaming') + (CONFIG.STREAM ? I18n.t('bs.about.streamActive') : I18n.t('bs.about.streamInactive')) + '\n' +
+                    I18n.t('bs.about.errorIndexer', { codes, n }) + '\n' +
+                    I18n.t('bs.about.enhancementHistory') + histCount + ' / ' + CONFIG.HISTORY_MAX + '\n' +
+                    'GSAP: ' + (Anim.hasGsap ? I18n.t('bs.about.gsapLoaded') : I18n.t('bs.about.gsapUnavailable')) + '\n' +
+                    I18n.t('bs.about.reducedMotion') + (Anim.reduced() ? I18n.t('bs.about.streamActive') : I18n.t('bs.about.streamInactive')) + '\n\n' +
+                    I18n.t('bs.about.endpoint') + CONFIG.API_URL + '\n' +
+                    I18n.t('bs.about.model') + CONFIG.MODEL + '\n' +
+                    I18n.t('bs.about.rateLimit') + CONFIG.RATE_LIMIT.max + ' req / ' + (CONFIG.RATE_LIMIT.window / 1000) + 's' + I18n.t('bs.about.perDomain') + '\n' +
+                    I18n.t('bs.about.automaticRetry') + CONFIG.RETRY_MAX + I18n.t('bs.about.attemptsBackoff') + (CONFIG.RETRY_BACKOFF_MS / 1000) + 's\n\n' +
+                    I18n.t('bs.about.shortcuts')
                 );
             });
-            GM_registerMenuCommand('⚙️ Configurações', () => {
+            reg(I18n.t('bs.menu.settings'), () => {
                 if (State.activeComposer) onSettings();
-                else alert('Foque um campo de texto primeiro.');
+                else alert(I18n.t('bs.focusFirst'));
             });
-            GM_registerMenuCommand('📄 Limpar arquivos de contexto', () => {
-                if (!ProjectContext.list().length) { alert('Nenhum arquivo de contexto carregado.'); return; }
-                if (confirm('Remover todos os arquivos de contexto?')) { ProjectContext.clearAll(); State.activeComposer?.actionbar.refreshContextBtn(); alert('Arquivos removidos.'); }
+            reg(I18n.t('bs.menu.clearContext'), () => {
+                if (!ProjectContext.list().length) { alert(I18n.t('bs.noContextFiles')); return; }
+                if (confirm(I18n.t('bs.confirmRemoveContext'))) { ProjectContext.clearAll(); State.activeComposer?.actionbar.refreshContextBtn(); alert(I18n.t('bs.filesRemoved')); }
             });
-            GM_registerMenuCommand('🧩 Gerenciar contexto', () => {
+            reg(I18n.t('bs.menu.manageContext'), () => {
                 if (State.activeComposer) State.activeComposer.actionbar.contextBtn.click();
-                else alert('Foque um campo de texto primeiro.');
+                else alert(I18n.t('bs.focusFirst'));
             });
-            GM_registerMenuCommand('📊 Histórico de erros', () => showErrorHistory());
-            GM_registerMenuCommand('🧹 Limpar histórico de erros', () => {
-                if (!ErrorIndexer.history().length) { alert('Nenhum erro registrado.'); return; }
-                if (confirm('Limpar histórico de erros?')) { ErrorIndexer.clearHistory(); alert('Histórico de erros limpo.'); }
+            reg(I18n.t('bs.menu.errorHistory'), () => showErrorHistory());
+            reg(I18n.t('bs.menu.clearErrors'), () => {
+                if (!ErrorIndexer.history().length) { alert(I18n.t('bs.noErrors')); return; }
+                if (confirm(I18n.t('bs.confirmClearErrors'))) { ErrorIndexer.clearHistory(); alert(I18n.t('bs.errorHistoryCleared')); }
             });
-            GM_registerMenuCommand('🗑️ Limpar histórico de aprimoramentos', () => {
-                if (!EnhancementHistory.listRuns().length) { alert('Nenhum aprimoramento registrado.'); return; }
-                if (confirm('Limpar histórico de aprimoramentos?')) { EnhancementHistory.clear(); alert('Histórico de aprimoramentos limpo.'); }
+            reg(I18n.t('bs.menu.clearEnh'), () => {
+                if (!EnhancementHistory.listRuns().length) { alert(I18n.t('bs.noEnhancements')); return; }
+                if (confirm(I18n.t('bs.confirmClearEnh'))) { EnhancementHistory.clear(); alert(I18n.t('bs.enhHistoryCleared')); }
             });
-            GM_registerMenuCommand('🔄 Atualizar catálogo de provedores', () => {
+            reg(I18n.t('bs.menu.lang'), () => {
+                const current = I18n.getLanguage();
+                const next = current === 'en' ? 'pt-BR' : 'en';
+                I18n.setLanguage(next);
+                alert(I18n.t('bs.langChanged'));
+            });
+            reg(I18n.t('bs.menu.refreshCatalog'), () => {
                 ProviderRegistry.hydrate(true).then((entries) => {
                     console.info(`[PE] Catálogo hidratado: ${entries.length} entradas (${entries.filter((entry) => entry.source === 'dynamic').length} dinâmicas).`);
                 }).catch((err) => console.warn('[PE] Falha na atualização do catálogo:', err));
+            });
+        }
+        if (typeof GM_registerMenuCommand === 'function') {
+            registerMenus();
+            if (typeof GM_unregisterMenuCommand !== 'function') {
+                console.warn('[PE] GM_unregisterMenuCommand unavailable; menus registered once.');
+            }
+            window.addEventListener('pe:i18n-changed', () => {
+                if (typeof GM_unregisterMenuCommand === 'function') registerMenus();
             });
         }
 

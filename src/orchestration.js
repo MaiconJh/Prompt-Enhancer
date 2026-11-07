@@ -30,7 +30,7 @@
         try { console.groupCollapsed(`[PE] ❌ ${idx.code} — ${idx.title}`); console.log('description:', idx.description); console.log('technical:', idx.technical); console.groupEnd(); } catch (_) {}
         const text = idx.description ? `${idx.title}\n${idx.description}` : idx.title;
         const ACTION_MAP = { 'retry': () => retryEnhance(), 'retry-no-context': () => retryEnhanceNoContext(), 'retry-nostream': () => retryEnhanceNoStream(), 'open-params': () => onParams() };
-        const labels = { retry: 'Tentar novamente', 'retry-no-context': 'Tentar sem contexto', 'retry-nostream': 'Modo padrão', 'open-params': 'Parâmetros' };
+        const labels = { retry: I18n.t('orq.action.retry'), 'retry-no-context': I18n.t('orq.action.retryNoContext'), 'retry-nostream': I18n.t('orq.action.retryNoStream'), 'open-params': I18n.t('orq.action.params') };
         const action = idx.actionKey && ACTION_MAP[idx.actionKey] ? idx.actionKey : null;
         if (action) Molecules.toast(text, 'error', { actionLabel: labels[action], onAction: ACTION_MAP[action], details: idx.technical });
         else Molecules.toast(text, 'error', { details: idx.technical });
@@ -53,12 +53,12 @@
     async function onEnhance(btn, { skipParamsCheck = false, skipContext = false, forceNonStream = false, retryOfRunId = null } = {}) {
         if (State.isProcessing || State.isGuiding) return;
         const el = State.activeInput;
-        if (!el) { Molecules.toast('Foque um campo de texto primeiro.', 'error'); return; }
+        if (!el) { Molecules.toast(I18n.t('orq.focusFirst'), 'error'); return; }
         const original = Utils.getText(el).trim();
-        if (original.length < CONFIG.MIN_TEXT_LENGTH) { Molecules.toast('Texto muito curto para aprimorar.', 'error'); Anim.shake(btn); return; }
+        if (original.length < CONFIG.MIN_TEXT_LENGTH) { Molecules.toast(I18n.t('orq.tooShort'), 'error'); Anim.shake(btn); return; }
         const params = State.params || ParamSchema.load();
         if (!params || typeof params !== 'object') {
-            Molecules.toast('Não foi possível carregar os parâmetros.', 'error');
+            Molecules.toast(I18n.t('orq.paramsFail'), 'error');
             return;
         }
         const activeFiles = ProjectContext.list().filter(f => f.enabled);
@@ -104,7 +104,7 @@
                     State.activeComposer?.actionbar.setUndoEnabled(true);
                     EnhancementHistory.setOutcome(capturedRunId, 'applied');
                     State.preview = null;
-                    Molecules.toast('Prompt aprimorado.', 'success');
+                    Molecules.toast(I18n.t('orq.enhanced'), 'success');
                 }
             });
         } catch (err) {
@@ -125,17 +125,17 @@
     async function onGuided(btn) {
         if (State.isProcessing || State.isGuiding) return;
         const el = State.activeInput;
-        if (!el) { Molecules.toast('Foque um campo de texto primeiro.', 'error'); return; }
+        if (!el) { Molecules.toast(I18n.t('orq.focusFirst'), 'error'); return; }
         const base = Utils.getText(el).trim();
-        if (base.length < CONFIG.MIN_TEXT_LENGTH) { Molecules.toast('Texto muito curto para aprimorar.', 'error'); Anim.shake(btn); return; }
+        if (base.length < CONFIG.MIN_TEXT_LENGTH) { Molecules.toast(I18n.t('orq.tooShort'), 'error'); Anim.shake(btn); return; }
         const params = State.params || ParamSchema.load();
         if (!params || typeof params !== 'object') {
-            Molecules.toast('Não foi possível carregar os parâmetros.', 'error');
+            Molecules.toast(I18n.t('orq.paramsFail'), 'error');
             return;
         }
 
         State.isGuiding = true;
-        State.activeComposer?.actionbar.setGuidedBusy(true, 'Analisando…');
+        State.activeComposer?.actionbar.setGuidedBusy(true, I18n.t('action.analyzing'));
         closeAll();
 
         const activeFiles = ProjectContext.list().filter(f => f.enabled);
@@ -213,7 +213,7 @@
                                     State.activeComposer?.actionbar.setUndoEnabled(true);
                                     EnhancementHistory.setOutcome(capturedRunId, 'applied');
                                     State.preview = null;
-                                    Molecules.toast('Prompt aprimorado com guiamento.', 'success');
+                                    Molecules.toast(I18n.t('orq.enhancedGuided'), 'success');
                                 }
                             });
                         }
@@ -238,7 +238,7 @@
         Utils.applyText(el, State.previousText);
         State.previousText = null;
         State.activeComposer?.actionbar.setUndoEnabled(false);
-        Molecules.toast('Alteração desfeita.', 'info');
+        Molecules.toast(I18n.t('orq.undone'), 'info');
     }
 
     const debouncedEnhance = Utils.debounce(() => { onEnhance(State.activeComposer?.actionbar.enhanceBtn); }, CONFIG.DEBOUNCE_MS);
@@ -282,13 +282,13 @@
 
     function showErrorHistory() {
         const history = ErrorIndexer.history();
-        if (!history.length) { alert('Nenhum erro registrado.'); return; }
+        if (!history.length) { alert(I18n.t('orq.noErrors')); return; }
         const lines = history.slice(0, 20).map((h, i) => {
-            const date = new Date(h.at).toLocaleString('pt-BR');
+            const date = I18n.formatDate(h.at);
             const status = h.status ? ` (HTTP ${h.status})` : '';
             return `${i + 1}. [${date}] ${h.code}${status} — ${h.title}\n   ${h.description}`;
         });
-        const msg = `${history.length} erro(s) registrado(s):\n\n${lines.join('\n\n')}`;
-        if (confirm(`${msg}\n\nDeseja limpar o histórico de erros?`)) { ErrorIndexer.clearHistory(); alert('Histórico de erros limpo.'); }
+        const msg = `${I18n.t('orq.errorsCount', { n: history.length })}\n\n${lines.join('\n\n')}`;
+        if (confirm(`${msg}\n\n${I18n.t('orq.clearErrorsConfirm')}`)) { ErrorIndexer.clearHistory(); alert(I18n.t('orq.errorsCleared')); }
     }
 

@@ -443,3 +443,25 @@ For bug reports, please include:
   the default backend.
 - The userscript community for the patterns and conventions that this
   project builds on.
+
+### Interface language (i18n)
+
+The userscript UI supports `pt-BR` and `en`. The active language is resolved in this order:
+
+1. **Explicit user choice** stored in `pe_ui_language` (`pt-BR` or `en`) — always respected.
+2. **`auto`** (default for first-run) — analyzes `navigator.language`:
+   - starts with `pt` → `pt-BR`
+   - otherwise (including missing) → `en`
+
+The default effective language is therefore **English after browser detection**, not a hardcoded `en`.
+
+Change it via **Parameters → Interface language** or the userscript menu **🌐 Idioma / Language**.
+
+**Scope — what is *not* translated:**
+
+- `CONFIG.SYSTEM_PROMPT`, `CONFIG.QUESTIONS_SYSTEM_PROMPT`, `CONFIG.ENHANCE_WITH_ANSWERS_SYSTEM_PROMPT` — these are prompts sent to the LLM, not UI. Kept in pt-BR by design.
+- Continuation/answer messages sent to the model inside `api-client.js`.
+- The `pe_system_prompt_v1` user-editable prompt.
+- Dev-only diagnostic strings in `console.*` logs.
+
+The `response_language` parameter (in Parameters) controls the **model's answer language**, which is orthogonal to UI language. Do not conflate the two.

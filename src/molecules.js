@@ -6,11 +6,11 @@
             const bar = document.createElement('div');
             bar.className = 'pe-actionbar';
             bar.setAttribute('role', 'toolbar');
-            bar.setAttribute('aria-label', 'Ações do prompt');
+            bar.setAttribute('aria-label', I18n.t('action.bar.aria'));
 
-            const enhanceBtn = Atoms.button({ icon: 'sparkles', label: 'Aprimorar', ariaLabel: 'Aprimorar prompt', variant: 'primary', onClick: () => onEnhance(enhanceBtn) });
-            const guidedBtn = Atoms.button({ icon: 'guide', label: 'Guiado', ariaLabel: 'Iniciar aprimoramento guiado', variant: 'outline', onClick: () => onGuided(guidedBtn) });
-            const contextBtn = Atoms.button({ icon: 'agentDoc', label: 'Contexto', ariaLabel: 'Gerenciar arquivos de contexto', variant: 'ghost', onClick: () => contextPopoverInst?.toggle() });
+            const enhanceBtn = Atoms.button({ icon: 'sparkles', label: I18n.t('action.enhance'), ariaLabel: I18n.t('action.enhance.aria'), variant: 'primary', onClick: () => onEnhance(enhanceBtn) });
+            const guidedBtn = Atoms.button({ icon: 'guide', label: I18n.t('action.guided'), ariaLabel: I18n.t('action.guided.aria'), variant: 'outline', onClick: () => onGuided(guidedBtn) });
+            const contextBtn = Atoms.button({ icon: 'agentDoc', label: I18n.t('action.context'), ariaLabel: I18n.t('action.context.aria'), variant: 'ghost', onClick: () => contextPopoverInst?.toggle() });
             contextBtn.classList.add('pe-btn--agents');
             contextBtn.appendChild(Object.assign(document.createElement('span'), { className: 'pe-status-dot' }));
 
@@ -21,16 +21,16 @@
                 contextBtn.classList.toggle('is-loaded', has);
                 const lbl = contextBtn.querySelector('.pe-label');
                 if (lbl) {
-                    if (!has) lbl.textContent = 'Contexto';
+                    if (!has) lbl.textContent = I18n.t('action.context');
                     else if (active.length === 1) lbl.textContent = active[0].name;
-                    else lbl.textContent = `Contexto (${active.length})`;
+                    else lbl.textContent = I18n.t('action.context.multi', { n: active.length });
                 }
             }
             refreshContextBtn();
 
-            const paramsBtn = Atoms.button({ icon: 'sliders', label: '', ariaLabel: 'Configurar parâmetros de geração', variant: 'ghost', onClick: () => onParams?.(paramsBtn) });
-            const settingsBtn = Atoms.button({ icon: 'gear', label: '', ariaLabel: 'Abrir configurações (histórico, parâmetros, contexto)', variant: 'ghost', onClick: () => onSettings?.(settingsBtn) });
-            const undoBtn = Atoms.button({ icon: 'undo', label: '', ariaLabel: 'Desfazer último aprimoramento', variant: 'ghost', onClick: () => onUndo() });
+            const paramsBtn = Atoms.button({ icon: 'sliders', label: '', ariaLabel: I18n.t('action.params.aria'), variant: 'ghost', onClick: () => onParams?.(paramsBtn) });
+            const settingsBtn = Atoms.button({ icon: 'gear', label: '', ariaLabel: I18n.t('action.settings.aria'), variant: 'ghost', onClick: () => onSettings?.(settingsBtn) });
+            const undoBtn = Atoms.button({ icon: 'undo', label: '', ariaLabel: I18n.t('action.undo.aria'), variant: 'ghost', onClick: () => onUndo() });
             undoBtn.disabled = true;
 
             bar.appendChild(enhanceBtn);
@@ -45,12 +45,14 @@
             bar.appendChild(settingsBtn);
             bar.appendChild(undoBtn);
 
+            const i18nRefresh = () => { const l = enhanceBtn.querySelector('.pe-label'); if (l && !enhanceBtn.classList.contains('is-loading')) l.textContent = I18n.t('action.enhance'); const g = guidedBtn.querySelector('.pe-label'); if (g && !guidedBtn.classList.contains('is-loading')) g.textContent = I18n.t('action.guided'); enhanceBtn.setAttribute('aria-label', I18n.t('action.enhance.aria')); guidedBtn.setAttribute('aria-label', I18n.t('action.guided.aria')); contextBtn.setAttribute('aria-label', I18n.t('action.context.aria')); paramsBtn.setAttribute('aria-label', I18n.t('action.params.aria')); settingsBtn.setAttribute('aria-label', I18n.t('action.settings.aria')); undoBtn.setAttribute('aria-label', I18n.t('action.undo.aria')); bar.setAttribute('aria-label', I18n.t('action.bar.aria')); refreshContextBtn(); };
+            window.addEventListener('pe:i18n-changed', i18nRefresh);
             return {
                 root: bar, enhanceBtn, guidedBtn, contextBtn, paramsBtn, settingsBtn,
                 setBusy(isBusy) {
                     enhanceBtn.disabled = isBusy;
                     enhanceBtn.replaceChildren(Atoms.icon(isBusy ? 'loader' : 'sparkles', isBusy ? 'pe-spin' : ''));
-                    const lbl = Object.assign(document.createElement('span'), { className: 'pe-label', textContent: isBusy ? 'Aprimorando…' : 'Aprimorar' });
+                    const lbl = Object.assign(document.createElement('span'), { className: 'pe-label', textContent: isBusy ? I18n.t('action.enhancing') : I18n.t('action.enhance') });
                     enhanceBtn.appendChild(lbl);
                     enhanceBtn.setAttribute('aria-busy', String(!!isBusy));
                     enhanceBtn.classList.toggle('is-loading', !!isBusy);
@@ -58,14 +60,14 @@
                 setGuidedBusy(isBusy, customLabel) {
                     guidedBtn.disabled = isBusy;
                     guidedBtn.replaceChildren(Atoms.icon(isBusy ? 'loader' : 'guide', isBusy ? 'pe-spin' : ''));
-                    const lbl = Object.assign(document.createElement('span'), { className: 'pe-label', textContent: customLabel || (isBusy ? 'Analisando…' : 'Guiado') });
+                    const lbl = Object.assign(document.createElement('span'), { className: 'pe-label', textContent: customLabel || (isBusy ? I18n.t('action.analyzing') : I18n.t('action.guided')) });
                     guidedBtn.appendChild(lbl);
                     guidedBtn.setAttribute('aria-busy', String(!!isBusy));
                     guidedBtn.classList.toggle('is-loading', !!isBusy);
                 },
                 setUndoEnabled(enabled) { undoBtn.disabled = !enabled; },
                 refreshContextBtn, refreshAgentsBtn: refreshContextBtn,
-                destroy() { try { contextPopoverInst?.destroy?.(); } catch (_) {} }
+                destroy() { window.removeEventListener('pe:i18n-changed', i18nRefresh); try { contextPopoverInst?.destroy?.(); } catch (_) {} }
             };
         },
 
@@ -84,13 +86,13 @@
                     </div>
                     <div class="pe-panel-loading__body">
                         <div class="pe-panel-loading__title-wrap">
-                            <div class="pe-panel-loading__title" data-title>Conectando</div>
+                            <div class="pe-panel-loading__title" data-title>${I18n.t('lo.state.connecting.title')}</div>
                         </div>
                         <div class="pe-panel-loading__sub-wrap">
                             <div class="pe-panel-loading__sub" data-sub>
-                                <span data-subtext>Estabelecendo conexão</span>
+                                <span data-subtext>${I18n.t('lo.state.connecting.sub')}</span>
                                 <span class="pe-dots" aria-hidden="true" data-dots><span></span><span></span><span></span></span>
-                                <span class="pe-token-pill" data-tokpill hidden>0 tok</span>
+                                <span class="pe-token-pill" data-tokpill hidden>${I18n.t('lo.tok0')}</span>
                                 <span class="pe-retry-pill" data-retrypill hidden></span>
                             </div>
                         </div>
@@ -99,16 +101,16 @@
                     <div class="pe-panel-loading__meta">
                         <div class="pe-panel-loading__meta-l">
                             <span class="pe-time">
-                                <span class="pe-time__label">decorrido</span>
+                                <span class="pe-time__label">${I18n.t('lo.elapsed')}</span>
                                 <span data-elapsed>0.0s</span>
                             </span>
                         </div>
                         <div class="pe-panel-loading__meta-r">
                             <button type="button" class="pe-debug-toggle" aria-expanded="false" data-dtoggle>
-                                <span>detalhes</span>
+                                <span>${I18n.t('lo.details')}</span>
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                             </button>
-                            <button type="button" class="pe-cancel" data-cancel>Cancelar</button>
+                            <button type="button" class="pe-cancel" data-cancel>${I18n.t('lo.cancel')}</button>
                         </div>
                     </div>
                     <div class="pe-debug" data-dpanel>
@@ -128,6 +130,7 @@
             const tokPill = root.querySelector('[data-tokpill]');
             const retryPill = root.querySelector('[data-retrypill]');
             const elapsedEl = root.querySelector('[data-elapsed]');
+            const elapsedLabelEl = root.querySelector('.pe-time__label');
             const debugToggle = root.querySelector('[data-dtoggle]');
             const debugPanel = root.querySelector('[data-dpanel]');
             const debugGrid = root.querySelector('[data-dgrid]');
@@ -136,14 +139,15 @@
             const gearCanvas = root.querySelector('[data-gear]');
 
             const METRIC_DEFS = [
-                ['model', 'Modelo'], ['endpoint', 'Endpoint'],
-                ['stream', 'Stream'], ['timeout', 'Timeout'],
-                ['payload', 'Payload'], ['attempt', 'Tentativa'],
-                ['status', 'Status'], ['bytes', 'Bytes'],
-                ['first_token', '1º token'], ['tokens', 'Tokens'],
-                ['rate', 'Taxa'], ['retry', 'Retry']
+                ['model', I18n.t('lo.metric.model')], ['endpoint', I18n.t('lo.metric.endpoint')],
+                ['stream', I18n.t('lo.metric.stream')], ['timeout', I18n.t('lo.metric.timeout')],
+                ['payload', I18n.t('lo.metric.payload')], ['attempt', I18n.t('lo.metric.attempt')],
+                ['status', I18n.t('lo.metric.status')], ['bytes', I18n.t('lo.metric.bytes')],
+                ['first_token', I18n.t('lo.metric.first_token')], ['tokens', I18n.t('lo.metric.tokens')],
+                ['rate', I18n.t('lo.metric.rate')], ['retry', I18n.t('lo.metric.retry')]
             ];
             const metricEls = {};
+            const metricKeyEls = {};
             METRIC_DEFS.forEach(([key, label]) => {
                 const row = document.createElement('div');
                 row.className = 'pe-debug__row';
@@ -156,19 +160,20 @@
                 row.appendChild(k); row.appendChild(v);
                 debugGrid.appendChild(row);
                 metricEls[key] = v;
+                metricKeyEls[key] = k;
             });
 
-            const STATE_LABELS = {
-                connecting: { title: 'Conectando', sub: 'Estabelecendo conexão' },
-                preparing: { title: 'Montando payload', sub: 'Validando parâmetros e contexto' },
-                dispatching: { title: 'Enviando requisição', sub: 'Despachando para o provedor' },
-                awaiting_ttfb: { title: 'Aguardando 1º byte', sub: 'Esperando resposta do servidor' },
-                awaiting_token: { title: 'Recebendo resposta', sub: 'Primeiro byte chegou, aguardando tokens' },
-                waiting: { title: 'Aguardando dados', sub: 'Nenhum byte recebido ainda' },
-                streaming: { title: 'Recebendo conteúdo', sub: 'Tokens chegando' },
-                finalizing: { title: 'Processando resultado', sub: 'Preparando saída' },
-                retrying: { title: 'Retentando', sub: 'Falha de rede · backoff' }
-            };
+            const getStateLabels = (state) => ({
+                connecting: { title: I18n.t('lo.state.connecting.title'), sub: I18n.t('lo.state.connecting.sub') },
+                preparing: { title: I18n.t('lo.state.preparing.title'), sub: I18n.t('lo.state.preparing.sub') },
+                dispatching: { title: I18n.t('lo.state.dispatching.title'), sub: I18n.t('lo.state.dispatching.sub') },
+                awaiting_ttfb: { title: I18n.t('lo.state.awaiting_ttfb.title'), sub: I18n.t('lo.state.awaiting_ttfb.sub') },
+                awaiting_token: { title: I18n.t('lo.state.awaiting_token.title'), sub: I18n.t('lo.state.awaiting_token.sub') },
+                waiting: { title: I18n.t('lo.state.waiting.title'), sub: I18n.t('lo.state.waiting.sub') },
+                streaming: { title: I18n.t('lo.state.streaming.title'), sub: I18n.t('lo.state.streaming.sub') },
+                finalizing: { title: I18n.t('lo.state.finalizing.title'), sub: I18n.t('lo.state.finalizing.sub') },
+                retrying: { title: I18n.t('lo.state.retrying.title'), sub: I18n.t('lo.state.retrying.sub') }
+            }[state] || { title: I18n.t('lo.state.connecting.title'), sub: I18n.t('lo.state.connecting.sub') });
             const PHASE_TO_STATE = {
                 routing: 'connecting', connecting: 'connecting',
                 preparing: 'preparing', dispatching: 'dispatching',
@@ -185,6 +190,7 @@
             let gear = null;
             const events = [];
             let currentState = 'connecting';
+            let warningCode = null;
             const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
             let virtualTimer = null;
             let virtualStartTime = 0;
@@ -218,11 +224,11 @@
             }
 
             function applyStateLabels(state, opts = {}) {
-                const labels = STATE_LABELS[state] || STATE_LABELS.connecting;
+                const labels = getStateLabels(state);
                 let title = labels.title;
                 let sub = labels.sub;
                 if (state === 'retrying' && opts.backoffMs != null) {
-                    sub = `Falha de rede · backoff ${(opts.backoffMs / 1000).toFixed(1)}s`;
+                    sub = I18n.t('lo.retrySub', { s: (opts.backoffMs / 1000).toFixed(1) });
                 }
                 if (titleEl.textContent !== title) {
                     titleEl.classList.add('is-swapping');
@@ -247,15 +253,16 @@
                 if (state === 'retrying') {
                     const total = (opts.total != null) ? opts.total : (CONFIG.RETRY_MAX + 1);
                     const att = (opts.attempt != null) ? opts.attempt : 2;
-                    retryPill.textContent = `tentativa ${att} / ${total}`;
+                    retryPill.textContent = I18n.t('lo.attempt', { a: att, t: total });
                 }
                 if (state !== 'streaming' && state !== 'finalizing') tokPill.hidden = true;
             }
 
             function setState(state, opts = {}) {
                 const s = PHASE_TO_STATE[state] || state;
-                if (!STATE_LABELS[s]) return;
+                if (!PHASE_TO_STATE[s] && !['connecting','preparing','dispatching','awaiting_ttfb','awaiting_token','waiting','streaming','finalizing','retrying'].includes(s)) return;
                 currentState = s;
+                if (s === 'streaming' || s === 'finalizing' || s === 'retrying' || s === 'connecting') warningCode = null;
                 root.dataset.state = s;
                 if (gear) gear.setState(s);
                 applyStateLabels(s, opts);
@@ -289,6 +296,30 @@
                 gear = createGear(gearCanvas, currentState);
             }
 
+            function applyWarningLabels(code) {
+                if (code === 'NO_FIRST_BYTE') {
+                    setMetric('status', I18n.t('lo.warn.awaitingFirstByte'), 'warn');
+                    subtextEl.textContent = I18n.t('lo.warn.noResponse');
+                } else if (code === 'STALL') {
+                    setMetric('status', I18n.t('lo.warn.stalled'), 'warn');
+                    subtextEl.textContent = I18n.t('lo.warn.noNewTokens');
+                }
+            }
+
+            const i18nRefresh = () => {
+                applyStateLabels(currentState);
+                if (warningCode) applyWarningLabels(warningCode);
+                const detailsSpan = debugToggle.querySelector('span');
+                if (detailsSpan) detailsSpan.textContent = I18n.t('lo.details');
+                if (!cancelBtn.disabled) cancelBtn.textContent = I18n.t('lo.cancel');
+                if (elapsedLabelEl) elapsedLabelEl.textContent = I18n.t('lo.elapsed');
+                if (tokPill.hidden) tokPill.textContent = I18n.t('lo.tok0');
+                METRIC_DEFS.forEach(([key]) => {
+                    const kEl = metricKeyEls[key];
+                    if (kEl) kEl.textContent = I18n.t(`lo.metric.${key}`);
+                });
+            };
+
             function show() {
                 if (!root.classList.contains('is-active')) {
                     root.classList.add('is-active');
@@ -296,12 +327,14 @@
                 ensureGear();
                 startTimer();
                 applyStateLabels(currentState);
+                window.addEventListener('pe:i18n-changed', i18nRefresh);
             }
 
             function hide() {
                 stopTimer();
                 cancelVirtualProgress();
                 root.classList.remove('is-active');
+                window.removeEventListener('pe:i18n-changed', i18nRefresh);
                 if (gear) { gear.destroy(); gear = null; }
             }
 
@@ -314,7 +347,7 @@
             cancelBtn.addEventListener('click', (e) => {
                 e.preventDefault(); e.stopPropagation();
                 if (cancelBtn.disabled) return;
-                cancelBtn.textContent = 'Cancelando…';
+                cancelBtn.textContent = I18n.t('lo.cancelling');
                 cancelBtn.disabled = true;
                 try { if (cancelFn) cancelFn(); else ApiClient.abort(); } catch (_) {}
             });
@@ -361,13 +394,8 @@
                 setEstimate() { /* no-op (indeterminate by design) */ },
                 warn(code) {
                     logEvent('warning', '· ' + code, 'warn');
-                    if (code === 'NO_FIRST_BYTE') {
-                        setMetric('status', 'aguardando 1º byte', 'warn');
-                        subtextEl.textContent = 'Servidor ainda não respondeu';
-                    } else if (code === 'STALL') {
-                        setMetric('status', 'streaming estagnado', 'warn');
-                        subtextEl.textContent = 'Sem novos tokens há alguns segundos';
-                    }
+                    warningCode = code;
+                    applyWarningLabels(code);
                 },
                 note(txt) { logEvent('note', '· ' + txt); },
                 onCancel(fn) { cancelFn = fn; }
@@ -425,10 +453,10 @@
             const prevActive = document.activeElement;
             let wasApplied = false;
             const body = document.createElement('div');
-            body.innerHTML = `<div class="pe-field"><span class="pe-field-label">Original</span><div class="pe-field-text">${Utils.escapeHtml(original)}</div></div><div class="pe-field"><span class="pe-field-label">Aprimorado</span><div class="pe-field-text" data-pe-stream>${Utils.escapeHtml(enhanced)}</div></div>`;
-            const cancelBtn = Atoms.button({ icon: 'x', label: 'Cancelar', ariaLabel: 'Cancelar', variant: 'outline', onClick: () => handleCancel() });
-            const applyBtn = Atoms.button({ icon: 'check', label: 'Aplicar', ariaLabel: 'Aplicar', variant: 'primary', onClick: () => handleApply() });
-            const { panel, close } = Molecules.panel({ title: 'Pré-visualização do prompt', anchor, children: body, footer: [cancelBtn, applyBtn], onClose: () => { try { (trigger || prevActive)?.focus?.(); } catch (_) {} if (!wasApplied) onCancel?.(); } });
+            body.innerHTML = `<div class="pe-field"><span class="pe-field-label">${Utils.escapeHtml(I18n.t('pv.original'))}</span><div class="pe-field-text">${Utils.escapeHtml(original)}</div></div><div class="pe-field"><span class="pe-field-label">${Utils.escapeHtml(I18n.t('pv.enhanced'))}</span><div class="pe-field-text" data-pe-stream>${Utils.escapeHtml(enhanced)}</div></div>`;
+            const cancelBtn = Atoms.button({ icon: 'x', label: I18n.t('pv.cancel'), ariaLabel: I18n.t('pv.cancel'), variant: 'outline', onClick: () => handleCancel() });
+            const applyBtn = Atoms.button({ icon: 'check', label: I18n.t('pv.apply'), ariaLabel: I18n.t('pv.apply'), variant: 'primary', onClick: () => handleApply() });
+            const { panel, close } = Molecules.panel({ title: I18n.t('pv.title'), anchor, children: body, footer: [cancelBtn, applyBtn], onClose: () => { try { (trigger || prevActive)?.focus?.(); } catch (_) {} if (!wasApplied) onCancel?.(); } });
             Anim.staggerIn(body, 0.06);
             setTimeout(() => { const stream = panel.querySelector('[data-pe-stream]'); if (stream) Anim.typewriter(stream, { duration: 0.85 }); }, 180);
             function handleCancel() { close(); }
@@ -440,7 +468,7 @@
             const root = document.createElement('div');
             root.className = 'pe-prompt-base';
             const wc = Utils.wordCount(prompt);
-            root.innerHTML = `<button type="button" class="pe-prompt-base__trigger" aria-expanded="false">${Atoms.icon('doc', 'pe-prompt-base__icon').outerHTML}<span class="pe-prompt-base__label">Prompt base</span><span class="pe-prompt-base__meta">${Utils.escapeHtml(Utils.truncate(prompt, 100))}</span><span class="pe-prompt-base__count">${wc} ${wc === 1 ? 'palavra' : 'palavras'}</span>${Atoms.icon('chevron', 'pe-prompt-base__chevron').outerHTML}</button><div class="pe-prompt-base__content"><div><div class="pe-prompt-base__text">${Utils.escapeHtml(prompt)}</div></div></div>`;
+            root.innerHTML = `<button type="button" class="pe-prompt-base__trigger" aria-expanded="false">${Atoms.icon('doc', 'pe-prompt-base__icon').outerHTML}<span class="pe-prompt-base__label">${Utils.escapeHtml(I18n.t('pbc.label'))}</span><span class="pe-prompt-base__meta">${Utils.escapeHtml(Utils.truncate(prompt, 100))}</span><span class="pe-prompt-base__count">${wc} ${I18n.tPlural('pbc.word', wc, { one: I18n.t('pbc.word.one'), other: I18n.t('pbc.word.other') })}</span>${Atoms.icon('chevron', 'pe-prompt-base__chevron').outerHTML}</button><div class="pe-prompt-base__content"><div><div class="pe-prompt-base__text">${Utils.escapeHtml(prompt)}</div></div></div>`;
             root.querySelector('.pe-prompt-base__trigger').addEventListener('click', (e) => { e.preventDefault(); const expanded = root.classList.toggle('is-expanded'); root.querySelector('.pe-prompt-base__trigger').setAttribute('aria-expanded', String(expanded)); });
             return root;
         },
@@ -448,23 +476,25 @@
         contextIndicator() {
             const root = document.createElement('div');
             root.className = 'pe-agents-indicator';
+            const i18nRefresh = () => refresh();
+            window.addEventListener('pe:i18n-changed', i18nRefresh);
             function refresh() {
                 root.innerHTML = '';
                 if (!ProjectContext.hasContent() || !ProjectContext.isEnabled()) { root.style.display = 'none'; return; }
                 root.style.display = 'flex';
                 const active = ProjectContext.list().filter(f => f.enabled);
-                const title = active.length === 1 ? active[0].name : `${active.length} arquivos de contexto`;
-                root.innerHTML = `${Atoms.icon('check').outerHTML}<div class="pe-agents-indicator__body"><span class="pe-agents-indicator__title">${Utils.escapeHtml(title)}</span><span class="pe-agents-indicator__meta">${Utils.formatBytes(ProjectContext.getTotalSize())} · injetado em cada chamada</span></div>`;
+                const title = active.length === 1 ? active[0].name : I18n.tPlural('ci.files', active.length, { one: I18n.t('ci.files.one', { n: active.length }), other: I18n.t('ci.files.other', { n: active.length }) });
+                root.innerHTML = `${Atoms.icon('check').outerHTML}<div class="pe-agents-indicator__body"><span class="pe-agents-indicator__title">${Utils.escapeHtml(title)}</span><span class="pe-agents-indicator__meta">${Utils.formatBytes(ProjectContext.getTotalSize())} · ${Utils.escapeHtml(I18n.t('ci.injected'))}</span></div>`;
             }
             refresh();
-            return { root, refresh };
+            return { root, refresh, destroy() { window.removeEventListener('pe:i18n-changed', i18nRefresh); } };
         },
 
         guidedWizard({ questions, prompt, anchor, trigger, onSubmit, onCancel }) {
             const prevActive = document.activeElement;
             const progressInline = document.createElement('div');
             progressInline.className = 'pe-progress-inline';
-            progressInline.innerHTML = `<div class="pe-progress-track"><div class="pe-progress-fill"></div></div><span class="pe-progress-label">0 de ${questions.length}</span>`;
+            progressInline.innerHTML = `<div class="pe-progress-track"><div class="pe-progress-fill"></div></div><span class="pe-progress-label">${I18n.t('gw.progress', { done: 0, total: questions.length })}</span>`;
             const progressFill = progressInline.querySelector('.pe-progress-fill');
             const progressLabel = progressInline.querySelector('.pe-progress-label');
             const bodyContent = document.createElement('div');
@@ -473,11 +503,11 @@
             const contextInd = Molecules.contextIndicator();
             const promptLabel = document.createElement('div');
             promptLabel.className = 'pe-section-label';
-            promptLabel.innerHTML = `${Atoms.icon('doc').outerHTML}<span>Prompt base</span>`;
+            promptLabel.innerHTML = `${Atoms.icon('doc').outerHTML}<span>${Utils.escapeHtml(I18n.t('gw.basePrompt'))}</span>`;
             const chip = Molecules.promptBaseChip(prompt);
             const questionsLabel = document.createElement('div');
             questionsLabel.className = 'pe-section-label';
-            questionsLabel.innerHTML = `${Atoms.icon('guide').outerHTML}<span>Perguntas de esclarecimento</span>`;
+            questionsLabel.innerHTML = `${Atoms.icon('guide').outerHTML}<span>${Utils.escapeHtml(I18n.t('gw.questionsLabel'))}</span>`;
             const list = document.createElement('div');
             bodyContent.appendChild(errorSlot); bodyContent.appendChild(contextInd.root);
             bodyContent.appendChild(promptLabel); bodyContent.appendChild(chip);
@@ -501,15 +531,15 @@
                 main.className = 'pe-q-header-main';
                 const text = document.createElement('div');
                 text.className = 'pe-q-text';
-                text.textContent = q.question || `Pergunta ${idx + 1}`;
+                text.textContent = q.question || I18n.t('gw.question', { n: idx + 1 });
                 main.appendChild(text);
                 const hint = document.createElement('span');
-                if (q.allowCode) { hint.className = 'pe-q-hint pe-q-hint--code'; hint.innerHTML = `${Atoms.icon('codeSpark').outerHTML}<span>Contexto de código útil aqui</span>`; }
-                else { hint.className = 'pe-q-hint'; hint.textContent = q.type === 'multi' ? 'Pode selecionar mais de uma opção' : (q.type === 'choice' ? 'Escolha uma opção' : 'Digite sua resposta'); }
+                if (q.allowCode) { hint.className = 'pe-q-hint pe-q-hint--code'; hint.innerHTML = `${Atoms.icon('codeSpark').outerHTML}<span>${Utils.escapeHtml(I18n.t('gw.codeHint'))}</span>`; }
+                else { hint.className = 'pe-q-hint'; hint.textContent = q.type === 'multi' ? I18n.t('gw.hint.multi') : (q.type === 'choice' ? I18n.t('gw.hint.choice') : I18n.t('gw.hint.text')); }
                 main.appendChild(hint);
                 const summary = document.createElement('span');
                 summary.className = 'pe-q-summary';
-                summary.innerHTML = 'Resposta: <span class="pe-q-summary__value">—</span>';
+                summary.innerHTML = `${Utils.escapeHtml(I18n.t('gw.answer'))} <span class="pe-q-summary__value">—</span>`;
                 const summaryValue = summary.querySelector('.pe-q-summary__value');
                 main.appendChild(summary);
                 const chevron = Atoms.icon('chevronD');
@@ -532,7 +562,7 @@
                         lab.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); group.querySelectorAll('.pe-option').forEach(o => o.classList.remove('is-checked')); lab.classList.add('is-checked'); qs.value = String(opt); qs.freeActive = false; setAnswered(q, qs, String(opt), { collapse: true }); });
                         group.appendChild(lab);
                     });
-                    group.appendChild(Object.assign(document.createElement('div'), { className: 'pe-options-divider', innerHTML: '<span>ou</span>' }));
+                    group.appendChild(Object.assign(document.createElement('div'), { className: 'pe-options-divider', innerHTML: `<span>${Utils.escapeHtml(I18n.t('gw.or'))}</span>` }));
                     group.appendChild(buildFreeText({ q, qs, kind: 'radio', items, onActivate: () => { qs.freeActive = true; qs.value = ''; group.querySelectorAll('.pe-option').forEach(o => o.classList.remove('is-checked')); }, onInput: (v) => { qs.freeText = v; if (v) setAnswered(q, qs, v, { collapse: false }); else if (!qs.value) unsetAnswered(q, qs); } }));
                 } else if (q.type === 'multi' && Array.isArray(q.options)) {
                     group.setAttribute('role', 'group');
@@ -543,12 +573,12 @@
                         lab.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); lab.classList.toggle('is-checked'); if (lab.classList.contains('is-checked')) qs.values.add(String(opt)); else qs.values.delete(String(opt)); updateMultiAnswer(q, qs); });
                         group.appendChild(lab);
                     });
-                    group.appendChild(Object.assign(document.createElement('div'), { className: 'pe-options-divider', innerHTML: '<span>e/ou</span>' }));
+                    group.appendChild(Object.assign(document.createElement('div'), { className: 'pe-options-divider', innerHTML: `<span>${Utils.escapeHtml(I18n.t('gw.andOr'))}</span>` }));
                     group.appendChild(buildFreeText({ q, qs, kind: 'checkbox', items, onActivate: () => { qs.freeActive = true; }, onInput: (v) => { qs.freeText = v; updateMultiAnswer(q, qs); } }));
                 } else {
                     const ta = document.createElement('textarea');
                     ta.className = 'pe-textarea'; ta.rows = 2;
-                    ta.placeholder = q.placeholder || 'Sua resposta…';
+                    ta.placeholder = q.placeholder || I18n.t('gw.yourAnswer');
                     ta.addEventListener('input', () => { qs.value = ta.value.trim(); if (qs.value) setAnswered(q, qs, qs.value, { collapse: false }); else unsetAnswered(q, qs); });
                     ta.addEventListener('click', (e) => e.stopPropagation());
                     group.appendChild(ta);
@@ -577,14 +607,14 @@
                     if (q.type === 'multi') { if (qs.values.size > 0 || qs.freeText) done++; }
                     else { if (qs.value || (qs.freeActive && qs.freeText)) done++; }
                 }
-                progressLabel.textContent = `${done} de ${questions.length}`;
+                progressLabel.textContent = I18n.t('gw.progress', { done, total: questions.length });
                 progressFill.style.width = `${(done / questions.length) * 100}%`;
                 submitBtn.disabled = done < questions.length;
             }
             function buildFreeText({ q, qs, kind, items, onActivate, onInput }) {
                 const wrap = document.createElement('div');
                 wrap.className = 'pe-free-text';
-                wrap.innerHTML = `<label class="pe-free-text__row"><span class="${kind === 'radio' ? 'pe-radio' : 'pe-checkbox'}"></span><span class="pe-free-text__label">${kind === 'radio' ? 'Nenhuma das opções — escrever resposta' : 'Outros elementos — escrever resposta'}</span></label><div class="pe-free-text__input-wrap"><div><input type="text" class="pe-free-text__input" placeholder="${kind === 'radio' ? 'Digite sua resposta…' : 'Ex: paginação, ordenação…'}"></div></div>`;
+                wrap.innerHTML = `<label class="pe-free-text__row"><span class="${kind === 'radio' ? 'pe-radio' : 'pe-checkbox'}"></span><span class="pe-free-text__label">${Utils.escapeHtml(kind === 'radio' ? I18n.t('gw.noneRadio') : I18n.t('gw.noneCheck'))}</span></label><div class="pe-free-text__input-wrap"><div><input type="text" class="pe-free-text__input" placeholder="${Utils.escapeHtml(kind === 'radio' ? I18n.t('gw.typeAnswer') : I18n.t('gw.multiPlaceholder'))}"></div></div>`;
                 const row = wrap.querySelector('.pe-free-text__row');
                 const input = wrap.querySelector('.pe-free-text__input');
                 row.addEventListener('click', (e) => {
@@ -598,21 +628,21 @@
                 return wrap;
             }
             let allExpanded = false;
-            const expandAllBtn = Atoms.buttonNode({ label: 'Expandir tudo', ariaLabel: 'Expandir ou recolher', variant: 'ghost', onClick: (btn) => { allExpanded = !allExpanded; items.forEach(({ item, header }) => { item.classList.toggle('is-open', allExpanded); header.setAttribute('aria-expanded', String(allExpanded)); }); btn.querySelector('.pe-label').textContent = allExpanded ? 'Recolher tudo' : 'Expandir tudo'; } });
+            const expandAllBtn = Atoms.buttonNode({ label: I18n.t('gw.expandAll'), ariaLabel: I18n.t('gw.expandAria'), variant: 'ghost', onClick: (btn) => { allExpanded = !allExpanded; items.forEach(({ item, header }) => { item.classList.toggle('is-open', allExpanded); header.setAttribute('aria-expanded', String(allExpanded)); }); btn.querySelector('.pe-label').textContent = allExpanded ? I18n.t('gw.collapseAll') : I18n.t('gw.expandAll'); } });
             expandAllBtn.classList.add('pe-panel__expand');
             const actions = document.createElement('div');
             actions.className = 'pe-panel__actions';
-            const cancelBtn = Atoms.button({ icon: 'x', label: 'Cancelar', ariaLabel: 'Cancelar', variant: 'outline', onClick: () => handleCancel() });
-            const submitBtn = Atoms.button({ icon: 'arrow', label: 'Gerar prompt', ariaLabel: 'Gerar', variant: 'primary', onClick: () => handleSubmit() });
+            const cancelBtn = Atoms.button({ icon: 'x', label: I18n.t('pv.cancel'), ariaLabel: I18n.t('pv.cancel'), variant: 'outline', onClick: () => handleCancel() });
+            const submitBtn = Atoms.button({ icon: 'arrow', label: I18n.t('gw.generate'), ariaLabel: I18n.t('gw.generateAria'), variant: 'primary', onClick: () => handleSubmit() });
             submitBtn.disabled = true;
             actions.appendChild(cancelBtn); actions.appendChild(submitBtn);
-            const { panel, close } = Molecules.panel({ title: 'Aprimoramento guiado', anchor, headerExtra: progressInline, children: bodyContent, footer: [expandAllBtn, actions], onClose: () => { try { (trigger || prevActive)?.focus?.(); } catch (_) {} onCancel?.(); } });
+            const { panel, close } = Molecules.panel({ title: I18n.t('gw.title'), anchor, headerExtra: progressInline, children: bodyContent, footer: [expandAllBtn, actions], onClose: () => { try { contextInd.destroy(); } catch (_) {} try { (trigger || prevActive)?.focus?.(); } catch (_) {} onCancel?.(); } });
             const loading = Molecules.loadingOverlay({});
             panel.appendChild(loading.root);
             const loadingHandler = wireOverlayToEvents(loading);
             let closed = false;
-            const animateOut = async (cb) => { if (closed) return; closed = true; await close(true); try { (trigger || prevActive)?.focus?.(); } catch (_) {} cb?.(); };
-            const handleCancel = () => { if (closed) return; closed = true; close(); };
+            const animateOut = async (cb) => { if (closed) return; closed = true; contextInd.destroy(); await close(true); try { (trigger || prevActive)?.focus?.(); } catch (_) {} cb?.(); };
+            const handleCancel = () => { if (closed) return; closed = true; contextInd.destroy(); close(); };
             async function handleSubmit() {
                 const payload = [];
                 let incomplete = false;
@@ -637,6 +667,8 @@
                 try {
                     const result = await onSubmit?.(payload, { onEvent: loadingHandler });
                     loading.setState('finalizing');
+                    await new Promise(r => setTimeout(r, 140));
+                    loading.hide();
                     await animateOut(() => { result?.onSuccess?.(); });
                 } catch (err) {
                     submitBtn.classList.remove('is-loading');
@@ -658,14 +690,14 @@
                     const details = document.createElement('details');
                     details.className = 'pe-panel-error__details';
                     const sum = document.createElement('summary');
-                    sum.textContent = 'Ver detalhes técnicos';
+                    sum.textContent = I18n.t('gw.details');
                     const pre = document.createElement('pre');
                     pre.textContent = JSON.stringify({ code: idx.code, ...idx.technical }, null, 2);
                     details.appendChild(sum); details.appendChild(pre);
                     box.appendChild(details);
                     errorSlot.appendChild(box);
                     Anim.fadeIn(box, { duration: 0.28 });
-                    if (err instanceof NetError && err.retryable) Molecules.toast(`${idx.title}\n${idx.description}`, 'error', { actionLabel: 'Tentar novamente', onAction: () => handleSubmit(), details: idx.technical });
+                    if (err instanceof NetError && err.retryable) Molecules.toast(`${idx.title}\n${idx.description}`, 'error', { actionLabel: I18n.t('gw.retry'), onAction: () => handleSubmit(), details: idx.technical });
                     else Molecules.toast(`${idx.title}\n${idx.description}`, 'error', { details: idx.technical });
                 }
             }
@@ -711,7 +743,7 @@
                 const d = document.createElement('details');
                 d.className = 'pe-toast__details';
                 const sum = document.createElement('summary');
-                sum.textContent = 'Detalhes técnicos';
+                sum.textContent = I18n.t('toast.details');
                 const pre = document.createElement('pre');
                 pre.textContent = typeof details === 'string' ? details : JSON.stringify(details, null, 2);
                 d.appendChild(sum); d.appendChild(pre);

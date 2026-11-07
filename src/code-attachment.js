@@ -10,37 +10,37 @@
         actions.className = 'pe-code-actions';
         const copyBtn = document.createElement('button');
         copyBtn.type = 'button'; copyBtn.className = 'pe-code-action';
-        copyBtn.innerHTML = `${Atoms.icon('copy').outerHTML}<span>Copiar</span>`;
+        copyBtn.innerHTML = `${Atoms.icon('copy').outerHTML}<span>${Utils.escapeHtml(I18n.t('ca.copy'))}</span>`;
         const clearBtn = document.createElement('button');
         clearBtn.type = 'button'; clearBtn.className = 'pe-code-action';
-        clearBtn.innerHTML = `${Atoms.icon('trash').outerHTML}<span>Limpar</span>`;
+        clearBtn.innerHTML = `${Atoms.icon('trash').outerHTML}<span>${Utils.escapeHtml(I18n.t('ca.clear'))}</span>`;
         actions.appendChild(copyBtn); actions.appendChild(clearBtn);
         const tabs = document.createElement('div');
         tabs.className = 'pe-code-tabs';
         const tabPaste = document.createElement('button');
         tabPaste.type = 'button'; tabPaste.className = 'pe-code-tab is-active';
-        tabPaste.innerHTML = `${Atoms.icon('paste').outerHTML}<span>Colar trecho</span>`;
+        tabPaste.innerHTML = `${Atoms.icon('paste').outerHTML}<span>${Utils.escapeHtml(I18n.t('ca.pasteTab'))}</span>`;
         const tabFile = document.createElement('button');
         tabFile.type = 'button'; tabFile.className = 'pe-code-tab';
-        tabFile.innerHTML = `${Atoms.icon('clip').outerHTML}<span>Anexar arquivo</span>`;
+        tabFile.innerHTML = `${Atoms.icon('clip').outerHTML}<span>${Utils.escapeHtml(I18n.t('ca.attachTab'))}</span>`;
         tabs.appendChild(tabPaste); tabs.appendChild(tabFile);
         const pastePane = document.createElement('div');
         pastePane.className = 'pe-code-pane';
         const ta = document.createElement('textarea');
         ta.className = 'pe-code-textarea';
-        ta.placeholder = 'Cole a função ou o trecho onde ocorre o problema…';
+        ta.placeholder = I18n.t('ca.placeholder');
         ta.rows = 4;
         const err = document.createElement('div');
         err.className = 'pe-code-error';
-        err.innerHTML = `${Atoms.icon('alert').outerHTML}<span>Adicione pelo menos 3 caracteres para usar este contexto.</span>`;
+        err.innerHTML = `${Atoms.icon('alert').outerHTML}<span>${Utils.escapeHtml(I18n.t('ca.minChars'))}</span>`;
         const footer = document.createElement('div');
         footer.className = 'pe-code-textarea-footer';
         const langSelect = document.createElement('select');
         langSelect.className = 'pe-code-lang';
-        ['JavaScript','TypeScript','Python','Java','Go','Rust','C','C++','C#','PHP','Ruby','Swift','Kotlin','SQL','Shell','HTML','CSS','JSON','YAML','Outro'].forEach(lang => { const o = document.createElement('option'); o.textContent = lang; langSelect.appendChild(o); });
+        ['JavaScript','TypeScript','Python','Java','Go','Rust','C','C++','C#','PHP','Ruby','Swift','Kotlin','SQL','Shell','HTML','CSS','JSON','YAML'].forEach(lang => { const o = document.createElement('option'); o.textContent = lang; langSelect.appendChild(o); }); (() => { const o = document.createElement('option'); o.textContent = I18n.t('ca.other'); langSelect.appendChild(o); })();
         const count = document.createElement('span');
         count.className = 'pe-code-count';
-        count.textContent = '0 caracteres';
+        count.textContent = I18n.t('ca.chars.zero');
         footer.appendChild(langSelect); footer.appendChild(count);
         pastePane.appendChild(ta); pastePane.appendChild(err); pastePane.appendChild(footer);
         const filePane = document.createElement('div');
@@ -50,12 +50,12 @@
         dropzone.className = 'pe-dropzone';
         dropzone.innerHTML = `
             <span class="pe-dropzone__icon">${Atoms.icon('upload').outerHTML}</span>
-            <span class="pe-dropzone__title">Arraste um arquivo ou escolha um abaixo</span>
-            <span class="pe-dropzone__hint"><code>.js</code> <code>.ts</code> <code>.py</code> · máx ${Utils.formatBytes(CONFIG.MAX_FILE_SIZE)} · até ${CONFIG.MAX_FILE_COUNT} arquivos</span>
+            <span class="pe-dropzone__title">${Utils.escapeHtml(I18n.t('ca.dropTitle'))}</span>
+            <span class="pe-dropzone__hint"><code>.js</code> <code>.ts</code> <code>.py</code> · ${Utils.escapeHtml(I18n.t('ca.maxSize', { size: Utils.formatBytes(CONFIG.MAX_FILE_SIZE) }))} · ${Utils.escapeHtml(I18n.t('ca.maxFiles', { n: CONFIG.MAX_FILE_COUNT }))}</span>
         `;
         const pickBtn = document.createElement('button');
         pickBtn.type = 'button'; pickBtn.className = 'pe-dropzone__btn';
-        pickBtn.innerHTML = `${Atoms.icon('doc').outerHTML}<span>Escolher arquivo</span>`;
+        pickBtn.innerHTML = `${Atoms.icon('doc').outerHTML}<span>${Utils.escapeHtml(I18n.t('ca.pickFile'))}</span>`;
         dropzone.appendChild(pickBtn);
         const fileInput = document.createElement('input');
         fileInput.type = 'file'; fileInput.multiple = true;
@@ -70,7 +70,7 @@
         function emit() { onUpdate?.(); }
         function updateCount() {
             const n = ta.value.length;
-            count.textContent = `${n} ${n === 1 ? 'caractere' : 'caracteres'}`;
+            count.textContent = I18n.tPlural('ca.char', n, { one: I18n.t('ca.char.one', { n }), other: I18n.t('ca.char.other', { n }) });
             const hasError = n > 0 && n < 3;
             ta.classList.toggle('is-error', hasError);
             count.classList.toggle('is-error', hasError);
@@ -100,9 +100,9 @@
         async function readFiles(fileListIn) {
             const incoming = Array.from(fileListIn);
             const remaining = CONFIG.MAX_FILE_COUNT - state.files.length;
-            if (remaining <= 0) { Molecules.toast(`Máximo de ${CONFIG.MAX_FILE_COUNT} arquivos atingido.`, 'error'); return; }
+            if (remaining <= 0) { Molecules.toast(I18n.t('ca.maxFilesReached', { n: CONFIG.MAX_FILE_COUNT }), 'error'); return; }
             for (const file of incoming.slice(0, remaining)) {
-                if (file.size > CONFIG.MAX_FILE_SIZE) { Molecules.toast(`"${file.name}" excede ${Utils.formatBytes(CONFIG.MAX_FILE_SIZE)}.`, 'error'); continue; }
+                if (file.size > CONFIG.MAX_FILE_SIZE) { Molecules.toast(I18n.t('ca.fileTooBig', { name: file.name, size: Utils.formatBytes(CONFIG.MAX_FILE_SIZE) }), 'error'); continue; }
                 try {
                     const content = await file.text();
                     state.files.push({ name: file.name, size: file.size, content });
@@ -110,14 +110,14 @@
                     const chips = fileList.querySelectorAll('.pe-file-chip');
                     if (chips.length) Anim.pulseSuccessClass(chips[chips.length - 1]);
                     emit();
-                } catch (e) { Molecules.toast(`Falha ao ler "${file.name}".`, 'error'); }
+                } catch (e) { Molecules.toast(I18n.t('ca.readFail', { name: file.name }), 'error'); }
             }
         }
         tabPaste.addEventListener('click', () => setMode('paste'));
         tabFile.addEventListener('click', () => setMode('file'));
         ta.addEventListener('input', () => { state.codeText = ta.value; updateCount(); emit(); });
         langSelect.addEventListener('change', () => { state.language = langSelect.value; emit(); });
-        copyBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); const txt = state.mode === 'paste' ? ta.value : ''; if (!txt) return; try { ta.select(); document.execCommand('copy'); } catch (_) {} const lbl = copyBtn.querySelector('span'); if (lbl) { const old = lbl.textContent; lbl.textContent = 'Copiado!'; setTimeout(() => { lbl.textContent = old; }, 1200); } });
+        copyBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); const txt = state.mode === 'paste' ? ta.value : ''; if (!txt) return; try { ta.select(); document.execCommand('copy'); } catch (_) {} const lbl = copyBtn.querySelector('span'); if (lbl) { const old = lbl.textContent; lbl.textContent = I18n.t('ca.copied'); setTimeout(() => { lbl.textContent = old; }, 1200); } });
         clearBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); state.codeText = ''; state.files = []; ta.value = ''; renderFiles(); updateCount(); emit(); });
         pickBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); fileInput.click(); });
         dropzone.addEventListener('click', (e) => { if (e.target.closest('.pe-dropzone__btn')) return; fileInput.click(); });

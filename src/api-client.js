@@ -135,7 +135,7 @@
                                 }
                                 lastErr = ErrorIndexer.build({
                                     code: 'OUTPUT_TRUNCATED',
-                                    message: 'A resposta continuou atingindo o limite de tokens.',
+                                    message: I18n.t('api.truncatedCont'),
                                     meta: { ...err.meta, partialOutput }
                                 });
                                 throw lastErr;
@@ -171,7 +171,7 @@
                     } catch (_) {}
                 };
                 if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-                    const err = ErrorIndexer.build({ code: 'OFFLINE', message: 'Você está offline.' });
+                    const err = ErrorIndexer.build({ code: 'OFFLINE', message: I18n.t('api.offline') });
                     emitHistoryEarly({ payload: null, output: '', error: { code: 'OFFLINE', message: err.message }, meta: {} });
                     reject(err);
                     return;
@@ -305,11 +305,11 @@
                             }
                             try { emit({ type: 'stream_done', tokens: tokenCount }); } catch (_) {}
                             if (responseAccum.trim()) finalize(null, responseAccum.trim());
-                            else finalize(ErrorIndexer.build({ code: 'EMPTY_RESPONSE', message: lastFinishReason === 'content_filter' ? 'Conteúdo bloqueado pelo filtro de segurança do provedor.' : 'A API não retornou conteúdo.', meta: { finishReason: lastFinishReason } }));
+                            else finalize(ErrorIndexer.build({ code: 'EMPTY_RESPONSE', message: lastFinishReason === 'content_filter' ? I18n.t('api.contentFilter') : I18n.t('api.emptyResponse'), meta: { finishReason: lastFinishReason } }));
                         }
                     }
                 }
-                const reqObj = { abort: () => { if (aborted || settled) return; aborted = true; clearWatchdogs(); try { reqRef?.abort?.(); } catch (_) {} finalize(ErrorIndexer.build({ code: 'ABORTED', message: 'Requisição cancelada.' })); } };
+                const reqObj = { abort: () => { if (aborted || settled) return; aborted = true; clearWatchdogs(); try { reqRef?.abort?.(); } catch (_) {} finalize(ErrorIndexer.build({ code: 'ABORTED', message: I18n.t('api.aborted') })); } };
                 State._currentRequest = reqObj;
                 State.pendingAbort = reqObj.abort;
                 emit({ type: 'phase', phase: 'dispatching' });
@@ -383,7 +383,7 @@
                         try { data = JSON.parse(res.responseText); }
                         catch {
                             const headers = ErrorIndexer.parseHeaders(res.responseHeaders);
-                            finalize(ErrorIndexer.build({ code: 'BAD_JSON', message: 'Resposta inválida da API.', meta: { status: res.status, contentType: headers['content-type'] || '', snippet: ErrorIndexer.truncate(res.responseText) } }));
+                            finalize(ErrorIndexer.build({ code: 'BAD_JSON', message: I18n.t('api.badJson'), meta: { status: res.status, contentType: headers['content-type'] || '', snippet: ErrorIndexer.truncate(res.responseText) } }));
                             return;
                         }
                         if (useStream && !receivedFirstToken) emit({ type: 'fallback' });
@@ -399,14 +399,14 @@
                             return;
                         }
                         if (typeof content !== 'string' || !content.trim()) {
-                            finalize(ErrorIndexer.build({ code: 'EMPTY_RESPONSE', message: finishReason === 'content_filter' ? 'Conteúdo bloqueado por filtro de segurança.' : (refusal ? `Provedor recusou: ${refusal}` : 'A API não retornou conteúdo.'), meta: { status: res.status, finishReason, refusal, provider: ErrorIndexer.extractProviderError(data) } }));
+                            finalize(ErrorIndexer.build({ code: 'EMPTY_RESPONSE', message: finishReason === 'content_filter' ? I18n.t('api.contentFilter') : (refusal ? I18n.t('api.providerRefused', { msg: refusal }) : I18n.t('api.emptyResponse')), meta: { status: res.status, finishReason, refusal, provider: ErrorIndexer.extractProviderError(data) } }));
                             return;
                         }
                         finalize(null, content.trim());
                     },
-                    onerror: () => { if (aborted) return; finalize(ErrorIndexer.build({ code: 'NETWORK', message: 'Falha de rede ao contatar a API.' })); },
-                    ontimeout: () => { if (aborted) return; finalize(ErrorIndexer.build({ code: 'TIMEOUT', message: 'Tempo limite excedido.', meta: { timeoutMs, payloadKB, timeoutContextKB, payloadSize: Utils.byteSize(payloadForSize) } })); },
-                    onabort: () => { if (aborted) return; aborted = true; finalize(ErrorIndexer.build({ code: 'ABORTED', message: 'Requisição cancelada.' })); }
+                    onerror: () => { if (aborted) return; finalize(ErrorIndexer.build({ code: 'NETWORK', message: I18n.t('api.networkFail') })); },
+                    ontimeout: () => { if (aborted) return; finalize(ErrorIndexer.build({ code: 'TIMEOUT', message: I18n.t('api.timeout'), meta: { timeoutMs, payloadKB, timeoutContextKB, payloadSize: Utils.byteSize(payloadForSize) } })); },
+                    onabort: () => { if (aborted) return; aborted = true; finalize(ErrorIndexer.build({ code: 'ABORTED', message: I18n.t('api.aborted') })); }
                 });
                 emit({ type: 'phase', phase: 'awaiting_ttfb' });
                 if (useStream) startWatchdogs();
@@ -423,7 +423,7 @@
                 { ...options, skipContext: true }
             );
             const parsed = Utils.parseJSON(raw);
-            if (!parsed || !Array.isArray(parsed.questions) || !parsed.questions.length) throw ErrorIndexer.build({ code: 'BAD_JSON', message: 'Não foi possível gerar perguntas.', meta: { snippet: ErrorIndexer.truncate(raw) } });
+            if (!parsed || !Array.isArray(parsed.questions) || !parsed.questions.length) throw ErrorIndexer.build({ code: 'BAD_JSON', message: I18n.t('api.cantGenerateQuestions'), meta: { snippet: ErrorIndexer.truncate(raw) } });
             const cleaned = parsed.questions
                 .filter(q => q && typeof q.question === 'string' && q.question.trim())
                 .map((q, i) => {
@@ -434,7 +434,7 @@
                     if (q.allowCode === true) item.allowCode = true;
                     return item;
                 }).slice(0, 5);
-            if (!cleaned.length) throw ErrorIndexer.build({ code: 'EMPTY_RESPONSE', message: 'Nenhuma pergunta válida.', meta: { snippet: ErrorIndexer.truncate(raw) } });
+            if (!cleaned.length) throw ErrorIndexer.build({ code: 'EMPTY_RESPONSE', message: I18n.t('api.noValidQuestions'), meta: { snippet: ErrorIndexer.truncate(raw) } });
             return cleaned;
         },
 

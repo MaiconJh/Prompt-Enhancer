@@ -17,21 +17,21 @@
         const HISTORY_BYTES_MAX = 65_536;
         const SNIPPET_MAX = 240;
         const CATALOG = {
-            OFFLINE:{category:'connection',title:'Sem conexão',description:'Verifique sua internet e tente novamente.',retryable:false,actionKey:null},
-            NETWORK:{category:'connection',title:'Falha de rede',description:'Não foi possível contatar o servidor.',retryable:true,actionKey:'retry'},
-            PROVIDER_DOWN:{category:'server',title:'Provedor indisponível',description:'O servidor retornou um erro 5xx.',retryable:true,actionKey:'retry'},
-            PROVIDER_RATE_LIMIT:{category:'rate',title:'Limite do provedor (429)',description:'Muitas requisições em pouco tempo.',retryable:false,actionKey:null},
-            PROVIDER_QUOTA:{category:'quota',title:'Cota esgotada (402)',description:'Saldo do provedor esgotado.',retryable:false,actionKey:'open-params'},
-            HTTP_CLIENT:{category:'client',title:'Erro do cliente',description:'Requisição rejeitada pelo servidor (4xx).',retryable:false,actionKey:'retry'},
-            TIMEOUT:{category:'timeout',title:'Tempo limite excedido',description:'Sem resposta no tempo esperado.',retryable:true,actionKey:'retry-no-context'},
-            EMPTY_RESPONSE:{category:'content',title:'Resposta vazia',description:'O provedor não retornou conteúdo útil.',retryable:false,actionKey:'open-params'},
-            OUTPUT_TRUNCATED:{category:'content',title:'Resposta interrompida',description:'O modelo atingiu o limite de saída e a continuação automática não conseguiu concluir a resposta.',retryable:false,actionKey:'retry'},
-            BAD_JSON:{category:'content',title:'Resposta inválida',description:'JSON malformado ou inesperado.',retryable:false,actionKey:'retry-nostream'},
-            LOCAL_RATE_LIMIT:{category:'rate',title:'Limite local atingido',description:'Aguarde antes de novas chamadas.',retryable:false,actionKey:null},
-            ABORTED:{category:'abort',title:'Cancelado',description:'Operação interrompida pelo usuário.',retryable:false,actionKey:null},
-            NO_FIRST_BYTE:{category:'timeout',title:'Servidor não respondeu',description:'Nenhum byte recebido do servidor.',retryable:true,actionKey:'retry-no-context'},
-            STALL:{category:'timeout',title:'Streaming estagnado',description:'Sem novos tokens por alguns segundos.',retryable:true,actionKey:'retry'},
-            STREAM_PARSE_ERROR:{category:'content',title:'Erro no streaming',description:'Formato SSE inesperado do servidor.',retryable:false,actionKey:'retry-nostream'}
+            OFFLINE:{category:'connection',get title() { return I18n.t('err.OFFLINE.title'); },get description() { return I18n.t('err.OFFLINE.desc'); },retryable:false,actionKey:null},
+            NETWORK:{category:'connection',get title() { return I18n.t('err.NETWORK.title'); },get description() { return I18n.t('err.NETWORK.desc'); },retryable:true,actionKey:'retry'},
+            PROVIDER_DOWN:{category:'server',get title() { return I18n.t('err.PROVIDER_DOWN.title'); },get description() { return I18n.t('err.PROVIDER_DOWN.desc'); },retryable:true,actionKey:'retry'},
+            PROVIDER_RATE_LIMIT:{category:'rate',get title() { return I18n.t('err.PROVIDER_RATE_LIMIT.title'); },get description() { return I18n.t('err.PROVIDER_RATE_LIMIT.desc'); },retryable:false,actionKey:null},
+            PROVIDER_QUOTA:{category:'quota',get title() { return I18n.t('err.PROVIDER_QUOTA.title'); },get description() { return I18n.t('err.PROVIDER_QUOTA.desc'); },retryable:false,actionKey:'open-params'},
+            HTTP_CLIENT:{category:'client',get title() { return I18n.t('err.HTTP_CLIENT.title'); },get description() { return I18n.t('err.HTTP_CLIENT.desc'); },retryable:false,actionKey:'retry'},
+            TIMEOUT:{category:'timeout',get title() { return I18n.t('err.TIMEOUT.title'); },get description() { return I18n.t('err.TIMEOUT.desc'); },retryable:true,actionKey:'retry-no-context'},
+            EMPTY_RESPONSE:{category:'content',get title() { return I18n.t('err.EMPTY_RESPONSE.title'); },get description() { return I18n.t('err.EMPTY_RESPONSE.desc'); },retryable:false,actionKey:'open-params'},
+            OUTPUT_TRUNCATED:{category:'content',get title() { return I18n.t('err.OUTPUT_TRUNCATED.title'); },get description() { return I18n.t('err.OUTPUT_TRUNCATED.desc'); },retryable:false,actionKey:'retry'},
+            BAD_JSON:{category:'content',get title() { return I18n.t('err.BAD_JSON.title'); },get description() { return I18n.t('err.BAD_JSON.desc'); },retryable:false,actionKey:'retry-nostream'},
+            LOCAL_RATE_LIMIT:{category:'rate',get title() { return I18n.t('err.LOCAL_RATE_LIMIT.title'); },get description() { return I18n.t('err.LOCAL_RATE_LIMIT.desc'); },retryable:false,actionKey:null},
+            ABORTED:{category:'abort',get title() { return I18n.t('err.ABORTED.title'); },get description() { return I18n.t('err.ABORTED.desc'); },retryable:false,actionKey:null},
+            NO_FIRST_BYTE:{category:'timeout',get title() { return I18n.t('err.NO_FIRST_BYTE.title'); },get description() { return I18n.t('err.NO_FIRST_BYTE.desc'); },retryable:true,actionKey:'retry-no-context'},
+            STALL:{category:'timeout',get title() { return I18n.t('err.STALL.title'); },get description() { return I18n.t('err.STALL.desc'); },retryable:true,actionKey:'retry'},
+            STREAM_PARSE_ERROR:{category:'content',get title() { return I18n.t('err.STREAM_PARSE_ERROR.title'); },get description() { return I18n.t('err.STREAM_PARSE_ERROR.desc'); },retryable:false,actionKey:'retry-nostream'}
         };
         function safeJsonParse(text) { try { return JSON.parse(text); } catch (_) { return null; } }
         function truncate(text, max = SNIPPET_MAX) { if (typeof text !== 'string') return ''; const s = text.replace(/\s+/g, ' ').trim(); return s.length > max ? s.slice(0, max).trimEnd() + '…' : s; }
@@ -79,22 +79,22 @@
         function codeForStatus(status) { if (status === 429) return 'PROVIDER_RATE_LIMIT'; if (status === 402) return 'PROVIDER_QUOTA'; if (status >= 500) return 'PROVIDER_DOWN'; if (status >= 400) return 'HTTP_CLIENT'; return 'NETWORK'; }
         function defaultMessageFor(code, status) {
             switch (code) {
-                case 'OFFLINE': return 'Você está offline.';
-                case 'NETWORK': return status ? `Resposta inesperada (HTTP ${status}).` : 'Falha de rede.';
-                case 'PROVIDER_DOWN': return `Servidor indisponível${status ? ` (HTTP ${status})` : ''}.`;
-                case 'PROVIDER_RATE_LIMIT': return 'Limite do provedor atingido (429).';
-                case 'PROVIDER_QUOTA': return 'Cota/saldo esgotado no provedor (402).';
-                case 'HTTP_CLIENT': return `Requisição rejeitada${status ? ` (HTTP ${status})` : ''}.`;
-                case 'TIMEOUT': return 'Tempo limite excedido.';
-                case 'EMPTY_RESPONSE': return 'A API não retornou conteúdo.';
-                case 'OUTPUT_TRUNCATED': return 'A resposta atingiu o limite de tokens e não pôde ser concluída automaticamente.';
-                case 'BAD_JSON': return 'Resposta inválida da API.';
-                case 'LOCAL_RATE_LIMIT': return 'Limite local de requisições atingido.';
-                case 'ABORTED': return 'Requisição cancelada.';
-                case 'NO_FIRST_BYTE': return 'Nenhum byte recebido do servidor.';
-                case 'STALL': return 'Streaming estagnado.';
-                case 'STREAM_PARSE_ERROR': return 'Falha ao interpretar stream SSE.';
-                default: return 'Erro inesperado.';
+                case 'OFFLINE': return I18n.t('err.OFFLINE.defaultMsg');
+                case 'NETWORK': return status ? I18n.t('err.NETWORK.defaultMsgStatus',{status}) : I18n.t('err.NETWORK.defaultMsg');
+                case 'PROVIDER_DOWN': return I18n.t('err.PROVIDER_DOWN.defaultMsg',{status: status?` (HTTP ${status})`:''});
+                case 'PROVIDER_RATE_LIMIT': return I18n.t('err.PROVIDER_RATE_LIMIT.defaultMsg');
+                case 'PROVIDER_QUOTA': return I18n.t('err.PROVIDER_QUOTA.defaultMsg');
+                case 'HTTP_CLIENT': return I18n.t('err.HTTP_CLIENT.defaultMsg',{status: status?` (HTTP ${status})`:''});
+                case 'TIMEOUT': return I18n.t('err.TIMEOUT.defaultMsg');
+                case 'EMPTY_RESPONSE': return I18n.t('err.EMPTY_RESPONSE.defaultMsg');
+                case 'OUTPUT_TRUNCATED': return I18n.t('err.OUTPUT_TRUNCATED.defaultMsg');
+                case 'BAD_JSON': return I18n.t('err.BAD_JSON.defaultMsg');
+                case 'LOCAL_RATE_LIMIT': return I18n.t('err.LOCAL_RATE_LIMIT.defaultMsg');
+                case 'ABORTED': return I18n.t('err.ABORTED.defaultMsg');
+                case 'NO_FIRST_BYTE': return I18n.t('err.NO_FIRST_BYTE.defaultMsg');
+                case 'STALL': return I18n.t('err.STALL.defaultMsg');
+                case 'STREAM_PARSE_ERROR': return I18n.t('err.STREAM_PARSE_ERROR.defaultMsg');
+                default: return I18n.t('err.UNKNOWN.defaultMsg');
             }
         }
         function fromHttpResponse(status, data, rawHeaders, rawText) {
@@ -112,18 +112,18 @@
         function classify(err) {
             const code = err?.code || 'UNKNOWN';
             const meta = err?.meta || {};
-            const entry = CATALOG[code] || { category: 'unknown', title: 'Erro', description: 'Ocorreu um erro inesperado.', retryable: false, actionKey: null };
+            const entry = CATALOG[code] || { category: 'unknown', get title(){return I18n.t('err.UNKNOWN.title');}, get description(){return I18n.t('err.UNKNOWN.desc');}, retryable: false, actionKey: null };
             const provider = meta.provider || {};
             const providerMsg = provider.message || '';
             const providerName = provider.provider || '';
             const providerCode = String(meta.providerCode || provider.type || '').toUpperCase();
             let title = entry.title, description = entry.description;
             if (meta.status && (code === 'PROVIDER_DOWN' || code === 'HTTP_CLIENT')) title = `${title} (${meta.status})`;
-            if (code === 'PROVIDER_RATE_LIMIT' && meta.retryAfterMs) description = `${description} Aguarde ~${Math.ceil(meta.retryAfterMs / 1000)}s.`;
-            if (code === 'LOCAL_RATE_LIMIT' && meta.retryAfterMs) description = `Aguarde ~${Math.ceil(meta.retryAfterMs / 1000)}s antes de novas chamadas.`;
-            if (code === 'TIMEOUT' && meta.timeoutMs) description = `Sem resposta em ${(meta.timeoutMs / 1000).toFixed(0)}s${meta.payloadKB ? ` (payload ${meta.payloadKB.toFixed(1)} KB)` : ''}.`;
-            if (code === 'EMPTY_RESPONSE') { if (meta.finishReason === 'content_filter') description = 'Conteúdo bloqueado pelo filtro de segurança do provedor.'; else if (meta.refusal) description = `Provedor recusou: ${meta.refusal}`; }
-            if (code === 'BAD_JSON' && meta.contentType) description = `Recebido "${meta.contentType}" em vez de JSON.`;
+            if (code === 'PROVIDER_RATE_LIMIT' && meta.retryAfterMs) description = `${description} ${I18n.t('err.waitSeconds',{n:Math.ceil(meta.retryAfterMs/1000)})}`;
+            if (code === 'LOCAL_RATE_LIMIT' && meta.retryAfterMs) description = I18n.t('err.localWait',{n:Math.ceil(meta.retryAfterMs/1000)})
+            if (code === 'TIMEOUT' && meta.timeoutMs) description = I18n.t('err.timeoutMs',{s:(meta.timeoutMs/1000).toFixed(0), payload: meta.payloadKB?` (payload ${meta.payloadKB.toFixed(1)} KB)`:''})
+            if (code === 'EMPTY_RESPONSE') { if (meta.finishReason === 'content_filter') description = I18n.t('err.contentFilter'); else if (meta.refusal) description = I18n.t('err.providerRefused',{msg:meta.refusal}); }
+            if (code === 'BAD_JSON' && meta.contentType) description = I18n.t('err.receivedInstead', { ct: meta.contentType });
             if (providerMsg) {
                 if (providerCode === 'PROMOTION_MODEL_LIMIT_REACHED' || /sign up/i.test(providerMsg)) {
                     description = providerMsg;

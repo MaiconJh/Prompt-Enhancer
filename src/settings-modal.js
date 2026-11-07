@@ -16,7 +16,7 @@
         } catch (error) {
             systemPromptDraft = SystemPromptManager.defaultConfig();
             console.error('[PE] Falha ao carregar o system prompt:', error);
-            Molecules.toast('Não foi possível carregar o system prompt salvo. Redefina-o ou tente novamente.', 'error', { details: error.message });
+            Molecules.toast(I18n.t('sm.sp.toast.loadFail'), 'error', { details: error.message });
         }
         let activeTab = initialTab;
         let selectedSystemPreset = '';
@@ -26,6 +26,7 @@
         let providerRequest;
         let isSaving = false;
         let prevFooterDirty = false;
+        let i18nRefresh = null;
 
         const backdrop = document.createElement('div');
         backdrop.className = 'pe-modal-backdrop pe-scope';
@@ -34,22 +35,22 @@
         panel.className = 'pe-panel pe-modal';
         panel.setAttribute('role', 'dialog');
         panel.setAttribute('aria-modal', 'true');
-        panel.setAttribute('aria-label', 'Configurações');
+        panel.setAttribute('aria-label', I18n.t('sm.title'));
 
         const header = document.createElement('div');
         header.className = 'pe-panel__header';
         const heading = document.createElement('div');
         heading.className = 'pe-modal-heading';
         const h4 = document.createElement('h4');
-        h4.textContent = 'Configurações';
+        h4.textContent = I18n.t('sm.title');
         const headingHint = document.createElement('p');
-        headingHint.textContent = 'Personalize como o Prompt Enhancer trabalha.';
+        headingHint.textContent = I18n.t('sm.hint');
         heading.append(h4, headingHint);
         header.appendChild(heading);
         const closeBtn = document.createElement('button');
         closeBtn.type = 'button';
         closeBtn.className = 'pe-panel__close';
-        closeBtn.setAttribute('aria-label', 'Fechar');
+        closeBtn.setAttribute('aria-label', I18n.t('sm.footer.closeAria'));
         closeBtn.appendChild(Atoms.icon('x'));
         closeBtn.addEventListener('click', close);
         header.appendChild(closeBtn);
@@ -57,15 +58,17 @@
 
         const tabsBar = document.createElement('div');
         tabsBar.className = 'pe-modal-tabs';
+        tabsBar.setAttribute('data-section-label', I18n.t('sm.tabs.section'));
         tabsBar.setAttribute('role', 'tablist');
-        tabsBar.setAttribute('aria-label', 'Abas de configurações');
-        const tabDefs = [
-            { key: 'params', label: 'Parâmetros', icon: 'sliders', title: 'Parâmetros de aprimoramento', description: 'Defina os limites e a intensidade usados nas respostas.' },
-            { key: 'context', label: 'Contexto & Idioma', icon: 'folder', title: 'Contexto e idioma', description: 'Configure o contexto do projeto e o estilo das respostas.' },
-            { key: 'systemPrompt', label: 'System prompt', icon: 'doc', title: 'System prompt', description: 'Edite as instruções e gerencie seus presets pessoais.' },
-            { key: 'history', label: 'Histórico', icon: 'guide', title: 'Histórico de execuções', description: 'Revise resultados e detalhes das chamadas anteriores.' },
-            { key: 'provider', label: 'Provedor', icon: 'gear', title: 'Provedor de API', description: 'Configure e teste o endpoint usado pelo script.' }
+        tabsBar.setAttribute('aria-label', I18n.t('sm.tabs.aria'));
+        const getTabDefs = () => [
+            { key: 'params', label: I18n.t('sm.tab.params.label'), icon: 'sliders', title: I18n.t('sm.tab.params.title'), description: I18n.t('sm.tab.params.desc') },
+            { key: 'context', label: I18n.t('sm.tab.context.label'), icon: 'folder', title: I18n.t('sm.tab.context.title'), description: I18n.t('sm.tab.context.desc') },
+            { key: 'systemPrompt', label: I18n.t('sm.tab.systemPrompt.label'), icon: 'doc', title: I18n.t('sm.tab.systemPrompt.title'), description: I18n.t('sm.tab.systemPrompt.desc') },
+            { key: 'history', label: I18n.t('sm.tab.history.label'), icon: 'guide', title: I18n.t('sm.tab.history.title'), description: I18n.t('sm.tab.history.desc') },
+            { key: 'provider', label: I18n.t('sm.tab.provider.label'), icon: 'gear', title: I18n.t('sm.tab.provider.title'), description: I18n.t('sm.tab.provider.desc') }
         ];
+        const tabDefs = getTabDefs();
         if (!tabDefs.some(tab => tab.key === activeTab)) activeTab = 'params';
         const tabButtons = {};
         tabDefs.forEach(t => {
@@ -117,7 +120,7 @@
                 else if (!e.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
             } else if (e.target instanceof Element && e.target.closest('[role="tab"]') && ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) {
                 e.preventDefault();
-                const keys = tabDefs.map(tab => tab.key);
+                const keys = getTabDefs().map(tab => tab.key);
                 const current = keys.indexOf(activeTab);
                 const next = e.key === 'Home' ? 0 : e.key === 'End' ? keys.length - 1 : (current + (e.key === 'ArrowRight' ? 1 : -1) + keys.length) % keys.length;
                 activeTab = keys[next];
@@ -137,6 +140,7 @@
 
         function close() {
             if (closed) return;
+            if (i18nRefresh) { window.removeEventListener('pe:i18n-changed', i18nRefresh); i18nRefresh = null; }
             closed = true;
             cancelAnimationFrame(openFrame);
             clearTimeout(providerTimer);
@@ -162,7 +166,7 @@
             try {
                 systemPromptDraft = SystemPromptManager.save(systemPromptDraft);
             } catch (error) {
-                Molecules.toast('Não foi possível salvar o system prompt.', 'error', { details: error.message });
+                Molecules.toast(I18n.t('sm.sp.toast.spSaveFail'), 'error', { details: error.message });
                 return;
             }
             ParamSchema.save(cleaned);
@@ -189,7 +193,7 @@
                 }
             } catch (_) {}
             try { GM_setValue('pe_params_configured', true); } catch (_) {}
-            Molecules.toast('Configurações salvas.', 'success');
+            Molecules.toast(I18n.t('sm.saved'), 'success');
             try { onSave?.(cleaned); } catch (_) {}
             close();
         }
@@ -247,10 +251,10 @@
             footerEl.setAttribute('aria-live', 'polite');
             const editing = tab === 'params' || tab === 'context' || tab === 'systemPrompt';
             if (!editing || !dirty) {
-                footerEl.appendChild(Atoms.button({ icon: 'x', label: 'Fechar', ariaLabel: 'Fechar', variant: 'outline', onClick: close }));
+                footerEl.appendChild(Atoms.button({ icon: 'x', label: I18n.t('sm.footer.close'), ariaLabel: I18n.t('sm.footer.closeWindowAria'), variant: 'outline', onClick: close }));
             } else {
-                const cancelBtn = Atoms.button({ icon: 'x', label: 'Cancelar', ariaLabel: 'Cancelar', variant: 'outline', onClick: () => { close(); }, disabled: saving });
-                const saveBtn = Atoms.button({ icon: 'check', label: saving ? 'Salvando' : 'Salvar', ariaLabel: 'Salvar', variant: 'primary', onClick: () => { renderFooter(tab, true, true); applyAndClose(); }, disabled: saving });
+                const cancelBtn = Atoms.button({ icon: 'x', label: I18n.t('sm.footer.cancel'), ariaLabel: I18n.t('sm.footer.cancelAria'), variant: 'outline', onClick: () => { close(); }, disabled: saving });
+                const saveBtn = Atoms.button({ icon: 'check', label: saving ? I18n.t('sm.footer.saving') : I18n.t('sm.footer.save'), ariaLabel: I18n.t('sm.footer.saveAria'), variant: 'primary', onClick: () => { renderFooter(tab, true, true); applyAndClose(); }, disabled: saving });
                 if (saving) saveBtn.classList.add('is-loading');
                 footerEl.appendChild(cancelBtn);
                 footerEl.appendChild(saveBtn);
@@ -273,7 +277,7 @@
             bodyEl.scrollTop = 0;
             bodyEl.style.overflowY = '';
             footerEl.innerHTML = '';
-            const tab = tabDefs.find(item => item.key === activeTab);
+            const tab = getTabDefs().find(item => item.key === activeTab);
             const intro = document.createElement('div');
             intro.className = 'pe-settings-intro';
             const icon = document.createElement('span');
@@ -302,7 +306,7 @@
             const presetsRow = document.createElement('div');
             presetsRow.className = 'pe-param-presets';
             presetsRow.setAttribute('role', 'group');
-            presetsRow.setAttribute('aria-label', 'Predefinições de parâmetros');
+            presetsRow.setAttribute('aria-label', I18n.t('sm.params.presetsAria'));
             const presetButtons = [];
             const updatePresetSelection = () => {
                 const matchingPreset = ParamSchema.PRESETS.find(preset =>
@@ -334,10 +338,18 @@
             updatePresetSelection();
             form.appendChild(presetsRow);
 
+            const langRow = document.createElement('div');
+            langRow.className = 'pe-param-row';
+            langRow.innerHTML = `<label class="pe-param-label" for="pe-ui-language">${Utils.escapeHtml(I18n.t('param.ui_language.label'))}</label><div class="pe-param-control"><select id="pe-ui-language" class="pe-param-input"><option value="auto">${Utils.escapeHtml(I18n.t('param.ui_language.opt.auto'))}</option><option value="pt-BR">${Utils.escapeHtml(I18n.t('param.ui_language.opt.ptBR'))}</option><option value="en">${Utils.escapeHtml(I18n.t('param.ui_language.opt.en'))}</option></select><div class="pe-param-hint">${Utils.escapeHtml(I18n.t('param.ui_language.hint'))}</div></div>`;
+            const langSelect = langRow.querySelector('select');
+            langSelect.value = I18n.getStoredLanguage() || 'auto';
+            langSelect.addEventListener('change', (e) => { I18n.setLanguage(e.target.value); Molecules.toast(I18n.t('bs.langChanged'), 'info'); });
+            form.appendChild(langRow);
+
             ParamSchema.SCHEMA.filter(f => f.type === 'number').forEach(f => {
                 const row = document.createElement('div');
                 row.className = 'pe-param-row';
-                const placeholder = f.key === 'seed' ? 'Aleatório' : (f.default == null ? '' : f.default);
+                const placeholder = f.key === 'seed' ? I18n.t('param.seed.placeholder') : (f.default == null ? '' : f.default);
                 row.innerHTML = `<label class="pe-param-label" for="pe-param-${f.key}">${Utils.escapeHtml(f.label)}</label><div class="pe-param-control"><input type="number" id="pe-param-${f.key}" class="pe-param-input" min="${f.min}" max="${f.max}" step="${f.step}" value="${draft[f.key] == null ? '' : String(draft[f.key])}" placeholder="${placeholder}">${f.hint ? `<div class="pe-param-hint">${Utils.escapeHtml(f.hint)}</div>` : ''}</div>`;
                 form.appendChild(row);
                 row.querySelector('input').addEventListener('input', (e) => {
@@ -358,19 +370,19 @@
 
             const heading = document.createElement('div');
             heading.className = 'pe-provider-section-heading';
-            heading.innerHTML = '<h6>Escolha um modelo</h6><p>Selecione um provedor ou busque diretamente pelo modelo. Abra um modelo para ver detalhes e gerenciar o roteamento.</p>';
+            heading.innerHTML = `<h6>${Utils.escapeHtml(I18n.t('sm.provider.heading'))}</h6><p>${Utils.escapeHtml(I18n.t('sm.provider.headingDesc'))}</p>`;
             form.appendChild(heading);
 
             // Painel de roteamento (Principal + Fallback)
             const routingPanel = document.createElement('div');
             routingPanel.className = 'pe-routing-panel';
-            routingPanel.setAttribute('aria-label', 'Roteamento de provedores');
+            routingPanel.setAttribute('aria-label', I18n.t('sm.provider.routingAria'));
 
             const primaryStep = document.createElement('div');
             primaryStep.className = 'pe-routing-step';
             const primaryLabel = document.createElement('span');
             primaryLabel.className = 'pe-routing-label is-primary';
-            primaryLabel.textContent = 'Principal';
+            primaryLabel.textContent = I18n.t('sm.provider.primary');
             const primaryValue = document.createElement('span');
             primaryValue.className = 'pe-routing-value';
             primaryValue.id = 'pe-routing-primary';
@@ -385,7 +397,7 @@
             fallbackStep.className = 'pe-routing-step';
             const fallbackLabel = document.createElement('span');
             fallbackLabel.className = 'pe-routing-label is-fallback';
-            fallbackLabel.textContent = 'Fallback';
+            fallbackLabel.textContent = I18n.t('sm.provider.fallback');
             const fallbackValue = document.createElement('span');
             fallbackValue.className = 'pe-routing-value';
             fallbackValue.id = 'pe-routing-fallback';
@@ -393,20 +405,20 @@
 
             const clearBtn = Atoms.button({
                 icon: 'trash',
-                label: 'Limpar roteamento',
-                ariaLabel: 'Limpar rota principal e fallback',
+                label: I18n.t('sm.provider.clearRouting'),
+                ariaLabel: I18n.t('sm.provider.clearRoutingAria'),
                 variant: 'ghost',
                 onClick: () => {
                     try {
                         if (typeof ProviderManager !== 'undefined') {
                             ProviderManager.unpin();
                             ProviderManager.setFallback('');
-                            Molecules.toast('Roteamento limpo. O sistema usará a rota padrão.', 'success');
+                            Molecules.toast(I18n.t('sm.provider.clearRoutingOk'), 'success');
                             renderList();
                         }
                     } catch (err) {
                         console.warn('[PE] Falha ao limpar roteamento:', err);
-                        Molecules.toast('Não foi possível limpar o roteamento.', 'error');
+                        Molecules.toast(I18n.t('sm.provider.clearRoutingFail'), 'error');
                     }
                 }
             });
@@ -417,7 +429,7 @@
 
             const loading = document.createElement('div');
             loading.className = 'pe-catalog-loading';
-            loading.textContent = 'Atualizando catálogo…';
+            loading.textContent = I18n.t('sm.provider.updating');
             loading.hidden = true;
             form.appendChild(loading);
 
@@ -426,27 +438,27 @@
             const search = document.createElement('input');
             search.type = 'search';
             search.className = 'pe-param-input';
-            search.placeholder = 'Buscar modelo…';
-            search.setAttribute('aria-label', 'Buscar modelo');
+            search.placeholder = I18n.t('sm.provider.searchPlaceholder');
+            search.setAttribute('aria-label', I18n.t('sm.provider.searchAria'));
 
             const keylessLabel = document.createElement('label');
             keylessLabel.className = 'pe-catalog-toggle';
             const keyless = document.createElement('input');
             keyless.type = 'checkbox';
-            keylessLabel.append(keyless, document.createTextNode('Sem chave'));
+            keylessLabel.append(keyless, document.createTextNode(I18n.t('sm.provider.noKey')));
 
             const streamLabel = document.createElement('label');
             streamLabel.className = 'pe-catalog-toggle';
             const streaming = document.createElement('input');
             streaming.type = 'checkbox';
-            streamLabel.append(streaming, document.createTextNode('Streaming'));
+            streamLabel.append(streaming, document.createTextNode(I18n.t('sm.provider.streaming')));
 
             filters.append(search, keylessLabel, streamLabel);
             form.appendChild(filters);
 
             const accordion = document.createElement('div');
             accordion.className = 'pe-provider-accordion';
-            accordion.setAttribute('aria-label', 'Modelos por provedor');
+            accordion.setAttribute('aria-label', I18n.t('sm.provider.modelsAria'));
             form.appendChild(accordion);
 
             bodyEl.appendChild(form);
@@ -455,15 +467,17 @@
 
             function limitsLabel(entry) {
                 const parts = [];
-                if (entry.limits && entry.limits.rpm !== null && entry.limits.rpm !== undefined) parts.push(`${entry.limits.rpm} req/min`);
-                if (entry.limits && entry.limits.rpd !== null && entry.limits.rpd !== undefined) parts.push(`${entry.limits.rpd} req/dia`);
-                if (entry.limits && entry.limits.note) parts.push(entry.limits.note);
-                return parts.join(' · ') || 'Não informados';
+                if (entry.limits && entry.limits.rpm !== null && entry.limits.rpm !== undefined) parts.push(I18n.t('sm.provider.limits.rpm', { n: entry.limits.rpm }));
+                if (entry.limits && entry.limits.rpd !== null && entry.limits.rpd !== undefined) parts.push(I18n.t('sm.provider.limits.rpd', { n: entry.limits.rpd }));
+                if (entry.limits && entry.limits.note) {
+                    parts.push(entry.limits.noteKey ? I18n.t(entry.limits.noteKey) : entry.limits.note);
+                }
+                return parts.join(' · ') || I18n.t('sm.provider.notInformedPl');
             }
 
             function authLabel(entry) {
-                if (!entry.auth || entry.auth.type === 'none') return 'Sem autenticação';
-                return entry.auth.key === 'anonymous' ? 'Bearer anonymous' : 'Bearer';
+                if (!entry.auth || entry.auth.type === 'none') return I18n.t('sm.provider.noAuth');
+                return entry.auth.key === 'anonymous' ? I18n.t('sm.provider.bearerAnon') : I18n.t('sm.provider.bearer');
             }
 
             function isFreeBadge(entry) {
@@ -495,24 +509,24 @@
                     details.append(dt, dd);
                 };
 
-                addField('Provedor', entry.providerLabel || entry.providerId || 'Desconhecido');
-                addField('Autenticação', authLabel(entry));
-                addField('Limites', limitsLabel(entry));
-                addField('Contexto', entry.modelId || 'Não informado');
+                addField(I18n.t('sm.provider.fieldProvider'), entry.providerLabel || entry.providerId || I18n.t('sm.provider.unknown'));
+                addField(I18n.t('sm.provider.fieldAuth'), authLabel(entry));
+                addField(I18n.t('sm.provider.fieldLimits'), limitsLabel(entry));
+                addField(I18n.t('sm.provider.fieldContext'), entry.modelId || I18n.t('sm.provider.notInformed'));
 
                 const actions = document.createElement('div');
                 actions.className = 'pe-model-details__actions';
 
                 const copyButton = Atoms.buttonNode({
-                    label: 'Copiar JSON',
-                    ariaLabel: `Copiar configuração JSON de ${entry.label}`,
+                    label: I18n.t('sm.provider.copyJson'),
+                    ariaLabel: I18n.t('sm.provider.copyJsonAria', { label: entry.label }),
                     variant: 'ghost'
                 });
                 copyButton.type = 'button';
                 copyButton.addEventListener('click', async (event) => {
                     event.stopPropagation();
                     if (!navigator.clipboard?.writeText) {
-                        Molecules.toast('A cópia para a área de transferência não está disponível.', 'error');
+                        Molecules.toast(I18n.t('sm.provider.copyUnavailable'), 'error');
                         return;
                     }
                     const safeEntry = {
@@ -520,21 +534,21 @@
                         auth: entry.auth ? { type: entry.auth.type, headerName: entry.auth.headerName } : undefined,
                         headers: entry.headers ? Object.fromEntries(Object.entries(entry.headers).map(([name, value]) => [
                             name,
-                            /authorization|api[-_]?key|token|secret/i.test(name) ? '[redigido]' : value
+                            /authorization|api[-_]?key|token|secret/i.test(name) ? I18n.t('sm.provider.redacted') : value
                         ])) : undefined
                     };
                     try {
                         await navigator.clipboard.writeText(JSON.stringify(safeEntry, null, 2));
-                        Molecules.toast('Configuração copiada.', 'success');
+                        Molecules.toast(I18n.t('sm.provider.copyOk'), 'success');
                     } catch (err) {
                         console.warn('[PE] Falha ao copiar a configuração do modelo.', err);
-                        Molecules.toast('Não foi possível copiar a configuração.', 'error');
+                        Molecules.toast(I18n.t('sm.provider.copyFail'), 'error');
                     }
                 });
 
                 const pinButton = Atoms.buttonNode({
-                    label: pinned && pinned.id === entry.id ? 'Rota fixada' : 'Fixar esta rota',
-                    ariaLabel: pinned && pinned.id === entry.id ? 'Esta rota já está fixada' : `Fixar ${entry.label}`,
+                    label: pinned && pinned.id === entry.id ? I18n.t('sm.provider.routePinned') : I18n.t('sm.provider.pinRoute'),
+                    ariaLabel: pinned && pinned.id === entry.id ? I18n.t('sm.provider.pinnedAria') : I18n.t('sm.provider.pinAria', { label: entry.label }),
                     variant: 'primary'
                 });
                 pinButton.type = 'button';
@@ -543,38 +557,38 @@
                     event.stopPropagation();
                     if (pinned && pinned.id === entry.id) return;
                     if (entry.auth && entry.auth.type === 'bearer' && entry.auth.key === '') {
-                        const apiKey = prompt(`Informe a chave de API para ${entry.providerLabel || 'este provedor'}:`);
+                        const apiKey = prompt(I18n.t('sm.provider.apiKeyPrompt', { provider: entry.providerLabel || I18n.t('sm.provider.fieldProvider') }));
                         if (apiKey === null) return;
                         if (!apiKey.trim()) {
-                            Molecules.toast('A chave de API não pode ficar vazia.', 'error');
+                            Molecules.toast(I18n.t('sm.provider.apiKeyEmpty'), 'error');
                             return;
                         }
                         try {
                             GM_setValue('pe_api_key', apiKey.trim());
                         } catch (err) {
-                            Molecules.toast('Não foi possível salvar a chave de API.', 'error', { details: err && err.message });
+                            Molecules.toast(I18n.t('sm.provider.apiKeySaveFail'), 'error', { details: err && err.message });
                             return;
                         }
                     }
                     if (!ProviderManager.pin(entry.id)) {
-                        Molecules.toast('Não foi possível fixar esta rota.', 'error');
+                        Molecules.toast(I18n.t('sm.provider.pinFail'), 'error');
                         return;
                     }
-                    Molecules.toast(`Rota fixada: ${entry.label}`, 'success');
+                    Molecules.toast(I18n.t('sm.provider.pinOk', { label: entry.label }), 'success');
                     renderList();
                 });
 
                 const isFallback = fallbackMatchesEntry(fallback, entry);
                 const isPinned = pinned && pinned.id === entry.id;
                 const fallbackButton = Atoms.buttonNode({
-                    label: isFallback ? 'Remover fallback' : 'Definir como fallback',
-                    ariaLabel: isFallback ? `Remover ${entry.label} do fallback` : `Definir ${entry.label} como fallback`,
+                    label: isFallback ? I18n.t('sm.provider.removeFallback') : I18n.t('sm.provider.setFallback'),
+                    ariaLabel: isFallback ? I18n.t('sm.provider.removeFallbackAria', { label: entry.label }) : I18n.t('sm.provider.setFallbackAria', { label: entry.label }),
                     variant: isFallback ? 'ghost' : 'outline'
                 });
                 fallbackButton.type = 'button';
                 fallbackButton.disabled = !!isPinned;
                 if (isPinned) {
-                    fallbackButton.title = 'Este modelo já é a rota principal; não pode ser fallback.';
+                    fallbackButton.title = I18n.t('sm.provider.fallbackPinnedTitle');
                 }
                 fallbackButton.addEventListener('click', (event) => {
                     event.stopPropagation();
@@ -582,26 +596,26 @@
                     if (isFallback) {
                         try {
                             ProviderManager.setFallback('');
-                            Molecules.toast(`Fallback removido: ${entry.label}`, 'success');
+                            Molecules.toast(I18n.t('sm.provider.fallbackRemovedOk', { label: entry.label }), 'success');
                             renderList();
                         } catch (err) {
                             console.warn('[PE] Falha ao remover fallback:', err);
-                            Molecules.toast('Não foi possível remover o fallback.', 'error');
+                            Molecules.toast(I18n.t('sm.provider.fallbackRemoveFail'), 'error');
                         }
                         return;
                     }
                     // Definir como fallback
                     if (entry.auth && entry.auth.type === 'bearer' && entry.auth.key === '') {
-                        const apiKey = prompt(`Informe a chave de API para ${entry.providerLabel || 'este provedor'}:`);
+                        const apiKey = prompt(I18n.t('sm.provider.apiKeyPrompt', { provider: entry.providerLabel || I18n.t('sm.provider.fieldProvider') }));
                         if (apiKey === null) return;
                         if (!apiKey.trim()) {
-                            Molecules.toast('A chave de API não pode ficar vazia.', 'error');
+                            Molecules.toast(I18n.t('sm.provider.apiKeyEmpty'), 'error');
                             return;
                         }
                         try {
                             GM_setValue('pe_api_key', apiKey.trim());
                         } catch (err) {
-                            Molecules.toast('Não foi possível salvar a chave de API.', 'error', { details: err && err.message });
+                            Molecules.toast(I18n.t('sm.provider.apiKeySaveFail'), 'error', { details: err && err.message });
                             return;
                         }
                     }
@@ -610,9 +624,9 @@
                     let errMsg = '';
                     try {
                         if (typeof ProviderManager === 'undefined') {
-                            errMsg = 'ProviderManager indisponível';
+                            errMsg = 'ProviderManager unavailable';
                         } else if (typeof ProviderManager.add !== 'function') {
-                            errMsg = 'ProviderManager.add não é função';
+                            errMsg = 'ProviderManager.add is not a function';
                         } else {
                             const providerPayload = {
                                 name: String(entry.providerLabel || entry.label || 'Fallback').trim().slice(0, 60),
@@ -622,14 +636,14 @@
                                 headers: { ...(entry.headers || {}) }
                             };
                             if (!providerPayload.url || !providerPayload.model) {
-                                errMsg = 'URL ou modelo vazio';
+                                errMsg = 'Empty URL or model';
                             } else {
                                 const newProvider = ProviderManager.add(providerPayload);
                                 if (newProvider && newProvider.id) {
                                     ProviderManager.setFallback(newProvider.id);
                                     ok = true;
                                 } else {
-                                    errMsg = 'add retornou: ' + JSON.stringify(newProvider);
+                                    errMsg = 'add returned: ' + JSON.stringify(newProvider);
                                 }
                             }
                         }
@@ -638,11 +652,11 @@
                         errMsg = err && err.message ? err.message : String(err);
                     }
                     if (ok) {
-                        Molecules.toast(`Fallback definido: ${entry.label}`, 'success');
+                        Molecules.toast(I18n.t('sm.provider.fallbackOk', { label: entry.label }), 'success');
                         renderList();
                     } else {
                         console.error('[PE] Detalhes falha fallback:', errMsg);
-                        Molecules.toast('Não foi possível definir este modelo como fallback.' + (errMsg ? ' (' + errMsg + ')' : ''), 'error');
+                        Molecules.toast(I18n.t('sm.provider.fallbackFail'), 'error');
                     }
                 });
 
@@ -674,16 +688,16 @@
                     if (pinned) {
                         primaryEl.textContent = `${pinned.label} (${pinned.modelId || pinned.id})`;
                     } else if (activeProvider) {
-                        primaryEl.textContent = `${activeProvider.name || 'Kilo'} (${activeProvider.model || 'padrão'})`;
+                        primaryEl.textContent = `${activeProvider.name || 'Kilo'} (${activeProvider.model || I18n.t('sm.provider.default')})`;
                     } else {
-                        primaryEl.textContent = 'Padrão do sistema';
+                        primaryEl.textContent = I18n.t('sm.provider.defaultSystem');
                     }
                 }
                 if (fallbackEl) {
                     if (fallback) {
                         fallbackEl.textContent = `${fallback.name || 'Fallback'} (${fallback.model || ''})`.trim();
                     } else {
-                        fallbackEl.textContent = 'Nenhum';
+                        fallbackEl.textContent = I18n.t('sm.provider.none');
                     }
                 }
 
@@ -693,11 +707,11 @@
                     empty.setAttribute('role', 'status');
                     const message = document.createElement('p');
                     message.textContent = query
-                        ? `Nenhum modelo corresponde à busca “${query}”.`
-                        : 'Nenhum modelo encontrado com os filtros atuais.';
-                    const clear = Atoms.buttonNode({ label: 'Limpar filtros', variant: 'ghost' });
+                        ? I18n.t('sm.provider.emptySearch', { query })
+                        : I18n.t('sm.provider.emptyFilters');
+                    const clear = Atoms.buttonNode({ label: I18n.t('sm.provider.clearFilters'), variant: 'ghost' });
                     clear.type = 'button';
-                    clear.setAttribute('aria-label', 'Limpar busca e filtros');
+                    clear.setAttribute('aria-label', I18n.t('sm.provider.clearFiltersAria'));
                     clear.addEventListener('click', () => {
                         search.value = '';
                         keyless.checked = false;
@@ -714,7 +728,7 @@
                 groups.forEach((group) => {
                     const title = document.createElement('h6');
                     title.className = 'pe-provider-group-title';
-                    title.textContent = group.providerLabel || group.providerId || 'Provedor';
+                    title.textContent = group.providerLabel || group.providerId || I18n.t('sm.provider.fieldProvider');
                     accordion.appendChild(title);
 
                     (group.entries || []).forEach((entry) => {
@@ -728,7 +742,7 @@
                         header.setAttribute('role', 'button');
                         header.tabIndex = 0;
                         header.setAttribute('aria-expanded', String(isActive));
-                        header.setAttribute('aria-label', `${entry.label}, ${group.providerLabel || 'provedor'}. ${isActive ? 'Recolher detalhes' : 'Expandir detalhes'}.`);
+                        header.setAttribute('aria-label', I18n.t('sm.provider.cardAria', { label: entry.label, provider: group.providerLabel || I18n.t('sm.provider.fieldProvider'), action: isActive ? I18n.t('sm.provider.collapseDetails') : I18n.t('sm.provider.expandDetails') }));
 
                         const info = document.createElement('div');
                         info.className = 'pe-model-info';
@@ -752,10 +766,10 @@
                             badge.textContent = text;
                             badges.appendChild(badge);
                         };
-                        if (isFreeBadge(entry)) addBadge('grátis');
-                        if (entry.capabilities && entry.capabilities.streaming) addBadge('streaming');
-                        if (pinned && pinned.id === entry.id) addBadge('Principal', { isPrimary: true });
-                        if (fallback && fallbackMatchesEntry(fallback, entry)) addBadge('Fallback', { isFallback: true });
+                        if (isFreeBadge(entry)) addBadge(I18n.t('sm.provider.free'));
+                        if (entry.capabilities && entry.capabilities.streaming) addBadge(I18n.t('sm.provider.streaming'));
+                        if (pinned && pinned.id === entry.id) addBadge(I18n.t('sm.provider.primaryBadge'), { isPrimary: true });
+                        if (fallback && fallbackMatchesEntry(fallback, entry)) addBadge(I18n.t('sm.provider.fallbackBadge'), { isFallback: true });
                         const chevron = document.createElement('span');
                         chevron.className = 'pe-chevron';
                         chevron.setAttribute('aria-hidden', 'true');
@@ -810,11 +824,11 @@
             }).catch((err) => {
                 console.warn('[PE] Falha ao atualizar catálogo na aba Provedor.', err);
                 loading.hidden = false;
-                loading.textContent = 'Não foi possível atualizar o catálogo; exibindo entradas disponíveis.';
+                loading.textContent = I18n.t('sm.provider.updateFail');
                 renderList();
             });
 
-            const closeBtn = Atoms.button({ icon: 'x', label: 'Fechar', ariaLabel: 'Fechar janela de configurações', variant: 'primary', onClick: close });
+            const closeBtn = Atoms.button({ icon: 'x', label: I18n.t('sm.footer.close'), ariaLabel: I18n.t('sm.footer.closeWindowAria'), variant: 'primary', onClick: close });
             footerEl.appendChild(closeBtn);
         }
         function renderContext() {
@@ -824,11 +838,11 @@
             const infoBox = document.createElement('div');
             infoBox.className = 'pe-context-info';
             const activeFiles = ProjectContext.list().filter(f => f.enabled);
-            infoBox.innerHTML = `<div class="pe-context-info__title">Contexto do projeto</div><div class="pe-context-info__text">${activeFiles.length} arquivo(s) ativo(s) · ${Utils.formatBytes(ProjectContext.getTotalSize())} · ${ProjectContext.isEnabled() ? 'injeção ON' : 'injeção OFF'}</div><div class="pe-context-info__hint">Anexado automaticamente ao final do system prompt (quando ativado).</div>`;
+            infoBox.innerHTML = `<div class="pe-context-info__title">${Utils.escapeHtml(I18n.t('sm.context.infoTitle'))}</div><div class="pe-context-info__text">${Utils.escapeHtml(I18n.tPlural('sm.context.fileActive', activeFiles.length, { one: I18n.t('sm.context.fileActive.one', { n: activeFiles.length }), other: I18n.t('sm.context.fileActive.other', { n: activeFiles.length }) }))} · ${Utils.formatBytes(ProjectContext.getTotalSize())} · ${ProjectContext.isEnabled() ? I18n.t('sm.context.injectionOn') : I18n.t('sm.context.injectionOff')}</div><div class="pe-context-info__hint">${Utils.escapeHtml(I18n.t('sm.context.hint'))}</div>`;
             const manageBtn = document.createElement('button');
             manageBtn.type = 'button';
             manageBtn.className = 'pe-context-manage';
-            manageBtn.textContent = 'Gerenciar arquivos';
+            manageBtn.textContent = I18n.t('sm.context.manage');
             manageBtn.addEventListener('click', () => { close(); setTimeout(() => State.activeComposer?.actionbar?.contextBtn?.click(), 250); });
             infoBox.appendChild(manageBtn);
             form.appendChild(infoBox);
@@ -850,7 +864,7 @@
             const customTone = ParamSchema.SCHEMA.find(f => f.key === 'response_persona_custom');
             const customToneRow = document.createElement('div');
             customToneRow.className = 'pe-param-row';
-            customToneRow.innerHTML = `<label class="pe-param-label" for="pe-param-${customTone.key}">${Utils.escapeHtml(customTone.label)}</label><div class="pe-param-control"><input type="text" id="pe-param-${customTone.key}" class="pe-param-input" maxlength="${customTone.maxLength}" value="${Utils.escapeHtml(draft[customTone.key] || '')}" placeholder="Ex: sarcástico, mas didático"><div class="pe-param-hint">${Utils.escapeHtml(customTone.hint)}</div></div>`;
+            customToneRow.innerHTML = `<label class="pe-param-label" for="pe-param-${customTone.key}">${Utils.escapeHtml(customTone.label)}</label><div class="pe-param-control"><input type="text" id="pe-param-${customTone.key}" class="pe-param-input" maxlength="${customTone.maxLength}" value="${Utils.escapeHtml(draft[customTone.key] || '')}" placeholder="${I18n.t('param.response_persona_custom.placeholder')}"><div class="pe-param-hint">${Utils.escapeHtml(customTone.hint)}</div></div>`;
             form.appendChild(customToneRow);
             customToneRow.querySelector('input').addEventListener('input', (e) => { draft[customTone.key] = e.target.value; syncFooter('context'); });
             function updateCustomToneVisibility() {
@@ -870,10 +884,10 @@
             intro.className = 'pe-system-prompt__intro';
             const title = document.createElement('h5');
             title.className = 'pe-system-prompt__title';
-            title.textContent = 'Instruções de aprimoramento';
+            title.textContent = I18n.t('sm.sp.introTitle');
             const description = document.createElement('p');
             description.className = 'pe-system-prompt__description';
-            description.textContent = 'Complementa o aprimoramento direto e o fluxo guiado. Contexto do projeto, idioma e personalidade são configurados separadamente.';
+            description.textContent = I18n.t('sm.sp.introDesc');
             intro.append(title, description);
             form.appendChild(intro);
 
@@ -884,15 +898,15 @@
             editorHeading.className = 'pe-system-prompt__section-heading';
             const editorTitle = document.createElement('h6');
             editorTitle.id = 'pe-system-prompt-heading';
-            editorTitle.textContent = 'Prompt ativo';
+            editorTitle.textContent = I18n.t('sm.sp.editorTitle');
             const editorHint = document.createElement('p');
-            editorHint.textContent = 'Edite as instruções usadas pelo script.';
+            editorHint.textContent = I18n.t('sm.sp.editorHint');
             editorHeading.append(editorTitle, editorHint);
 
             const editorLabel = document.createElement('label');
             editorLabel.className = 'pe-system-prompt__label';
             editorLabel.htmlFor = 'pe-system-prompt-editor';
-            editorLabel.textContent = 'Conteúdo do system prompt';
+            editorLabel.textContent = I18n.t('sm.sp.editorLabel');
             const editor = document.createElement('textarea');
             editor.id = 'pe-system-prompt-editor';
             editor.className = 'pe-textarea pe-system-prompt__textarea';
@@ -910,13 +924,14 @@
             feedback.setAttribute('aria-live', 'polite');
             const updateValidation = () => {
                 const result = SystemPromptManager.validatePrompt(systemPromptDraft.prompt);
-                count.textContent = `${result.charCount.toLocaleString('pt-BR')} / ${SystemPromptManager.MAX_LENGTH.toLocaleString('pt-BR')} caracteres`;
+                const loc = I18n.getLanguage() === 'en' ? 'en-US' : 'pt-BR';
+                count.textContent = `${result.charCount.toLocaleString(loc)} / ${SystemPromptManager.MAX_LENGTH.toLocaleString(loc)} ${I18n.t('spm.charsLabel')}`;
                 const state = result.errors.length ? 'error' : (result.warnings.length ? 'warning' : 'valid');
                 feedback.className = `pe-system-prompt__feedback is-${state}`;
                 editor.setAttribute('aria-invalid', String(result.errors.length > 0));
                 feedback.textContent = result.errors.length
                     ? result.errors.join(' ')
-                    : (result.warnings.length ? result.warnings.join(' ') : 'Prompt válido.');
+                    : (result.warnings.length ? result.warnings.join(' ') : I18n.t('spm.valid'));
             };
             editor.addEventListener('input', () => {
                 systemPromptDraft.prompt = editor.value;
@@ -930,13 +945,13 @@
             editorControls.className = 'pe-system-prompt__editor-controls';
 
             const resetBtn = Atoms.button({
-                icon: 'undo', label: 'Redefinir para o padrão', ariaLabel: 'Redefinir para o system prompt padrão',
+                icon: 'undo', label: I18n.t('sm.sp.reset'), ariaLabel: I18n.t('sm.sp.resetAria'),
                 variant: 'outline', onClick: () => {
                     systemPromptDraft.prompt = CONFIG.SYSTEM_PROMPT;
                     editor.value = systemPromptDraft.prompt;
                     updateValidation();
                     syncFooter('systemPrompt');
-                    Molecules.toast('Prompt padrão restaurado no editor. Salve para aplicar.', 'info');
+                    Molecules.toast(I18n.t('sm.sp.resetToast'), 'info');
                 }
             });
             editorControls.appendChild(resetBtn);
@@ -950,21 +965,21 @@
             presetHeading.className = 'pe-system-prompt__section-heading';
             const presetTitle = document.createElement('h6');
             presetTitle.id = 'pe-system-presets-heading';
-            presetTitle.textContent = 'Presets pessoais';
+            presetTitle.textContent = I18n.t('sm.sp.presetsTitle');
             const presetHint = document.createElement('p');
-            presetHint.textContent = `Guarde até ${SystemPromptManager.MAX_PRESETS} versões para reutilizar. As alterações são persistidas ao salvar as configurações.`;
+            presetHint.textContent = I18n.t('sm.sp.presetsHint', { max: SystemPromptManager.MAX_PRESETS });
             presetHeading.append(presetTitle, presetHint);
 
             const presetSelectLabel = document.createElement('label');
             presetSelectLabel.className = 'pe-system-prompt__label';
             presetSelectLabel.htmlFor = 'pe-system-preset-select';
-            presetSelectLabel.textContent = 'Preset salvo';
+            presetSelectLabel.textContent = I18n.t('sm.sp.presetSaved');
             const presetSelect = document.createElement('select');
             presetSelect.id = 'pe-system-preset-select';
             presetSelect.className = 'pe-param-input pe-system-prompt__select';
             const emptyOption = document.createElement('option');
             emptyOption.value = '';
-            emptyOption.textContent = 'Selecione um preset';
+            emptyOption.textContent = I18n.t('sm.sp.presetSelect');
             presetSelect.appendChild(emptyOption);
             systemPromptDraft.presets.forEach((preset) => {
                 const option = document.createElement('option');
@@ -981,20 +996,20 @@
             const presetNameLabel = document.createElement('label');
             presetNameLabel.className = 'pe-system-prompt__label';
             presetNameLabel.htmlFor = 'pe-system-preset-name';
-            presetNameLabel.textContent = 'Nome do preset';
+            presetNameLabel.textContent = I18n.t('sm.sp.presetName');
             const presetName = document.createElement('input');
             presetName.id = 'pe-system-preset-name';
             presetName.className = 'pe-param-input pe-system-prompt__name';
             presetName.type = 'text';
             presetName.maxLength = SystemPromptManager.MAX_PRESET_NAME;
             presetName.autocomplete = 'off';
-            presetName.placeholder = 'Ex.: Revisão de código';
+            presetName.placeholder = I18n.t('sm.sp.presetNamePlaceholder');
             presetName.setAttribute('aria-describedby', 'pe-system-preset-name-hint');
             presetName.value = presetSelect.value;
             const presetNameHint = document.createElement('div');
             presetNameHint.id = 'pe-system-preset-name-hint';
             presetNameHint.className = 'pe-system-prompt__helper';
-            presetNameHint.textContent = 'Use um nome novo para criar ou o nome selecionado para atualizar.';
+            presetNameHint.textContent = I18n.t('sm.sp.presetNameHint');
             presetSelect.addEventListener('change', () => {
                 selectedSystemPreset = presetSelect.value;
                 presetName.value = presetSelect.value;
@@ -1016,29 +1031,29 @@
 
             const presetActions = document.createElement('div');
             presetActions.className = 'pe-system-prompt__preset-actions';
-            const loadPresetBtn = Atoms.button({ icon: 'check', label: 'Carregar', ariaLabel: 'Carregar preset selecionado', variant: 'outline', onClick: () => {
+            const loadPresetBtn = Atoms.button({ icon: 'check', label: I18n.t('sm.sp.load'), ariaLabel: I18n.t('sm.sp.loadAria'), variant: 'outline', onClick: () => {
                 const selected = systemPromptDraft.presets.find(p => p.name === presetSelect.value);
-                if (!selected) { Molecules.toast('Selecione um preset para carregar.', 'error'); return; }
+                if (!selected) { Molecules.toast(I18n.t('sm.sp.toast.selectLoad'), 'error'); return; }
                 systemPromptDraft.prompt = selected.prompt;
                 editor.value = selected.prompt;
                 updateValidation();
                 syncFooter('systemPrompt');
-                Molecules.toast(`Preset "${selected.name}" carregado. Salve para aplicar.`, 'success');
+                Molecules.toast(I18n.t('sm.sp.toast.loaded', { name: selected.name }), 'success');
                 editor.focus();
             }});
-            const savePresetBtn = Atoms.button({ icon: 'check', label: 'Salvar preset', ariaLabel: 'Salvar ou atualizar preset', variant: 'outline', onClick: () => {
+            const savePresetBtn = Atoms.button({ icon: 'check', label: I18n.t('sm.sp.savePreset'), ariaLabel: I18n.t('sm.sp.savePresetAria'), variant: 'outline', onClick: () => {
                 const name = presetName.value.trim();
                 const check = SystemPromptManager.validatePrompt(systemPromptDraft.prompt);
                 if (check.errors.length) { Molecules.toast(check.errors.join(' '), 'error'); editor.focus(); return; }
                 if (!name || name.length > SystemPromptManager.MAX_PRESET_NAME) {
-                    Molecules.toast(`Informe um nome de até ${SystemPromptManager.MAX_PRESET_NAME} caracteres.`, 'error');
+                    Molecules.toast(I18n.t('sm.sp.toast.nameLen', { max: SystemPromptManager.MAX_PRESET_NAME }), 'error');
                     presetName.focus();
                     return;
                 }
                 const existing = systemPromptDraft.presets.find(p => p.name.toLocaleLowerCase() === name.toLocaleLowerCase());
-                if (existing && !confirm(`O preset "${existing.name}" já existe. Substituí-lo?`)) return;
+                if (existing && !confirm(I18n.t('sm.sp.toast.existsReplace', { name: existing.name }))) return;
                 if (!existing && systemPromptDraft.presets.length >= SystemPromptManager.MAX_PRESETS) {
-                    Molecules.toast(`Limite de ${SystemPromptManager.MAX_PRESETS} presets atingido.`, 'error');
+                    Molecules.toast(I18n.t('sm.sp.toast.limit', { max: SystemPromptManager.MAX_PRESETS }), 'error');
                     return;
                 }
                 const presets = systemPromptDraft.presets.map(preset => ({ ...preset }));
@@ -1048,22 +1063,22 @@
                 try {
                     persistSystemPromptPresets(presets);
                 } catch (error) {
-                    Molecules.toast('Não foi possível salvar o preset.', 'error', { details: error.message });
+                    Molecules.toast(I18n.t('sm.sp.toast.saveFail'), 'error', { details: error.message });
                     return;
                 }
                 selectedSystemPreset = name;
                 render();
-                Molecules.toast(`Preset "${name}" salvo.`, 'success');
+                Molecules.toast(I18n.t('sm.sp.toast.saved', { name }), 'success');
             }});
-            const renamePresetBtn = Atoms.button({ icon: 'doc', label: 'Renomear', ariaLabel: 'Renomear preset selecionado', variant: 'outline', onClick: () => {
+            const renamePresetBtn = Atoms.button({ icon: 'doc', label: I18n.t('sm.sp.rename'), ariaLabel: I18n.t('sm.sp.renameAria'), variant: 'outline', onClick: () => {
                 const selectedIndex = systemPromptDraft.presets.findIndex(p => p.name === presetSelect.value);
                 const name = presetName.value.trim();
-                if (selectedIndex < 0) { Molecules.toast('Selecione um preset para renomear.', 'error'); return; }
-                if (!name || name.length > SystemPromptManager.MAX_PRESET_NAME) { Molecules.toast(`Informe um nome de até ${SystemPromptManager.MAX_PRESET_NAME} caracteres.`, 'error'); return; }
+                if (selectedIndex < 0) { Molecules.toast(I18n.t('sm.sp.toast.selectRename'), 'error'); return; }
+                if (!name || name.length > SystemPromptManager.MAX_PRESET_NAME) { Molecules.toast(I18n.t('sm.sp.toast.nameLen', { max: SystemPromptManager.MAX_PRESET_NAME }), 'error'); return; }
                 const duplicateIndex = systemPromptDraft.presets.findIndex((p, i) => i !== selectedIndex && p.name.toLocaleLowerCase() === name.toLocaleLowerCase());
                 const presets = systemPromptDraft.presets.map(preset => ({ ...preset }));
                 if (duplicateIndex >= 0) {
-                    if (!confirm(`O preset "${systemPromptDraft.presets[duplicateIndex].name}" já existe. Substituí-lo e excluir o preset renomeado?`)) return;
+                    if (!confirm(I18n.t('sm.sp.toast.existsReplaceDelete', { name: systemPromptDraft.presets[duplicateIndex].name }))) return;
                     presets.splice(duplicateIndex, 1);
                     const adjustedIndex = selectedIndex > duplicateIndex ? selectedIndex - 1 : selectedIndex;
                     presets.splice(adjustedIndex, 1, { name, prompt: presets[adjustedIndex].prompt });
@@ -1073,29 +1088,29 @@
                 try {
                     persistSystemPromptPresets(presets);
                 } catch (error) {
-                    Molecules.toast('Não foi possível renomear o preset.', 'error', { details: error.message });
+                    Molecules.toast(I18n.t('sm.sp.toast.renameFail'), 'error', { details: error.message });
                     return;
                 }
                 selectedSystemPreset = name;
                 render();
-                Molecules.toast('Preset renomeado.', 'success');
+                Molecules.toast(I18n.t('sm.sp.toast.renamed'), 'success');
             }});
-            const deletePresetBtn = Atoms.button({ icon: 'trash', label: 'Excluir', ariaLabel: 'Excluir preset selecionado', variant: 'outline', onClick: () => {
+            const deletePresetBtn = Atoms.button({ icon: 'trash', label: I18n.t('sm.sp.delete'), ariaLabel: I18n.t('sm.sp.deleteAria'), variant: 'outline', onClick: () => {
                 const selectedIndex = systemPromptDraft.presets.findIndex(p => p.name === presetSelect.value);
-                if (selectedIndex < 0) { Molecules.toast('Selecione um preset para excluir.', 'error'); return; }
+                if (selectedIndex < 0) { Molecules.toast(I18n.t('sm.sp.toast.selectDelete'), 'error'); return; }
                 const name = systemPromptDraft.presets[selectedIndex].name;
-                if (!confirm(`Excluir o preset "${name}"?`)) return;
+                if (!confirm(I18n.t('sm.sp.toast.confirmDelete', { name }))) return;
                 const presets = systemPromptDraft.presets.map(preset => ({ ...preset }));
                 presets.splice(selectedIndex, 1);
                 try {
                     persistSystemPromptPresets(presets);
                 } catch (error) {
-                    Molecules.toast('Não foi possível excluir o preset.', 'error', { details: error.message });
+                    Molecules.toast(I18n.t('sm.sp.toast.deleteFail'), 'error', { details: error.message });
                     return;
                 }
                 selectedSystemPreset = '';
                 render();
-                Molecules.toast('Preset excluído.', 'success');
+                Molecules.toast(I18n.t('sm.sp.toast.deleted'), 'success');
             }});
             [loadPresetBtn, savePresetBtn, renamePresetBtn, deletePresetBtn].forEach(button => presetActions.appendChild(button));
             const hasSelection = Boolean(presetSelect.value);
@@ -1108,16 +1123,16 @@
             const defaultDetails = document.createElement('details');
             defaultDetails.className = 'pe-system-prompt__default';
             const defaultSummary = document.createElement('summary');
-            defaultSummary.textContent = 'Ver prompt padrão original';
+            defaultSummary.textContent = I18n.t('sm.sp.defaultSummary');
             const defaultDescription = document.createElement('p');
             defaultDescription.className = 'pe-system-prompt__helper';
-            defaultDescription.textContent = 'Referência somente leitura; redefinir copia este conteúdo para o editor.';
+            defaultDescription.textContent = I18n.t('sm.sp.defaultHint');
             const defaultEditor = document.createElement('textarea');
             defaultEditor.id = 'pe-system-prompt-default';
             defaultEditor.className = 'pe-textarea pe-system-prompt__default-textarea';
             defaultEditor.rows = 6;
             defaultEditor.readOnly = true;
-            defaultEditor.setAttribute('aria-label', 'System prompt padrão original do script, somente leitura');
+            defaultEditor.setAttribute('aria-label', I18n.t('sm.sp.defaultAria'));
             defaultEditor.value = CONFIG.SYSTEM_PROMPT;
             defaultDetails.append(defaultSummary, defaultDescription, defaultEditor);
             form.appendChild(defaultDetails);
@@ -1132,15 +1147,15 @@
             if (!runs.length) {
                 const empty = document.createElement('div');
                 empty.className = 'pe-history-empty';
-                empty.textContent = 'Nenhuma execução registrada ainda. Cada execução (Aprimorar ou Guiado) aparecerá aqui com suas chamadas à API aninhadas.';
+                empty.textContent = I18n.t('sm.history.empty');
                 bodyEl.appendChild(empty);
-                const closeBtn = Atoms.button({ icon: 'x', label: 'Fechar', ariaLabel: 'Fechar', variant: 'primary', onClick: close });
+                const closeBtn = Atoms.button({ icon: 'x', label: I18n.t('sm.footer.close'), ariaLabel: I18n.t('sm.footer.closeWindowAria'), variant: 'primary', onClick: close });
                 footerEl.appendChild(closeBtn);
                 return;
             }
             const container = document.createElement('div');
             const statusIconMap = { success: '✓', error: '✗', aborted: '⏸', pending: '○' };
-            const outcomeLabels = { applied: 'Aplicado', cancelled: 'Cancelado', error: 'Erro', aborted: 'Abortado', pending: 'Pendente' };
+            const outcomeLabels = { applied: I18n.t('sm.history.outcome.applied'), cancelled: I18n.t('sm.history.outcome.cancelled'), error: I18n.t('sm.history.outcome.error'), aborted: I18n.t('sm.history.outcome.aborted'), pending: I18n.t('sm.history.outcome.pending') };
             const copyRunJson = async (run) => {
                 const json = JSON.stringify(run, null, 2);
                 if (navigator.clipboard?.writeText) {
@@ -1155,7 +1170,7 @@
                     document.body.appendChild(textarea);
                     try {
                         textarea.select();
-                        if (!document.execCommand('copy')) throw new Error('O navegador não permitiu copiar para a área de transferência.');
+                        if (!document.execCommand('copy')) throw new Error(I18n.t('sm.provider.copyUnavailable'));
                     } finally {
                         textarea.remove();
                     }
@@ -1163,14 +1178,14 @@
             };
             const deleteRun = (runId, runCard) => {
                 if (!runId) return;
-                if (!confirm('Excluir esta execução do histórico? Esta ação não pode ser desfeita.')) return;
+                if (!confirm(I18n.t('sm.history.deleteConfirm'))) return;
                 try {
                     const raw = GM_getValue('pe_runs', '[]');
                     const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
                     const list = Array.isArray(parsed) ? parsed : [];
                     const filtered = list.filter(r => r && r.id !== runId);
                     GM_setValue('pe_runs', JSON.stringify(filtered));
-                    Molecules.toast('Execução removida do histórico.', 'success');
+                    Molecules.toast(I18n.t('sm.history.deleteOk'), 'success');
                     runCard?.remove();
                     render();
                     setTimeout(() => {
@@ -1179,7 +1194,7 @@
                     }, 0);
                 } catch (error) {
                     console.error('[PE] Falha ao excluir execução do histórico:', error);
-                    Molecules.toast('Não foi possível excluir a execução.', 'error', { details: error.message });
+                    Molecules.toast(I18n.t('sm.history.deleteFail'), 'error', { details: error.message });
                 }
             };
             runs.forEach((run) => {
@@ -1195,14 +1210,14 @@
 
                 const statusIcon = statusIconMap[run.status] || '○';
                 const statusClass = run.status === 'success' ? 'is-success' : run.status === 'error' ? 'is-error' : run.status === 'aborted' ? 'is-aborted' : '';
-                const typeBadge = run.type === 'guided' ? 'Guiado' : 'Aprimorar';
+                const typeBadge = run.type === 'guided' ? I18n.t('sm.history.type.guided') : I18n.t('sm.history.type.enhance');
                 const preview = Utils.truncate(run.input || '', 100);
-                const time = new Date(run.startedAt).toLocaleString('pt-BR');
+                const time = I18n.formatDate(run.startedAt);
                 const dur = run.durationMs >= 1000 ? `${(run.durationMs / 1000).toFixed(2)}s` : `${run.durationMs}ms`;
                 const callsCount = (run.calls && run.calls.length) || 0;
-                const outcomeLabel = outcomeLabels[run.outcome] || run.outcome || '—';
+                const outcomeLabel = outcomeLabels[run.outcome] || run.outcome || I18n.t('sm.history.dash');
                 const outcomeClass = `pe-outcome-${run.outcome || 'pending'}`;
-                const legacyBadge = run.meta && run.meta.legacy ? '<span class="pe-history-legacy-badge">legado</span>' : '';
+                const legacyBadge = run.meta && run.meta.legacy ? `<span class="pe-history-legacy-badge">${Utils.escapeHtml(I18n.t('sm.history.legacy'))}</span>` : '';
 
                 header.innerHTML = `
                     <span class="pe-history-item__status ${statusClass}">${statusIcon}</span>
@@ -1214,7 +1229,7 @@
                         <span class="pe-history-item__meta">
                             <span>${Utils.escapeHtml(time)}</span>
                             <span>· ${dur}</span>
-                            <span>· ${callsCount} chamada(s)</span>
+                            <span>· ${I18n.t('sm.history.callsCount', { n: callsCount })}</span>
                             <span class="pe-history-outcome ${outcomeClass}">${Utils.escapeHtml(outcomeLabel)}</span>
                         </span>
                     </span>
@@ -1227,16 +1242,16 @@
                 heading.appendChild(header);
 
                 const copyBtn = Atoms.buttonNode({
-                    label: 'Copiar JSON',
-                    ariaLabel: `Copiar execução ${typeBadge} como JSON`,
+                    label: I18n.t('sm.history.copyJson'),
+                    ariaLabel: I18n.t('sm.history.copyJsonAria', { type: typeBadge }),
                     variant: 'outline',
                     onClick: async () => {
                         try {
                             await copyRunJson(run);
-                            Molecules.toast('Execução copiada como JSON.', 'success');
+                            Molecules.toast(I18n.t('sm.history.copyOk'), 'success');
                         } catch (error) {
                             console.error('[PE] Falha ao copiar execução do histórico:', error);
-                            Molecules.toast('Não foi possível copiar o JSON desta execução.', 'error', { details: error.message });
+                            Molecules.toast(I18n.t('sm.history.copyFail'), 'error', { details: error.message });
                         }
                     }
                 });
@@ -1269,23 +1284,23 @@
                     details.appendChild(sec);
                 };
 
-                addSection('Entrada', run.input || '(vazio)');
+                addSection(I18n.t('sm.history.section.input'), run.input || I18n.t('sm.history.empty.value'));
 
                 const ctx = run.contextInfo;
                 if (ctx && (ctx.activeCount || ctx.totalBytes || ctx.enabled)) {
-                    addSection('Contexto', `${ctx.activeCount || 0} arquivo(s) · ${Utils.formatBytes(ctx.totalBytes || 0)} · ${ctx.enabled ? 'injeção ON' : 'injeção OFF'}`, { isKV: true });
+                    addSection(I18n.t('sm.history.section.context'), `${I18n.tPlural('sm.context.fileActive', ctx.activeCount || 0, { one: I18n.t('sm.context.fileActive.one', { n: ctx.activeCount || 0 }), other: I18n.t('sm.context.fileActive.other', { n: ctx.activeCount || 0 }) })} · ${Utils.formatBytes(ctx.totalBytes || 0)} · ${ctx.enabled ? I18n.t('sm.context.injectionOn') : I18n.t('sm.context.injectionOff')}`, { isKV: true });
                 } else {
-                    addSection('Contexto', '—', { isKV: true });
+                    addSection(I18n.t('sm.history.section.context'), I18n.t('sm.history.dash'), { isKV: true });
                 }
 
-                addSection('Parâmetros', JSON.stringify(run.params || {}, null, 2));
+                addSection(I18n.t('sm.history.section.params'), JSON.stringify(run.params || {}, null, 2));
 
                 if (run.error) {
-                    addSection('Resultado final — Erro', JSON.stringify(run.error, null, 2), { isError: true });
+                    addSection(I18n.t('sm.history.section.resultError'), JSON.stringify(run.error, null, 2), { isError: true });
                 } else if (run.output) {
-                    addSection('Resultado final', run.output);
+                    addSection(I18n.t('sm.history.section.result'), run.output);
                 } else {
-                    addSection('Resultado final', '(sem saída)', { isKV: true });
+                    addSection(I18n.t('sm.history.section.result'), I18n.t('sm.history.empty.output'), { isKV: true });
                 }
 
                 const deleteSection = document.createElement('div');
@@ -1294,8 +1309,8 @@
                 deleteSection.style.justifyContent = 'flex-end';
                 const deleteBtn = Atoms.button({
                     icon: 'trash',
-                    label: 'Excluir execução',
-                    ariaLabel: `Excluir execução de ${typeBadge.toLowerCase()} de ${time} do histórico`,
+                    label: I18n.t('sm.history.delete'),
+                    ariaLabel: I18n.t('sm.history.deleteAria', { type: typeBadge.toLowerCase(), time }),
                     variant: 'outline',
                     onClick: () => deleteRun(run.id, card)
                 });
@@ -1305,7 +1320,7 @@
                 if (run.calls && run.calls.length) {
                     const callsLabel = document.createElement('div');
                     callsLabel.className = 'pe-history-section__label';
-                    callsLabel.textContent = `Chamadas à API (${run.calls.length})`;
+                    callsLabel.textContent = I18n.t('sm.history.section.calls', { n: run.calls.length });
                     details.appendChild(callsLabel);
 
                     run.calls.forEach((call) => {
@@ -1319,15 +1334,15 @@
                         const callStatus = call.error ? 'is-error' : 'is-success';
                         const callStatusIcon = call.error ? '✗' : '✓';
                         const callDur = call.durationMs >= 1000 ? `${(call.durationMs / 1000).toFixed(2)}s` : `${call.durationMs}ms`;
-                        const kindLabel = call.kind === 'questions' ? 'Perguntas' : call.kind === 'enhance-with-answers' ? 'Aprimorar c/ respostas' : 'Principal';
-                        const retryTag = call.retryOf ? ' · retry' : '';
-                        const streamTag = call.streamUsed ? ' · stream' : '';
-                        const fbTag = call.fallbackUsed ? ' · fallback' : '';
+                        const kindLabel = call.kind === 'questions' ? I18n.t('sm.history.call.questions') : call.kind === 'enhance-with-answers' ? I18n.t('sm.history.call.enhanceWithAnswers') : I18n.t('sm.history.call.main');
+                        const retryTag = call.retryOf ? ` · ${I18n.t('sm.history.call.retry')}` : '';
+                        const streamTag = call.streamUsed ? ` · ${I18n.t('sm.history.call.stream')}` : '';
+                        const fbTag = call.fallbackUsed ? ` · ${I18n.t('sm.history.call.fallback')}` : '';
 
                         callHeader.innerHTML = `
                             <span class="pe-history-call__status ${callStatus}">${callStatusIcon}</span>
                             <span class="pe-history-call__main">
-                                <span class="pe-history-call__title">${Utils.escapeHtml(kindLabel)} · tentativa ${call.attempt}${retryTag}</span>
+                                <span class="pe-history-call__title">${Utils.escapeHtml(kindLabel)} · ${I18n.t('sm.history.call.attempt', { n: call.attempt })}${retryTag}</span>
                                 <span class="pe-history-call__meta">${callDur}${streamTag}${fbTag}</span>
                             </span>
                             <span class="pe-history-call__chevron">${Atoms.icon('chevronD').outerHTML}</span>
@@ -1364,14 +1379,14 @@
                         };
 
                         if (call.payload) {
-                            if (call.payload.system) addCallSection('System prompt', call.payload.system);
-                            if (call.payload.messages && call.payload.messages.length) addCallSection('Mensagens', JSON.stringify(call.payload.messages, null, 2));
-                            if (call.payload.params) addCallSection('Parâmetros', JSON.stringify(call.payload.params, null, 2));
-                            if (call.payload.meta) addCallSection('Metadados', JSON.stringify(call.payload.meta, null, 2));
+                            if (call.payload.system) addCallSection(I18n.t('sm.history.call.systemPrompt'), call.payload.system);
+                            if (call.payload.messages && call.payload.messages.length) addCallSection(I18n.t('sm.history.call.messages'), JSON.stringify(call.payload.messages, null, 2));
+                            if (call.payload.params) addCallSection(I18n.t('sm.history.call.params'), JSON.stringify(call.payload.params, null, 2));
+                            if (call.payload.meta) addCallSection(I18n.t('sm.history.call.meta'), JSON.stringify(call.payload.meta, null, 2));
                         }
-                        if (call.output) addCallSection('Saída', call.output);
-                        else addCallSection('Saída', '(vazio)', { isKV: true });
-                        if (call.error) addCallSection('Erro', JSON.stringify(call.error, null, 2), { isError: true });
+                        if (call.output) addCallSection(I18n.t('sm.history.call.output'), call.output);
+                        else addCallSection(I18n.t('sm.history.call.output'), I18n.t('sm.history.empty.value'), { isKV: true });
+                        if (call.error) addCallSection(I18n.t('sm.history.call.error'), JSON.stringify(call.error, null, 2), { isError: true });
 
                         callEl.appendChild(callDetails);
                         details.appendChild(callEl);
@@ -1383,14 +1398,34 @@
             });
             bodyEl.appendChild(container);
 
-            const clearBtn = Atoms.button({ icon: 'trash', label: 'Limpar histórico', ariaLabel: 'Limpar histórico', variant: 'outline', onClick: () => {
-                if (confirm('Limpar todo o histórico de aprimoramentos?')) { EnhancementHistory.clear(); render(); }
+            const clearBtn = Atoms.button({ icon: 'trash', label: I18n.t('sm.history.clear'), ariaLabel: I18n.t('sm.history.clearAria'), variant: 'outline', onClick: () => {
+                if (confirm(I18n.t('sm.history.clearConfirm'))) { EnhancementHistory.clear(); render(); }
             }});
-            const closeBtn = Atoms.button({ icon: 'x', label: 'Fechar', ariaLabel: 'Fechar', variant: 'primary', onClick: close });
+            const closeBtn = Atoms.button({ icon: 'x', label: I18n.t('sm.footer.close'), ariaLabel: I18n.t('sm.footer.closeWindowAria'), variant: 'primary', onClick: close });
             footerEl.appendChild(clearBtn);
             footerEl.appendChild(closeBtn);
         }
 
+        i18nRefresh = () => {
+            const sc = bodyEl.scrollTop;
+            h4.textContent = I18n.t('sm.title');
+            headingHint.textContent = I18n.t('sm.hint');
+            panel.setAttribute('aria-label', I18n.t('sm.title'));
+            closeBtn.setAttribute('aria-label', I18n.t('sm.footer.closeAria'));
+            tabsBar.setAttribute('aria-label', I18n.t('sm.tabs.aria'));
+            tabsBar.setAttribute('data-section-label', I18n.t('sm.tabs.section'));
+            const tabs = getTabDefs();
+            Object.entries(tabButtons).forEach(([k, b]) => {
+                const t = tabs.find(tab => tab.key === k);
+                if (!t) return;
+                b.setAttribute('aria-label', t.label);
+                const lbl = b.querySelector('.pe-modal-tab__label');
+                if (lbl) lbl.textContent = t.label;
+            });
+            render();
+            bodyEl.scrollTop = sc;
+        };
+        window.addEventListener('pe:i18n-changed', i18nRefresh);
         render();
         return { close };
     }

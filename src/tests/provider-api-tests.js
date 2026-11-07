@@ -6,6 +6,7 @@ import vm from 'node:vm';
 
 const sourceDir = new URL('../', import.meta.url);
 const configSource = await readFile(new URL('config.js', sourceDir), 'utf8');
+const i18nSource = await readFile(new URL('i18n.js', sourceDir), 'utf8');
 const managerSource = await readFile(new URL('provider-manager.js', sourceDir), 'utf8');
 const errorsSource = await readFile(new URL('network-errors.js', sourceDir), 'utf8');
 const systemPromptSource = await readFile(new URL('system-prompt-manager.js', sourceDir), 'utf8');
@@ -73,6 +74,8 @@ function createApiHarness(responses, customPrompt = '', projectContextSuffix = '
 
     vm.runInContext(configSource, context, { filename: 'src/config.js' });
     vm.runInContext('CONFIG.STREAM = false; CONFIG.RETRY_MAX = 0;', context);
+    vm.runInContext(i18nSource, context, { filename: 'src/i18n.js' });
+    context.I18n = context.window.I18n;
     vm.runInContext(managerSource, context, { filename: 'src/provider-manager.js' });
     vm.runInContext(errorsSource, context, { filename: 'src/network-errors.js' });
     vm.runInContext(systemPromptSource, context, { filename: 'src/system-prompt-manager.js' });

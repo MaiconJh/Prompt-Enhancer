@@ -14,29 +14,29 @@
             const trimmed = text.trim();
             const errors = [];
             const warnings = [];
-            if (!trimmed) errors.push('O system prompt não pode ficar vazio.');
-            if (text.length > MAX_LENGTH) errors.push(`O limite é ${MAX_LENGTH.toLocaleString('pt-BR')} caracteres.`);
-            if (trimmed && trimmed.length < 80) warnings.push('Prompt curto: confira se as instruções e o resultado esperado estão claros.');
-            if (trimmed && !/[\r\n]/.test(trimmed)) warnings.push('Considere separar instruções em linhas para facilitar a leitura.');
+            if (!trimmed) errors.push(I18n.t('spm.empty'));
+            if (text.length > MAX_LENGTH) errors.push(I18n.t('spm.limitChars',{max:MAX_LENGTH.toLocaleString(I18n.getLanguage()==='en'?'en-US':'pt-BR')}));
+            if (trimmed && trimmed.length < 80) warnings.push(I18n.t('spm.shortPrompt'));
+            if (trimmed && !/[\r\n]/.test(trimmed)) warnings.push(I18n.t('spm.separateLines'));
             return { errors, warnings, charCount: text.length };
         }
 
         function normalize(config) {
-            if (!config || typeof config !== 'object' || Array.isArray(config)) throw new Error('Os dados salvos do system prompt estão inválidos.');
+            if (!config || typeof config !== 'object' || Array.isArray(config)) throw new Error(I18n.t('spm.invalidData'));
             const prompt = typeof config.prompt === 'string' ? config.prompt : CONFIG.SYSTEM_PROMPT;
             const promptCheck = validatePrompt(prompt);
             if (promptCheck.errors.length) throw new Error(promptCheck.errors.join(' '));
             const presets = Array.isArray(config.presets) ? config.presets : [];
-            if (presets.length > MAX_PRESETS) throw new Error(`O limite é ${MAX_PRESETS} presets.`);
+            if (presets.length > MAX_PRESETS) throw new Error(I18n.t('spm.limitPresets',{max:MAX_PRESETS}));
             const names = new Set();
             const cleanPresets = presets.map((preset) => {
-                if (!preset || typeof preset !== 'object') throw new Error('Há um preset inválido nos dados salvos.');
+                if (!preset || typeof preset !== 'object') throw new Error(I18n.t('spm.invalidPreset'));
                 const name = String(preset.name || '').trim();
                 const value = typeof preset.prompt === 'string' ? preset.prompt : '';
                 const key = name.toLocaleLowerCase();
-                if (!name || name.length > MAX_PRESET_NAME) throw new Error(`O nome do preset deve ter entre 1 e ${MAX_PRESET_NAME} caracteres.`);
-                if (names.has(key)) throw new Error(`Há presets duplicados com o nome "${name}".`);
-                if (validatePrompt(value).errors.length) throw new Error(`O prompt do preset "${name}" é inválido.`);
+                if (!name || name.length > MAX_PRESET_NAME) throw new Error(I18n.t('spm.presetNameLength',{max:MAX_PRESET_NAME}));
+                if (names.has(key)) throw new Error(I18n.t('spm.duplicatePreset',{name:name}));
+                if (validatePrompt(value).errors.length) throw new Error(I18n.t('spm.invalidPresetPrompt',{name:name}));
                 names.add(key);
                 return { name, prompt: value };
             });
@@ -49,7 +49,7 @@
                 const params = typeof raw === 'string' ? JSON.parse(raw) : raw;
                 if (params && typeof params.system_prompt === 'string' && params.system_prompt.trim()) return params.system_prompt;
             } catch (error) {
-                console.warn('[PE] Não foi possível migrar o system prompt legado:', error);
+                console.warn(I18n.t('spm.legacyMigrateFail'), error);
             }
             return null;
         }
@@ -59,7 +59,7 @@
             if (raw !== null) {
                 let parsed;
                 try { parsed = JSON.parse(raw); }
-                catch (error) { throw new Error(`Não foi possível ler os dados do system prompt: ${error.message}`); }
+                catch (error) { throw new Error(I18n.t('spm.readFail',{msg:error.message})); }
                 return normalize(parsed);
             }
             const initial = defaultConfig();
@@ -104,7 +104,7 @@
             return {
                 ...validation,
                 ok: included && mainPrompt === prompt,
-                message: included ? 'Simulação local concluída: o prompt selecionado será aplicado ao aprimoramento e omitido na geração de perguntas para preservar o formato JSON. Nenhum dado foi enviado.' : 'A simulação não confirmou a composição do prompt.'
+                message: included ? I18n.t('spm.simOk') : I18n.t('spm.simFail')
             };
         }
 

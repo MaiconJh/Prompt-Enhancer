@@ -12,7 +12,7 @@
 
         const DEFAULT_TEMPLATE = {
             id: 'kilo',
-            name: 'Kilo (padrão)',
+            name: 'Kilo',
             url: DEFAULT_PROVIDER.url,
             model: DEFAULT_PROVIDER.model,
             apiKey: 'anonymous',
@@ -20,54 +20,6 @@
             builtin: true,
             fallback: false
         };
-
-        const PRESETS = [
-            { id: 'kilo', label: 'Kilo (padrão)', template: {
-                name: 'Kilo',
-                url: DEFAULT_PROVIDER.url,
-                model: DEFAULT_PROVIDER.model,
-                apiKey: 'anonymous',
-                headers: { ...(DEFAULT_PROVIDER.headers || {}) }
-            } },
-            { id: 'openrouter', label: 'OpenRouter', template: {
-                name: 'OpenRouter',
-                url: 'https://openrouter.ai/api/v1/chat/completions',
-                model: 'openai/gpt-4o-mini',
-                apiKey: '',
-                headers: {
-                    'HTTP-Referer': 'https://github.com/EdgeTypE/better-deepseek',
-                    'X-Title': 'Prompt-Enhancer'
-                }
-            } },
-            { id: 'openai', label: 'OpenAI', template: {
-                name: 'OpenAI',
-                url: 'https://api.openai.com/v1/chat/completions',
-                model: 'gpt-4o-mini',
-                apiKey: '',
-                headers: {}
-            } },
-            { id: 'groq', label: 'Groq', template: {
-                name: 'Groq',
-                url: 'https://api.groq.com/openai/v1/chat/completions',
-                model: 'llama-3.3-70b-versatile',
-                apiKey: '',
-                headers: {}
-            } },
-            { id: 'ollama', label: 'Ollama (local)', template: {
-                name: 'Ollama',
-                url: 'http://localhost:11434/v1/chat/completions',
-                model: 'llama3.2',
-                apiKey: '',
-                headers: {}
-            } },
-            { id: 'custom', label: 'Personalizado', template: {
-                name: 'Meu provider',
-                url: '',
-                model: '',
-                apiKey: '',
-                headers: {}
-            } }
-        ];
 
         const safeGet = (key, fallback) => {
             try { return GM_getValue(key, fallback); } catch (_) { return fallback; }
@@ -126,7 +78,7 @@
                     if (!exists) {
                         const entry = {
                             id: Utils.uid('prov'),
-                            name: 'Meu provider (legado)',
+                            name: typeof I18n !== 'undefined' ? I18n.t('pm.provider.legacy') : 'Meu provider (legado)',
                             url: legacyUrl || DEFAULT_PROVIDER.url,
                             model: legacyModel || DEFAULT_PROVIDER.model,
                             apiKey: legacyKey || 'anonymous',
@@ -226,7 +178,7 @@
             const list = _load() || [];
             const entry = {
                 id: Utils.uid('prov'),
-                name: String(input.name || 'Novo provider').trim().slice(0, 60),
+                name: String(input.name || 'Provider').trim().slice(0, 60),
                 url: _chatUrl(input.url || ''),
                 model: String(input.model || '').trim(),
                 apiKey: String(input.apiKey || ''),
@@ -407,7 +359,6 @@
         }
 
         return {
-            PRESETS,
             list,
             getActive,
             getFallback,

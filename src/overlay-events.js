@@ -9,10 +9,10 @@
                     if (evt.meta) overlay.setMeta(evt.meta);
                     if (isFirstMeta) {
                         isFirstMeta = false;
-                        if (evt.meta) overlay.logEvent('dispatch', `· ${evt.meta.payloadKB.toFixed(1)} KB · tentativa ${evt.meta.attempt}`);
+                        if (evt.meta) overlay.logEvent('dispatch', I18n.t('ov.dispatch', { kb: evt.meta.payloadKB.toFixed(1), n: evt.meta.attempt }));
                     } else {
                         const att = evt.meta ? evt.meta.attempt : 1;
-                        overlay.logEvent('redispatch', `· tentativa ${att}`, 'ok');
+                        overlay.logEvent('redispatch', I18n.t('ov.attempt', { n: att }), 'ok');
                         overlay.setState('connecting');
                     }
                     break;
@@ -20,23 +20,23 @@
                     switch (evt.phase) {
                         case 'rate_limiting':
                             overlay.setState('waiting');
-                            overlay.logEvent('rate_limiting', '· Limite de requisições local');
+                            overlay.logEvent('rate_limiting', I18n.t('ov.rateLimiting'));
                             break;
                         case 'preparing':
                             overlay.setState('preparing');
-                            overlay.logEvent('preparing', '· Montando payload');
+                            overlay.logEvent('preparing', I18n.t('ov.preparing'));
                             break;
                         case 'dispatching':
                             overlay.setState('dispatching');
-                            overlay.logEvent('dispatching', '· Requisição em voo');
+                            overlay.logEvent('dispatching', I18n.t('ov.dispatching'));
                             break;
                         case 'awaiting_ttfb':
                             overlay.setState('awaiting_ttfb');
-                            overlay.logEvent('awaiting_ttfb', '· Sem dados recebidos');
+                            overlay.logEvent('awaiting_ttfb', I18n.t('ov.awaitingTtfb'));
                             break;
                         case 'awaiting_token':
                             overlay.setState('awaiting_token');
-                            overlay.logEvent('awaiting_token', '· Primeiro byte recebido');
+                            overlay.logEvent('awaiting_token', I18n.t('ov.awaitingToken'));
                             break;
                     }
                     break;
@@ -62,9 +62,9 @@
                     const nextAttempt = (evt.attempt || 0) + 1;
                     const total = CONFIG.RETRY_MAX + 1;
                     overlay.setState('retrying', { attempt: nextAttempt, total, backoffMs: evt.delayMs });
-                    overlay.logEvent('retry_sched', `· backoff ${(evt.delayMs / 1000).toFixed(1)}s`, 'warn');
+                    overlay.logEvent('retry_sched', I18n.t('ov.backoff', { s: (evt.delayMs / 1000).toFixed(1) }), 'warn');
                     overlay.setMetric('attempt', `${nextAttempt} / ${total}`, 'warn');
-                    overlay.setMetric('retry', `backoff ${(evt.delayMs / 1000).toFixed(1)}s`, 'warn');
+                    overlay.setMetric('retry', I18n.t('lo.retryMetric', { s: (evt.delayMs / 1000).toFixed(1) }), 'warn');
                     overlay.setMetric('status', '—', 'muted');
                     overlay.setMetric('bytes', '0 B');
                     break;
@@ -74,7 +74,7 @@
                     break;
                 case 'fallback':
                     overlay.setState('waiting');
-                    overlay.note('Fallback para resposta completa');
+                    overlay.note(I18n.t('ov.fallback'));
                     break;
                 case 'error':
                     overlay.logEvent('error', `· ${evt.code}`, 'err');

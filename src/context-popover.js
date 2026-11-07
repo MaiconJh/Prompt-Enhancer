@@ -9,7 +9,7 @@
         root.appendChild(fileInput);
         const head = document.createElement('div');
         head.className = 'pe-pop-head';
-        head.innerHTML = `<span class="pe-pop-head-title">${Atoms.icon('agentDoc').outerHTML}<span>Contexto do projeto</span></span>`;
+        head.innerHTML = `<span class="pe-pop-head-title">${Atoms.icon('agentDoc').outerHTML}<span>${I18n.t('cp.title')}</span></span>`;
         const closeBtn = document.createElement('button');
         closeBtn.type = 'button'; closeBtn.className = 'pe-pop-close';
         closeBtn.innerHTML = Atoms.icon('x').outerHTML;
@@ -24,14 +24,14 @@
             foot.hidden = true; body.innerHTML = '';
             const wrap = document.createElement('div');
             wrap.className = 'pe-pop-empty';
-            wrap.innerHTML = `<div class="pe-pop-empty-title">Nenhum arquivo de contexto carregado</div><div class="pe-pop-empty-hint">Aceita <code>.md</code> <code>.txt</code> · máx ${Utils.formatBytes(CONFIG.MAX_CONTEXT_FILE_SIZE)} por arquivo<br>Nomes comuns: ${Utils.escapeHtml(CONFIG.CONTEXT_KNOWN_NAMES.join(' · '))}</div><div class="pe-pop-divider"></div>`;
+            wrap.innerHTML = `<div class="pe-pop-empty-title">${I18n.t('cp.emptyTitle')}</div><div class="pe-pop-empty-hint">${I18n.t('cp.emptyHintPrefix')} ${Utils.formatBytes(CONFIG.MAX_CONTEXT_FILE_SIZE)} ${Utils.escapeHtml(I18n.t('cp.perFile'))}<br>${Utils.escapeHtml(I18n.t('cp.knownNames'))} ${Utils.escapeHtml(CONFIG.CONTEXT_KNOWN_NAMES.join(' · '))}</div><div class="pe-pop-divider"></div>`;
             const loadBtn = document.createElement('button');
             loadBtn.type = 'button'; loadBtn.className = 'pe-pop-action';
-            loadBtn.innerHTML = `${Atoms.icon('upload').outerHTML}<span class="pe-pop-action-body"><span class="pe-pop-action-title">Carregar arquivo</span><span class="pe-pop-action-hint">Selecione um arquivo de contexto</span></span>`;
+            loadBtn.innerHTML = `${Atoms.icon('upload').outerHTML}<span class="pe-pop-action-body"><span class="pe-pop-action-title">${I18n.t('cp.loadFile')}</span><span class="pe-pop-action-hint">${I18n.t('cp.loadFileHint')}</span></span>`;
             loadBtn.addEventListener('click', () => fileInput.click());
             const pasteBtn = document.createElement('button');
             pasteBtn.type = 'button'; pasteBtn.className = 'pe-pop-action';
-            pasteBtn.innerHTML = `${Atoms.icon('paste').outerHTML}<span class="pe-pop-action-body"><span class="pe-pop-action-title">Colar conteúdo</span><span class="pe-pop-action-hint">Cole o conteúdo diretamente</span></span>`;
+            pasteBtn.innerHTML = `${Atoms.icon('paste').outerHTML}<span class="pe-pop-action-body"><span class="pe-pop-action-title">${I18n.t('cp.pasteContent')}</span><span class="pe-pop-action-hint">${I18n.t('cp.pasteContentHint')}</span></span>`;
             pasteBtn.addEventListener('click', () => renderPaste());
             wrap.appendChild(loadBtn); wrap.appendChild(pasteBtn);
             body.appendChild(wrap);
@@ -42,7 +42,7 @@
             const total = ProjectContext.getTotalSize();
             const masterLabel = document.createElement('label');
             masterLabel.className = 'pe-pop-toggle';
-            masterLabel.innerHTML = `<input type="checkbox" ${ProjectContext.isEnabled() ? 'checked' : ''}><span class="pe-pop-toggle-switch"></span><span class="pe-pop-toggle-label"><strong>Ativar injeção de contexto</strong><br>Anexar ao system prompt</span>`;
+            masterLabel.innerHTML = `<input type="checkbox" ${ProjectContext.isEnabled() ? 'checked' : ''}><span class="pe-pop-toggle-switch"></span><span class="pe-pop-toggle-label"><strong>${I18n.t('cp.toggleTitle')}</strong><br>${I18n.t('cp.toggleHint')}</span>`;
             masterLabel.querySelector('input').addEventListener('change', (e) => { ProjectContext.setEnabled(e.target.checked); onChange?.(); refresh(); });
             body.appendChild(masterLabel);
             const list = document.createElement('div');
@@ -57,7 +57,7 @@
                 cbLabel.querySelector('input').addEventListener('change', (e) => { ProjectContext.toggle(f.id, e.target.checked); onChange?.(); refresh(); });
                 const meta = document.createElement('div');
                 meta.className = 'pe-pop-item__meta';
-                meta.innerHTML = `<span class="pe-pop-item__name" title="${Utils.escapeHtml(f.path || f.name)}">${Utils.escapeHtml(f.name)}</span><span class="pe-pop-item__size">${Utils.formatBytes(f.size || f.content.length)}${f.source === 'legacy' ? ' · legado' : ''}</span>`;
+                meta.innerHTML = `<span class="pe-pop-item__name" title="${Utils.escapeHtml(f.path || f.name)}">${Utils.escapeHtml(f.name)}</span><span class="pe-pop-item__size">${Utils.formatBytes(f.size || f.content.length)}${f.source === 'legacy' ? ' · ' + Utils.escapeHtml(I18n.t('cp.legacy')) : ''}</span>`;
                 const removeBtn = document.createElement('button');
                 removeBtn.type = 'button'; removeBtn.className = 'pe-pop-item__remove';
                 removeBtn.innerHTML = Atoms.icon('x').outerHTML;
@@ -69,16 +69,17 @@
             const totalEl = document.createElement('div');
             totalEl.className = 'pe-pop-total' + (total > CONFIG.MAX_CONTEXT_TOTAL_SIZE ? ' is-over' : '');
             const activeCount = files.filter(f => f.enabled).length;
-            totalEl.textContent = `${activeCount} ativo${activeCount === 1 ? '' : 's'} · ${Utils.formatBytes(total)} / ${Utils.formatBytes(CONFIG.MAX_CONTEXT_TOTAL_SIZE)}`;
+            const _actLabel = I18n.tPlural('cp.active', activeCount, { one: I18n.t('cp.active.one'), other: I18n.t('cp.active.other') });
+            totalEl.textContent = `${activeCount} ${_actLabel} · ${Utils.formatBytes(total)} / ${Utils.formatBytes(CONFIG.MAX_CONTEXT_TOTAL_SIZE)}`;
             body.appendChild(totalEl);
             foot.innerHTML = '';
             const addBtn = document.createElement('button');
             addBtn.type = 'button'; addBtn.className = 'pe-pop-foot-btn';
-            addBtn.innerHTML = `${Atoms.icon('upload').outerHTML}<span>Adicionar</span>`;
+            addBtn.innerHTML = `${Atoms.icon('upload').outerHTML}<span>${I18n.t('cp.add')}</span>`;
             addBtn.addEventListener('click', () => fileInput.click());
             const exportBtn = document.createElement('button');
             exportBtn.type = 'button'; exportBtn.className = 'pe-pop-foot-btn';
-            exportBtn.innerHTML = `${Atoms.icon('download').outerHTML}<span>Exportar</span>`;
+            exportBtn.innerHTML = `${Atoms.icon('download').outerHTML}<span>${I18n.t('cp.export')}</span>`;
             exportBtn.addEventListener('click', () => {
                 try {
                     const payload = { files: ProjectContext.list(), exportedAt: new Date().toISOString() };
@@ -88,12 +89,12 @@
                     a.href = url; a.download = `pe-context-${Date.now()}.json`;
                     document.body.appendChild(a); a.click(); a.remove();
                     setTimeout(() => URL.revokeObjectURL(url), 1000);
-                } catch (e) { Molecules.toast('Falha ao exportar contexto.', 'error'); }
+                } catch (e) { Molecules.toast(I18n.t('cp.exportFail'), 'error'); }
             });
             const clearBtn = document.createElement('button');
             clearBtn.type = 'button'; clearBtn.className = 'pe-pop-foot-btn danger';
-            clearBtn.innerHTML = `${Atoms.icon('trash').outerHTML}<span>Limpar</span>`;
-            clearBtn.addEventListener('click', () => { ProjectContext.clearAll(); Molecules.toast('Arquivos de contexto removidos.', 'info'); onChange?.(); refresh(); });
+            clearBtn.innerHTML = `${Atoms.icon('trash').outerHTML}<span>${I18n.t('cp.clear')}</span>`;
+            clearBtn.addEventListener('click', () => { ProjectContext.clearAll(); Molecules.toast(I18n.t('cp.filesRemoved'), 'info'); onChange?.(); refresh(); });
             foot.appendChild(addBtn); foot.appendChild(exportBtn); foot.appendChild(clearBtn);
         }
         function renderPaste() {
@@ -102,25 +103,25 @@
             wrap.className = 'pe-pop-paste';
             const nameInput = document.createElement('input');
             nameInput.type = 'text'; nameInput.className = 'pe-pop-paste-name';
-            nameInput.placeholder = 'Nome do arquivo (ex: AGENTS.md)'; nameInput.value = 'AGENTS.md';
+            nameInput.placeholder = I18n.t('cp.fileNamePlaceholder'); nameInput.value = 'AGENTS.md';
             const ta = document.createElement('textarea');
             ta.className = 'pe-pop-paste-textarea'; ta.rows = 6;
-            ta.placeholder = '# AGENTS.md\n\nCole aqui o conteúdo…';
+            ta.placeholder = I18n.t('cp.pastePlaceholder');
             const actions = document.createElement('div');
             actions.className = 'pe-pop-paste-actions';
             const cancelBtn = document.createElement('button');
-            cancelBtn.type = 'button'; cancelBtn.textContent = 'Cancelar';
+            cancelBtn.type = 'button'; cancelBtn.textContent = I18n.t('cp.cancel');
             cancelBtn.addEventListener('click', () => { if (ProjectContext.list().length) renderList(); else renderEmpty(); });
             const confirmBtn = document.createElement('button');
             confirmBtn.type = 'button'; confirmBtn.className = 'primary';
-            confirmBtn.textContent = 'Adicionar'; confirmBtn.disabled = true;
+            confirmBtn.textContent = I18n.t('cp.add'); confirmBtn.disabled = true;
             ta.addEventListener('input', () => { confirmBtn.disabled = ta.value.trim().length < 3; });
             confirmBtn.addEventListener('click', () => {
                 const v = ta.value.trim();
                 if (v.length < 3) return;
                 const res = ProjectContext.add({ name: nameInput.value.trim() || 'AGENTS.md', content: v, source: 'manual' });
-                if (!res.ok) { if (res.reason === 'total-too-large') Molecules.toast(`Total excede ${Utils.formatBytes(CONFIG.MAX_CONTEXT_TOTAL_SIZE)}.`, 'error'); else Molecules.toast('Falha ao adicionar.', 'error'); return; }
-                Molecules.toast('Arquivo adicionado.', 'success'); onChange?.(); renderList();
+                if (!res.ok) { if (res.reason === 'total-too-large') Molecules.toast(I18n.t('cp.totalExceeds',{max:Utils.formatBytes(CONFIG.MAX_CONTEXT_TOTAL_SIZE)}), 'error'); else Molecules.toast(I18n.t('cp.addFail'), 'error'); return; }
+                Molecules.toast(I18n.t('cp.fileAdded'), 'success'); onChange?.(); renderList();
             });
             actions.appendChild(cancelBtn); actions.appendChild(confirmBtn);
             wrap.appendChild(nameInput); wrap.appendChild(ta); wrap.appendChild(actions);
@@ -131,13 +132,13 @@
         fileInput.addEventListener('change', async (e) => {
             const file = e.target.files?.[0]; fileInput.value = '';
             if (!file) return;
-            if (file.size > CONFIG.MAX_CONTEXT_FILE_SIZE) { Molecules.toast(`"${file.name}" excede ${Utils.formatBytes(CONFIG.MAX_CONTEXT_FILE_SIZE)}.`, 'error'); return; }
+            if (file.size > CONFIG.MAX_CONTEXT_FILE_SIZE) { Molecules.toast(I18n.t('cp.fileTooBig', { name: file.name, size: Utils.formatBytes(CONFIG.MAX_CONTEXT_FILE_SIZE) }), 'error'); return; }
             try {
                 const text = await file.text();
                 const res = ProjectContext.add({ name: file.name || 'AGENTS.md', content: text, source: 'manual' });
-                if (!res.ok) { Molecules.toast('Falha ao adicionar arquivo.', 'error'); return; }
-                Molecules.toast('Arquivo adicionado.', 'success'); onChange?.(); refresh();
-            } catch (err) { Molecules.toast(`Falha ao ler "${file.name}".`, 'error'); }
+                if (!res.ok) { Molecules.toast(I18n.t('cp.addFileFail'), 'error'); return; }
+                Molecules.toast(I18n.t('cp.fileAdded'), 'success'); onChange?.(); refresh();
+            } catch (err) { Molecules.toast(I18n.t('cp.readFail', { name: file.name }), 'error'); }
         });
         function positionNearAnchor() {
             if (!anchor || !document.body.contains(anchor)) return;
@@ -161,6 +162,8 @@
         window.addEventListener('scroll', () => { if (isOpen) positionNearAnchor(); }, { passive: true, capture: true });
         window.addEventListener('resize', () => { if (isOpen) positionNearAnchor(); }, { passive: true });
         document.body.appendChild(root);
-        return { root, open, close, toggle, refresh, destroy() { root.remove(); } };
+        const i18nHandler = () => { if (isOpen) refresh(); };
+        window.addEventListener('pe:i18n-changed', i18nHandler);
+        return { root, open, close, toggle, refresh, destroy() { window.removeEventListener('pe:i18n-changed', i18nHandler); root.remove(); } };
     }
 

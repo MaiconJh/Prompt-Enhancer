@@ -46,7 +46,6 @@
         function isEnabled() { return safeGet(KEY_GLOBAL_ENABLED, true); }
         function setEnabled(v) { safeSet(KEY_GLOBAL_ENABLED, !!v); }
         function getTotalSize() { return _read().filter(f => f.enabled).reduce((s, f) => s + (f.size || f.content.length), 0); }
-        function getAggregateName() { const active = _read().filter(f => f.enabled); if (!active.length) return ''; if (active.length === 1) return active[0].name; return `${active.length} arquivos`; }
         function hasContent() { return _read().some(f => f.enabled && f.content.trim()); }
         function add({ name, content, path, source }) {
             const trimmed = String(content || '').trim();
@@ -72,6 +71,6 @@
             if (body.length > CONFIG.MAX_CONTEXT_TOTAL_SIZE) body = body.slice(0, CONFIG.MAX_CONTEXT_TOTAL_SIZE) + '\n[...contexto truncado]';
             return '\n\n' + Providers.wrap(body, Providers.detect());
         }
-        return { list, isEnabled, setEnabled, add, remove, toggle, clearAll, getTotalSize, getAggregateName, hasContent, buildSystemSuffix };
+        return { list, isEnabled, setEnabled, add, remove, toggle, clearAll, getTotalSize, hasContent, buildSystemSuffix };
     })();
 

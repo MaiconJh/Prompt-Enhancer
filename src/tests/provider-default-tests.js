@@ -6,19 +6,26 @@ import vm from 'node:vm';
 
 const sourceDir = new URL('../', import.meta.url);
 const configSource = await readFile(new URL('config.js', sourceDir), 'utf8');
+const i18nSource = await readFile(new URL('i18n.js', sourceDir), 'utf8');
 const managerSource = await readFile(new URL('provider-manager.js', sourceDir), 'utf8');
 
 function createProviderHarness(initialValues = {}) {
-    const values = new Map(Object.entries(initialValues));
+    // Força locale pt-BR por padrão para asserções determinísticas neste suite.
+    // Testes que precisem de outro locale podem passar `pe_ui_language: 'en'|'auto'`.
+    const merged = { pe_ui_language: 'pt-BR', ...initialValues };
+    const values = new Map(Object.entries(merged));
     let uid = 0;
     const context = vm.createContext({
         GM_getValue: (key, fallback) => values.has(key) ? values.get(key) : fallback,
         GM_setValue: (key, value) => values.set(key, value),
         GM_deleteValue: (key) => values.delete(key),
-        Utils: { uid: (prefix) => `${prefix}-${++uid}` }
+        Utils: { uid: (prefix) => `${prefix}-${++uid}` },
+        window: { dispatchEvent: () => {}, addEventListener: () => {}, removeEventListener: () => {} }
     });
 
     vm.runInContext(configSource, context, { filename: 'src/config.js' });
+    vm.runInContext(i18nSource, context, { filename: 'src/i18n.js' });
+    context.I18n = context.window.I18n;
     vm.runInContext(managerSource, context, { filename: 'src/provider-manager.js' });
     const { defaultProvider, providerManager } = vm.runInContext(
         '({ defaultProvider: DEFAULT_PROVIDER, providerManager: ProviderManager })',

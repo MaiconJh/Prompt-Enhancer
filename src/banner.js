@@ -2,10 +2,12 @@
 // ==UserScript==
 // @name         Prompt-Enhancer
 // @name:pt-BR   Aprimorador de Prompt
+// @name:en      Prompt-Enhancer
 // @namespace    https://github.com/EdgeTypE/better-deepseek
 // @version      1.0.0
 // @description  Modular prompt enhancement for LLM chat UIs. Free anonymous default API.
 // @description:pt-BR  Aprimoramento modular de prompts em chats com LLM. API padrão gratuita e anônima.
+// @description:en     Modular prompt enhancement for LLM chat UIs. Free anonymous default API.
 // @author       MaiconJh
 // @license      MIT
 // @match        *://chat.deepseek.com/*
@@ -21,6 +23,7 @@
 // @grant        GM_addStyle
 // @grant        GM_notification
 // @grant        GM_registerMenuCommand
+// @grant        GM_unregisterMenuCommand
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
