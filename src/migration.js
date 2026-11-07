@@ -1,27 +1,27 @@
 // ===== src/migration.js =====
     function migrateLegacy() {
-        const KEY_MIGRATED = 'kpe_ctx_migrated';
+        const KEY_MIGRATED = 'pe_ctx_migrated';
         let migrated = false;
         try { migrated = GM_getValue(KEY_MIGRATED, false); } catch (_) {}
         if (migrated) return;
         let legacyContent = '', legacyName = 'AGENTS.md', legacyEnabled = true;
-        try { legacyContent = GM_getValue('kpe_agents_md', ''); } catch (_) {}
-        try { legacyName = GM_getValue('kpe_agents_name', 'AGENTS.md') || 'AGENTS.md'; } catch (_) {}
-        try { legacyEnabled = GM_getValue('kpe_agents_enabled', true); } catch (_) {}
-        if (legacyContent && legacyContent !== '__KPE_EMPTY__') {
+        try { legacyContent = GM_getValue('pe_agents_md', ''); } catch (_) {}
+        try { legacyName = GM_getValue('pe_agents_name', 'AGENTS.md') || 'AGENTS.md'; } catch (_) {}
+        try { legacyEnabled = GM_getValue('pe_agents_enabled', true); } catch (_) {}
+        if (legacyContent && legacyContent !== '__PE_EMPTY__') {
             let existing = [];
-            try { const raw = GM_getValue('kpe_ctx_files', null); if (raw) existing = typeof raw === 'string' ? JSON.parse(raw) : raw; if (!Array.isArray(existing)) existing = []; } catch (_) { existing = []; }
+            try { const raw = GM_getValue('pe_ctx_files', null); if (raw) existing = typeof raw === 'string' ? JSON.parse(raw) : raw; if (!Array.isArray(existing)) existing = []; } catch (_) { existing = []; }
             const has = existing.some(f => f && f.source === 'legacy');
             if (!has) {
                 existing.push({ id: Utils.uid('ctx'), name: legacyName || 'AGENTS.md', path: '', content: String(legacyContent).trim(), size: String(legacyContent).length, enabled: !!legacyEnabled, source: 'legacy' });
-                try { GM_setValue('kpe_ctx_files', JSON.stringify(existing)); } catch (_) {}
+                try { GM_setValue('pe_ctx_files', JSON.stringify(existing)); } catch (_) {}
             }
         }
-        ['kpe_agents_md','kpe_agents_name','kpe_agents_size','kpe_agents_enabled'].forEach(k => { try { GM_deleteValue(k); } catch (_) {} });
+        ['pe_agents_md','pe_agents_name','pe_agents_size','pe_agents_enabled'].forEach(k => { try { GM_deleteValue(k); } catch (_) {} });
         try { GM_setValue(KEY_MIGRATED, true); } catch (_) {}
     }
 
-    // ===== Migração kpe_history → kpe_runs =====
+    // ===== Migração pe_history → pe_runs =====
     function _convertLegacyEntry(entry) {
         if (!entry || typeof entry !== 'object') return null;
         const at = Number(entry.at) || Date.now();
@@ -66,9 +66,9 @@
     }
 
     function migrateHistoryRuns() {
-        const KEY_FLAG = 'kpe_runs_migrated';
-        const OLD_KEY = 'kpe_history';
-        const NEW_KEY = 'kpe_runs';
+        const KEY_FLAG = 'pe_runs_migrated';
+        const OLD_KEY = 'pe_history';
+        const NEW_KEY = 'pe_runs';
         let alreadyMigrated = false;
         try { alreadyMigrated = GM_getValue(KEY_FLAG, false); } catch (_) {}
         if (alreadyMigrated) return;

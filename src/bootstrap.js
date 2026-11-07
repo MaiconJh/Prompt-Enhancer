@@ -56,15 +56,15 @@
             });
             GM_registerMenuCommand('🔄 Atualizar catálogo de provedores', () => {
                 ProviderRegistry.hydrate(true).then((entries) => {
-                    console.info(`[KPE] Catálogo hidratado: ${entries.length} entradas (${entries.filter((entry) => entry.source === 'dynamic').length} dinâmicas).`);
-                }).catch((err) => console.warn('[KPE] Falha na atualização do catálogo:', err));
+                    console.info(`[PE] Catálogo hidratado: ${entries.length} entradas (${entries.filter((entry) => entry.source === 'dynamic').length} dinâmicas).`);
+                }).catch((err) => console.warn('[PE] Falha na atualização do catálogo:', err));
             });
         }
 
         setTimeout(() => {
             ProviderRegistry.hydrate().then((entries) => {
-                console.info(`[KPE] Catálogo hidratado: ${entries.length} entradas (${entries.filter((entry) => entry.source === 'dynamic').length} dinâmicas).`);
-            }).catch((err) => console.warn('[KPE] Falha na hidratação do catálogo:', err));
+                console.info(`[PE] Catálogo hidratado: ${entries.length} entradas (${entries.filter((entry) => entry.source === 'dynamic').length} dinâmicas).`);
+            }).catch((err) => console.warn('[PE] Falha na hidratação do catálogo:', err));
         }, 100);
     }
 

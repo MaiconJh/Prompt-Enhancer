@@ -159,7 +159,7 @@ Durações fora da escala são deriva sistêmica, como um hex avulso.
 
 ### 1. Idioma e Localização (Standards Sec. Language)
 
-* **Código em inglês:** Identificadores, nomes de variáveis, nomes de classes/módulos, funções, objetos utilitários, métodos DOM, chaves de armazenamento GM/localStorage (`kpe_*`, `pe_*`), manipuladores de evento e comentários técnicos.
+* **Código em inglês:** Identificadores, nomes de variáveis, nomes de classes/módulos, funções, objetos utilitários, métodos DOM, chaves de armazenamento GM/localStorage (`pe_*`, `pe_*`), manipuladores de evento e comentários técnicos.
 * **Interface e Strings Visíveis em português do Brasil (pt-BR):** Rótulos (`label`), placeholders, textos renderizados, tooltips (`title`), atributos de acessibilidade (`aria-label`, `aria-description`, `role`), mensagens de status, logs de erro, notificações (`toast`) e botões.
 * **Proibido traduzir identificadores** e **proibido inserir qualquer string visível ou acessível em inglês**.
 
@@ -168,17 +168,17 @@ Durações fora da escala são deriva sistêmica, como um hex avulso.
 * **Proibido em qualquer string visível ou componente injetado:** "mock", "fictício", "simulado", "demonstração", "prévia estática", "em construção", "em breve", "placeholder de teste".
 * **Comportamento real obrigatório:** Todo componente adicionado, reconstruído ou modificado deve conectar-se integralmente à infraestrutura reativa existente (`State`, `ParamSchema`, `ProviderManager`, `ProjectContext`, `EnhancementHistory`, `Anim`).
 
-### 3. Padrão de Estilização e Tokens de Design (`kpe-*`)
+### 3. Padrão de Estilização e Tokens de Design (`pe-*`)
 
-* **Proibido o uso de utilitários de terceiros externos ou classes sem prefixo.** Toda a estilização deve ser feita através das CSS Custom Properties declaradas no escopo `:where(.kpe-scope)` injetado via `GM_addStyle`.
+* **Proibido o uso de utilitários de terceiros externos ou classes sem prefixo.** Toda a estilização deve ser feita através das CSS Custom Properties declaradas no escopo `:where(.pe-scope)` injetado via `GM_addStyle`.
 * **Hierarquia de Tokens Obrigatória:**
-* Superfícies: `var(--kpe-surface)`, `var(--kpe-surface-2)`, `var(--kpe-surface-3)`, `var(--kpe-surface-code)`
-* Tipografia: `var(--kpe-font)`, `var(--kpe-mono)`, `var(--kpe-fs-sm)`, `var(--kpe-fs-md)`, `var(--kpe-lh-base)`
-* Cores de Texto: `var(--kpe-text)`, `var(--kpe-text-muted)`, `var(--kpe-text-faint)`
-* Bordas e Sombras: `var(--kpe-border)`, `var(--kpe-border-strong)`, `var(--kpe-shadow-1)`, `var(--kpe-shadow-2)`
-* Cores de Ação/Destaque: `var(--kpe-accent)`, `var(--kpe-accent-soft)`, `var(--kpe-accent-border)`, `var(--kpe-accent-text)`
-* Semântica: `var(--kpe-success)`, `var(--kpe-error)`, `var(--kpe-warning)`
-* Curvas e Tempos: `var(--kpe-dur-fast)`, `var(--kpe-dur-base)`, `var(--kpe-ease-spring)`, `var(--kpe-ease-standard)`
+* Superfícies: `var(--pe-surface)`, `var(--pe-surface-2)`, `var(--pe-surface-3)`, `var(--pe-surface-code)`
+* Tipografia: `var(--pe-font)`, `var(--pe-mono)`, `var(--pe-fs-sm)`, `var(--pe-fs-md)`, `var(--pe-lh-base)`
+* Cores de Texto: `var(--pe-text)`, `var(--pe-text-muted)`, `var(--pe-text-faint)`
+* Bordas e Sombras: `var(--pe-border)`, `var(--pe-border-strong)`, `var(--pe-shadow-1)`, `var(--pe-shadow-2)`
+* Cores de Ação/Destaque: `var(--pe-accent)`, `var(--pe-accent-soft)`, `var(--pe-accent-border)`, `var(--pe-accent-text)`
+* Semântica: `var(--pe-success)`, `var(--pe-error)`, `var(--pe-warning)`
+* Curvas e Tempos: `var(--pe-dur-fast)`, `var(--pe-dur-base)`, `var(--pe-ease-spring)`, `var(--pe-ease-standard)`
 
 
 * **Proibido hardcoding de cores hexadecimais, rgb ou hsl em nós DOM criados.**
@@ -186,7 +186,7 @@ Durações fora da escala são deriva sistêmica, como um hex avulso.
 ### 4. Arquitetura DOM e Manipulação Nativa
 
 * A interface é montada via Vanilla JavaScript imperativo utilizando as primitivas de `Atoms` (`Atoms.button`, `Atoms.buttonNode`, `Atoms.icon`) e `Molecules`.
-* **Isolamento de Host:** Todo container, modal ou slot injetado deve conter a classe `.kpe-scope` e receber a blindagem de eventos contra o site hospedeiro via `Utils.shieldFromHost(el)`.
+* **Isolamento de Host:** Todo container, modal ou slot injetado deve conter a classe `.pe-scope` e receber a blindagem de eventos contra o site hospedeiro via `Utils.shieldFromHost(el)`.
 * **Acessibilidade WAI-ARIA:** Modais e painéis devem declarar `role="dialog"`, `aria-modal="true"` ou `"false"`, `aria-label`, foco gerenciado via teclado (`Tab` trapping e tecla `Escape`) e restauração do foco anterior (`previouslyFocused.focus()`).
 
 ### 5. Ícones e Animações
@@ -207,11 +207,11 @@ Durações fora da escala são deriva sistêmica, como um hex avulso.
 * Telas e Diálogos: `settingsModal`, `guidedWizard`, `preview`, `contextPopover`
 
 
-2. Mapeie as chaves de persistência envolvidas (`kpe_runs`, `kpe_params`, `pe_providers`, `pe_pinned_route`, `kpe_ctx_files`) e assegure que nenhum dado corrompa migrações existentes (`migration.js`).
+2. Mapeie as chaves de persistência envolvidas (`pe_runs`, `pe_params`, `pe_providers`, `pe_pinned_route`, `pe_ctx_files`) e assegure que nenhum dado corrompa migrações existentes (`migration.js`).
 
 ### Passo 2 — Implementação da Lógica e Interação (Vanilla DOM)
 
-1. Crie elementos utilizando `document.createElement`, compondo a estrutura com a classe de escopo `.kpe-scope`.
+1. Crie elementos utilizando `document.createElement`, compondo a estrutura com a classe de escopo `.pe-scope`.
 2. Para botões, utilize `Atoms.button` ou `Atoms.buttonNode`, configurando manipuladores de eventos (`click`, `input`, `change`) que atualizem os drafts ou despachem chamadas no `State`.
 3. Adicione feedback reativo visual usando `Molecules.toast(mensagem, tipo, opcoes)` ou `Anim.pulseSuccess(elemento)`.
 
@@ -236,7 +236,7 @@ Finalize a entrega gerando a tabela técnica detalhando as inserções e modific
 
 ## Gotchas & Falhas Silenciosas que a Skill Previne
 
-* **Injetar classes de Tailwind ou cores fixas (`#fff`, `rgb(0,0,0)`):** A interface deve usar estritamente as custom properties `--kpe-*`.
+* **Injetar classes de Tailwind ou cores fixas (`#fff`, `rgb(0,0,0)`):** A interface deve usar estritamente as custom properties `--pe-*`.
 * **Esquecer de blindar elementos injetados com `Utils.shieldFromHost`:** Sem isso, eventos de clique e digitação vazam para as caixas de chat hospedeiras (ChatGPT, Claude, DeepSeek).
 * **Usar strings em inglês nos botões ou modais:** Viola o padrão de interface voltado para pt-BR.
 * **Esquecer suporte a `prefers-reduced-motion`:** Sempre encadeie transições visuais pelo helper `Anim`.

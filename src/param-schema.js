@@ -68,7 +68,7 @@
         }
         function load() {
             try {
-                const raw = GM_getValue('kpe_params', null);
+                const raw = GM_getValue('pe_params', null);
                 const merged = defaults();
                 if (!raw) return merged;
                 const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
@@ -76,6 +76,6 @@
                 return merged;
             } catch (_) { return defaults(); }
         }
-        function save(values) { try { GM_setValue('kpe_params', JSON.stringify(values)); } catch (_) {} }
+        function save(values) { try { GM_setValue('pe_params', JSON.stringify(values)); } catch (_) {} }
         return { SCHEMA, PRESETS, defaults, validate, clean, load, save };
     })();

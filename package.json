@@ -8,7 +8,7 @@
     "build": "node build.js",
     "check": "node check.js",
     "test": "npm run check && node --test src/tests/*-tests.js",
-    "test:api": "KPE_API_SMOKE=1 node --test src/tests/provider-api-integration-tests.js"
+    "test:api": "PE_API_SMOKE=1 node --test src/tests/provider-api-integration-tests.js"
   },
   "engines": {
     "node": ">=20"

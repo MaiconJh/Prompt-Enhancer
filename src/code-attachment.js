@@ -1,60 +1,60 @@
 // ===== src/code-attachment.js =====
     function codeAttachment({ q, onUpdate } = {}) {
         const root = document.createElement('div');
-        root.className = 'kpe-code-wrap';
+        root.className = 'pe-code-wrap';
         const clip = document.createElement('div');
-        clip.className = 'kpe-code-clip';
+        clip.className = 'pe-code-clip';
         const area = document.createElement('div');
-        area.className = 'kpe-code-area';
+        area.className = 'pe-code-area';
         const actions = document.createElement('div');
-        actions.className = 'kpe-code-actions';
+        actions.className = 'pe-code-actions';
         const copyBtn = document.createElement('button');
-        copyBtn.type = 'button'; copyBtn.className = 'kpe-code-action';
+        copyBtn.type = 'button'; copyBtn.className = 'pe-code-action';
         copyBtn.innerHTML = `${Atoms.icon('copy').outerHTML}<span>Copiar</span>`;
         const clearBtn = document.createElement('button');
-        clearBtn.type = 'button'; clearBtn.className = 'kpe-code-action';
+        clearBtn.type = 'button'; clearBtn.className = 'pe-code-action';
         clearBtn.innerHTML = `${Atoms.icon('trash').outerHTML}<span>Limpar</span>`;
         actions.appendChild(copyBtn); actions.appendChild(clearBtn);
         const tabs = document.createElement('div');
-        tabs.className = 'kpe-code-tabs';
+        tabs.className = 'pe-code-tabs';
         const tabPaste = document.createElement('button');
-        tabPaste.type = 'button'; tabPaste.className = 'kpe-code-tab is-active';
+        tabPaste.type = 'button'; tabPaste.className = 'pe-code-tab is-active';
         tabPaste.innerHTML = `${Atoms.icon('paste').outerHTML}<span>Colar trecho</span>`;
         const tabFile = document.createElement('button');
-        tabFile.type = 'button'; tabFile.className = 'kpe-code-tab';
+        tabFile.type = 'button'; tabFile.className = 'pe-code-tab';
         tabFile.innerHTML = `${Atoms.icon('clip').outerHTML}<span>Anexar arquivo</span>`;
         tabs.appendChild(tabPaste); tabs.appendChild(tabFile);
         const pastePane = document.createElement('div');
-        pastePane.className = 'kpe-code-pane';
+        pastePane.className = 'pe-code-pane';
         const ta = document.createElement('textarea');
-        ta.className = 'kpe-code-textarea';
+        ta.className = 'pe-code-textarea';
         ta.placeholder = 'Cole a função ou o trecho onde ocorre o problema…';
         ta.rows = 4;
         const err = document.createElement('div');
-        err.className = 'kpe-code-error';
+        err.className = 'pe-code-error';
         err.innerHTML = `${Atoms.icon('alert').outerHTML}<span>Adicione pelo menos 3 caracteres para usar este contexto.</span>`;
         const footer = document.createElement('div');
-        footer.className = 'kpe-code-textarea-footer';
+        footer.className = 'pe-code-textarea-footer';
         const langSelect = document.createElement('select');
-        langSelect.className = 'kpe-code-lang';
+        langSelect.className = 'pe-code-lang';
         ['JavaScript','TypeScript','Python','Java','Go','Rust','C','C++','C#','PHP','Ruby','Swift','Kotlin','SQL','Shell','HTML','CSS','JSON','YAML','Outro'].forEach(lang => { const o = document.createElement('option'); o.textContent = lang; langSelect.appendChild(o); });
         const count = document.createElement('span');
-        count.className = 'kpe-code-count';
+        count.className = 'pe-code-count';
         count.textContent = '0 caracteres';
         footer.appendChild(langSelect); footer.appendChild(count);
         pastePane.appendChild(ta); pastePane.appendChild(err); pastePane.appendChild(footer);
         const filePane = document.createElement('div');
-        filePane.className = 'kpe-code-pane';
+        filePane.className = 'pe-code-pane';
         filePane.hidden = true;
         const dropzone = document.createElement('div');
-        dropzone.className = 'kpe-dropzone';
+        dropzone.className = 'pe-dropzone';
         dropzone.innerHTML = `
-            <span class="kpe-dropzone__icon">${Atoms.icon('upload').outerHTML}</span>
-            <span class="kpe-dropzone__title">Arraste um arquivo ou escolha um abaixo</span>
-            <span class="kpe-dropzone__hint"><code>.js</code> <code>.ts</code> <code>.py</code> · máx ${Utils.formatBytes(CONFIG.MAX_FILE_SIZE)} · até ${CONFIG.MAX_FILE_COUNT} arquivos</span>
+            <span class="pe-dropzone__icon">${Atoms.icon('upload').outerHTML}</span>
+            <span class="pe-dropzone__title">Arraste um arquivo ou escolha um abaixo</span>
+            <span class="pe-dropzone__hint"><code>.js</code> <code>.ts</code> <code>.py</code> · máx ${Utils.formatBytes(CONFIG.MAX_FILE_SIZE)} · até ${CONFIG.MAX_FILE_COUNT} arquivos</span>
         `;
         const pickBtn = document.createElement('button');
-        pickBtn.type = 'button'; pickBtn.className = 'kpe-dropzone__btn';
+        pickBtn.type = 'button'; pickBtn.className = 'pe-dropzone__btn';
         pickBtn.innerHTML = `${Atoms.icon('doc').outerHTML}<span>Escolher arquivo</span>`;
         dropzone.appendChild(pickBtn);
         const fileInput = document.createElement('input');
@@ -62,7 +62,7 @@
         fileInput.accept = CONFIG.ACCEPTED_FILE_TYPES;
         fileInput.style.display = 'none';
         const fileList = document.createElement('div');
-        fileList.className = 'kpe-file-list';
+        fileList.className = 'pe-file-list';
         filePane.appendChild(dropzone); filePane.appendChild(fileInput); filePane.appendChild(fileList);
         area.appendChild(actions); area.appendChild(tabs); area.appendChild(pastePane); area.appendChild(filePane);
         clip.appendChild(area); root.appendChild(clip);
@@ -87,10 +87,10 @@
             fileList.innerHTML = '';
             state.files.forEach((file, idx) => {
                 const chip = document.createElement('div');
-                chip.className = 'kpe-file-chip';
-                chip.innerHTML = `${Atoms.icon('doc').outerHTML}<span class="kpe-file-chip__name" title="${Utils.escapeHtml(file.name)}">${Utils.escapeHtml(file.name)}</span><span class="kpe-file-chip__size">${Utils.formatBytes(file.size)}</span>`;
+                chip.className = 'pe-file-chip';
+                chip.innerHTML = `${Atoms.icon('doc').outerHTML}<span class="pe-file-chip__name" title="${Utils.escapeHtml(file.name)}">${Utils.escapeHtml(file.name)}</span><span class="pe-file-chip__size">${Utils.formatBytes(file.size)}</span>`;
                 const removeBtn = document.createElement('button');
-                removeBtn.type = 'button'; removeBtn.className = 'kpe-file-chip__remove';
+                removeBtn.type = 'button'; removeBtn.className = 'pe-file-chip__remove';
                 removeBtn.innerHTML = Atoms.icon('x').outerHTML;
                 removeBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); state.files.splice(idx, 1); renderFiles(); emit(); });
                 chip.appendChild(removeBtn);
@@ -107,7 +107,7 @@
                     const content = await file.text();
                     state.files.push({ name: file.name, size: file.size, content });
                     renderFiles();
-                    const chips = fileList.querySelectorAll('.kpe-file-chip');
+                    const chips = fileList.querySelectorAll('.pe-file-chip');
                     if (chips.length) Anim.pulseSuccessClass(chips[chips.length - 1]);
                     emit();
                 } catch (e) { Molecules.toast(`Falha ao ler "${file.name}".`, 'error'); }
@@ -120,7 +120,7 @@
         copyBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); const txt = state.mode === 'paste' ? ta.value : ''; if (!txt) return; try { ta.select(); document.execCommand('copy'); } catch (_) {} const lbl = copyBtn.querySelector('span'); if (lbl) { const old = lbl.textContent; lbl.textContent = 'Copiado!'; setTimeout(() => { lbl.textContent = old; }, 1200); } });
         clearBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); state.codeText = ''; state.files = []; ta.value = ''; renderFiles(); updateCount(); emit(); });
         pickBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); fileInput.click(); });
-        dropzone.addEventListener('click', (e) => { if (e.target.closest('.kpe-dropzone__btn')) return; fileInput.click(); });
+        dropzone.addEventListener('click', (e) => { if (e.target.closest('.pe-dropzone__btn')) return; fileInput.click(); });
         fileInput.addEventListener('change', (e) => { readFiles(e.target.files); fileInput.value = ''; });
         ['dragenter', 'dragover'].forEach(evt => { dropzone.addEventListener(evt, (e) => { e.preventDefault(); e.stopPropagation(); }); });
         dropzone.addEventListener('drop', (e) => { e.preventDefault(); e.stopPropagation(); if (e.dataTransfer?.files?.length) readFiles(e.dataTransfer.files); });

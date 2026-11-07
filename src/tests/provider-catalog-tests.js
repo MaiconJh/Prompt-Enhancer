@@ -119,14 +119,14 @@ test('cache expirado é renovado na hidratação seguinte', async () => {
     const { registry, requests, values } = createHarness();
     await registry.hydrate();
     const initialRequestCount = requests.length;
-    const cache = JSON.parse(values.get('kpe_provider_catalog_cache'));
+    const cache = JSON.parse(values.get('pe_provider_catalog_cache'));
     cache.fetchedAt -= 300_001;
-    values.set('kpe_provider_catalog_cache', JSON.stringify(cache));
+    values.set('pe_provider_catalog_cache', JSON.stringify(cache));
 
     await registry.hydrate();
 
     assert.equal(requests.length, initialRequestCount + 4);
-    assert.ok(JSON.parse(values.get('kpe_provider_catalog_cache')).fetchedAt > cache.fetchedAt);
+    assert.ok(JSON.parse(values.get('pe_provider_catalog_cache')).fetchedAt > cache.fetchedAt);
 });
 
 test('pin OVHcloud resolve rota sem chave e API envia o modelo fixado em __meta', async () => {
@@ -153,7 +153,7 @@ test('falha HTTP 429 em rota fixada tenta o fallback virtual Kilo e emite evento
         { status: 429, body: { error: { message: 'rate limited' } } },
         { body: successResponse }
     ]);
-    values.set('kpe_virtual_fallback_enabled', true);
+    values.set('pe_virtual_fallback_enabled', true);
     manager.pin('ovhcloud:Meta-Llama-3_3-70B-Instruct');
 
     const result = await api._post('system prompt', 'prompt de teste', {

@@ -217,7 +217,7 @@
                 const timeoutMs = timeoutOverride != null ? timeoutOverride : baseTimeout;
                 const check = RateLimiter.check();
                 if (!check.allowed) {
-                    const emit = (evt) => { try { onEvent?.(evt); } catch (e) { console.warn('[KPE] onEvent error', e); } };
+                    const emit = (evt) => { try { onEvent?.(evt); } catch (e) { console.warn('[PE] onEvent error', e); } };
                     emit({ type: 'phase', phase: 'rate_limiting' });
                     const err = ErrorIndexer.build({ code: 'LOCAL_RATE_LIMIT', meta: { retryAfterMs: check.retryAfterMs } });
                     emitHistoryEarly({ payload: { system: fullSystem, messages: payload.messages, params: apiParams, meta: { model: activeProvider.model, endpoint: activeProvider.url, stream: useStream, timeoutMs, payloadKB, timeoutContextKB } }, output: '', error: { code: 'LOCAL_RATE_LIMIT', message: err.message, meta: err.meta }, meta: {}, streamUsed: false, fallbackUsed: false });
@@ -225,7 +225,7 @@
                     return;
                 }
                 RateLimiter.consume();
-                const emit = (evt) => { try { onEvent?.(evt); } catch (e) { console.warn('[KPE] onEvent error', e); } };
+                const emit = (evt) => { try { onEvent?.(evt); } catch (e) { console.warn('[PE] onEvent error', e); } };
                 emit({ type: 'phase', phase: 'preparing' });
                 let settled = false, aborted = false, receivedFirstToken = false, receivedAnyByte = false;
                 let firstTokenAt = 0, lastTokenAt = Date.now(), tokenCount = 0;

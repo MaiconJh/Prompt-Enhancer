@@ -39,7 +39,7 @@ Works on **DeepSeek**, **ChatGPT**, **Claude**, **Gemini** and **Perplexity**.
 
 - **Direct enhancement** — one click rewrites the prompt for clarity,
   specificity and structure, preserving the original intent.
-- **Guided wizard** — the model proposes 3–5 clarification questions
+- **Guided wizard** — the model proposes 1–5 clarification questions
   (free-form, single choice, or multi-choice). Answers are incorporated
   into the final prompt. Optional code attachment per question.
 - **Preview before applying** — original vs enhanced, side by side, in an
@@ -142,7 +142,7 @@ Selected tones guide both the generated prompt and its requested response style.
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/prompt-enhancer/prompt-enhancer.git
+   git clone https://github.com/MaiconJh/Prompt-Enhancer.git
    cd prompt-enhancer
    ```
 2. Build:
@@ -153,7 +153,8 @@ Selected tones guide both the generated prompt and its requested response style.
    new userscript in your userscript manager.
 4. Save. The script activates on supported hosts.
 
-No `npm install` is required — the build has no external dependencies.
+Install dependencies with `npm install` before building; `playwright` is
+used for test tooling.
 
 ---
 
@@ -195,11 +196,11 @@ top_p, frequency_penalty, presence_penalty, seed, response language and
 persona. Presets (**Precise**, **Balanced**, **Creative**) fill the fields
 in one click — changes are only persisted when you click Save.
 
-Stored locally in `kpe_params`.
+Stored locally in `pe_params`.
 
 ### System prompt and presets
 
-Editable system prompt, stored in `kpe_system_prompt_v1`. Local presets are
+Editable system prompt, stored in `pe_system_prompt_v1`. Local presets are
 stored alongside the prompt and can be loaded, renamed or deleted
 individually.
 
@@ -252,6 +253,9 @@ src/
 ├── banner.js               UserScript metadata header
 ├── open.js                 IIFE open + 'use strict'
 ├── config.js               CONFIG and animation constants
+├── provider-catalog.js     Curated free and local provider model entries
+├── provider-discovery.js   Discovers free model catalogs cross-origin
+├── provider-registry.js    Caches, normalizes, filters, merges catalog entries
 ├── host-shield.js          HostShield (event isolation)
 ├── utils.js                Utils and truncation helpers
 ├── providers-project-context.js Providers and ProjectContext (host detection, context and files)
@@ -278,7 +282,7 @@ src/
 └── close.js                IIFE close
 ```
 
-The concatenation order of the 25 middle modules is controlled by the
+The concatenation order of the 28 middle modules is controlled by the
 root-level `manifest.json`; `banner.js`, `open.js` and `close.js` remain in
 fixed structural positions.
 
@@ -303,18 +307,18 @@ SYSTEM_PROMPT
 
 | Key | Content |
 | :--- | :--- |
-| `kpe_ctx_files` | Project context files |
-| `kpe_ctx_global_enabled` | Master toggle for context injection |
-| `kpe_params` | Generation parameters |
-| `kpe_system_prompt_v1` | System prompt and presets |
-| `kpe_runs` | Enhancement history |
-| `kpe_error_history` | Error catalog history (last 20) |
+| `pe_ctx_files` | Project context files |
+| `pe_ctx_global_enabled` | Master toggle for context injection |
+| `pe_params` | Generation parameters |
+| `pe_system_prompt_v1` | System prompt and presets |
+| `pe_runs` | Enhancement history |
+| `pe_error_history` | Error catalog history (last 20) |
 | `pe_api_url` | Optional provider endpoint override |
 | `pe_model` | Optional provider model override |
 | `pe_api_key` | Provider API key (defaults to `anonymous`) |
 | `pe_pinned_route` | Optional selected catalog route |
-| `kpe_provider_catalog_cache` | Cached curated and discovered model catalog |
-| `kpe_virtual_fallback_enabled` | Whether virtual 429/5xx fallback is enabled |
+| `pe_provider_catalog_cache` | Cached curated and discovered model catalog |
+| `pe_virtual_fallback_enabled` | Whether virtual 429/5xx fallback is enabled |
 
 ---
 
@@ -351,7 +355,7 @@ external dependencies.
 - [ ] Toolbar appears on all five supported hosts.
 - [ ] Direct enhancement returns a preview with the original and enhanced
       text.
-- [ ] Guided mode generates 3–5 questions with correct types.
+- [ ] Guided mode generates 1–5 questions with correct types.
 - [ ] Project context is injected when enabled.
 - [ ] Parameter changes are reflected in the debug panel.
 - [ ] History records the run with nested calls.
@@ -374,7 +378,7 @@ external dependencies.
 ### Known gaps
 
 - The API endpoint and model are fixed at build time. Changing them requires
-  editing `src/01-config.js` and rebuilding.
+  editing `src/config.js` and rebuilding.
 - Only OpenAI-compatible APIs are supported. Other providers need a
   dedicated adapter.
 - Context files are text-only; binary or rich formats are not handled.

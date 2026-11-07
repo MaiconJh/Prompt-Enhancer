@@ -12,7 +12,7 @@
     NetError.AUTO_RETRY = new Set(['NETWORK','PROVIDER_DOWN','TIMEOUT']);
 
     const ErrorIndexer = (() => {
-        const KEY_HISTORY = 'kpe_error_history';
+        const KEY_HISTORY = 'pe_error_history';
         const HISTORY_MAX = 20;
         const HISTORY_BYTES_MAX = 65_536;
         const SNIPPET_MAX = 240;

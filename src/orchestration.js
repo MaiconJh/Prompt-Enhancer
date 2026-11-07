@@ -27,7 +27,7 @@
         if (err?.code === 'ABORTED') return;
         const idx = ErrorIndexer.classify(err);
         ErrorIndexer.record(err);
-        try { console.groupCollapsed(`[KPE] ❌ ${idx.code} — ${idx.title}`); console.log('description:', idx.description); console.log('technical:', idx.technical); console.groupEnd(); } catch (_) {}
+        try { console.groupCollapsed(`[PE] ❌ ${idx.code} — ${idx.title}`); console.log('description:', idx.description); console.log('technical:', idx.technical); console.groupEnd(); } catch (_) {}
         const text = idx.description ? `${idx.title}\n${idx.description}` : idx.title;
         const ACTION_MAP = { 'retry': () => retryEnhance(), 'retry-no-context': () => retryEnhanceNoContext(), 'retry-nostream': () => retryEnhanceNoStream(), 'open-params': () => onParams() };
         const labels = { retry: 'Tentar novamente', 'retry-no-context': 'Tentar sem contexto', 'retry-nostream': 'Modo padrão', 'open-params': 'Parâmetros' };
@@ -91,7 +91,13 @@
             EnhancementHistory.endRun(capturedRunId, { status: 'success', output: enhanced });
             State.preview = Molecules.preview({
                 original, enhanced, anchor: getAnchor(), trigger: btn || el,
-                onCancel: () => { EnhancementHistory.setOutcome(capturedRunId, 'cancelled'); State.preview = null; },
+                onCancel: () => {
+                    const run = EnhancementHistory.listRuns().find(r => r.id === capturedRunId);
+                    if (run?.outcome !== 'applied') {
+                        EnhancementHistory.setOutcome(capturedRunId, 'cancelled');
+                    }
+                    State.preview = null;
+                },
                 onApply: () => {
                     State.previousText = original;
                     Utils.applyText(el, enhanced);
@@ -194,7 +200,13 @@
                             State.isGuiding = false;
                             State.preview = Molecules.preview({
                                 original: base, enhanced, anchor: getAnchor(), trigger: btn || el,
-                                onCancel: () => { EnhancementHistory.setOutcome(capturedRunId, 'cancelled'); State.preview = null; },
+                                onCancel: () => {
+                                    const run = EnhancementHistory.listRuns().find(r => r.id === capturedRunId);
+                                    if (run?.outcome !== 'applied') {
+                                        EnhancementHistory.setOutcome(capturedRunId, 'cancelled');
+                                    }
+                                    State.preview = null;
+                                },
                                 onApply: () => {
                                     State.previousText = base;
                                     Utils.applyText(el, enhanced);
@@ -234,7 +246,7 @@
     function onFocusIn(e) {
         const target = e.target;
         if (!Utils.isEditable(target) || target.disabled || target.readOnly) return;
-        if (target.closest && target.closest('.kpe-scope')) return;
+        if (target.closest && target.closest('.pe-scope')) return;
         State.activeInput = target;
         const composerRoot = Composer.find(target);
         if (!composerRoot) return;
@@ -250,7 +262,7 @@
     }
 
     function onKeydown(e) {
-        const inOurScope = e.target && e.target.closest && e.target.closest('.kpe-scope');
+        const inOurScope = e.target && e.target.closest && e.target.closest('.pe-scope');
         if (e.key === 'Escape') { if (State.preview) { e.preventDefault(); closePreview(); return; } if (State.wizard) { e.preventDefault(); closeWizard(); return; } }
         if (!inOurScope && e.ctrlKey && e.shiftKey && (e.key === 'e' || e.key === 'E')) { if (State.activeInput) { e.preventDefault(); debouncedEnhance(); } }
         if (!inOurScope && e.ctrlKey && e.shiftKey && (e.key === 'p' || e.key === 'P')) { if (State.activeComposer) { e.preventDefault(); onParams(); } }

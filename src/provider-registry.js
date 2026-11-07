@@ -1,6 +1,6 @@
 // ===== src/provider-registry.js =====
     const ProviderRegistry = (() => {
-        const KEY_CACHE = 'kpe_provider_catalog_cache';
+        const KEY_CACHE = 'pe_provider_catalog_cache';
         let _memory = null;
         let _hydrating = null;
 
@@ -79,7 +79,7 @@
             try {
                 GM_setValue(KEY_CACHE, JSON.stringify({ version: CATALOG_VERSION, fetchedAt: Date.now(), entries }));
             } catch (err) {
-                console.warn('[KPE] Não foi possível salvar o cache do catálogo.', err);
+                console.warn('[PE] Não foi possível salvar o cache do catálogo.', err);
             }
         }
 
@@ -103,7 +103,7 @@
                     _memory = merged;
                     return merged;
                 } catch (err) {
-                    console.warn('[KPE] Falha na hidratação do catálogo.', err);
+                    console.warn('[PE] Falha na hidratação do catálogo.', err);
                     const fallback = _merge(STATIC_CATALOG, [], VIRTUAL_ROUTERS);
                     _memory = fallback;
                     return fallback;

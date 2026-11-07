@@ -18,7 +18,7 @@ function createApiHarness(responses, customPrompt = '', projectContextSuffix = '
     const requests = [];
     let uid = 0;
     if (customPrompt) {
-        localValues.set('kpe_system_prompt_v1', JSON.stringify({
+        localValues.set('pe_system_prompt_v1', JSON.stringify({
             version: 1,
             prompt: customPrompt,
             presets: []

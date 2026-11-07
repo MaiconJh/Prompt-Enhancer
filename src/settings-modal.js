@@ -15,7 +15,7 @@
             systemPromptDraft = SystemPromptManager.load();
         } catch (error) {
             systemPromptDraft = SystemPromptManager.defaultConfig();
-            console.error('[KPE] Falha ao carregar o system prompt:', error);
+            console.error('[PE] Falha ao carregar o system prompt:', error);
             Molecules.toast('Não foi possível carregar o system prompt salvo. Redefina-o ou tente novamente.', 'error', { details: error.message });
         }
         let activeTab = initialTab;
@@ -24,20 +24,22 @@
         let openFrame;
         let providerTimer;
         let providerRequest;
+        let isSaving = false;
+        let prevFooterDirty = false;
 
         const backdrop = document.createElement('div');
-        backdrop.className = 'kpe-modal-backdrop kpe-scope';
+        backdrop.className = 'pe-modal-backdrop pe-scope';
 
         const panel = document.createElement('div');
-        panel.className = 'kpe-panel kpe-modal';
+        panel.className = 'pe-panel pe-modal';
         panel.setAttribute('role', 'dialog');
         panel.setAttribute('aria-modal', 'true');
         panel.setAttribute('aria-label', 'Configurações');
 
         const header = document.createElement('div');
-        header.className = 'kpe-panel__header';
+        header.className = 'pe-panel__header';
         const heading = document.createElement('div');
-        heading.className = 'kpe-modal-heading';
+        heading.className = 'pe-modal-heading';
         const h4 = document.createElement('h4');
         h4.textContent = 'Configurações';
         const headingHint = document.createElement('p');
@@ -46,7 +48,7 @@
         header.appendChild(heading);
         const closeBtn = document.createElement('button');
         closeBtn.type = 'button';
-        closeBtn.className = 'kpe-panel__close';
+        closeBtn.className = 'pe-panel__close';
         closeBtn.setAttribute('aria-label', 'Fechar');
         closeBtn.appendChild(Atoms.icon('x'));
         closeBtn.addEventListener('click', close);
@@ -54,7 +56,7 @@
         panel.appendChild(header);
 
         const tabsBar = document.createElement('div');
-        tabsBar.className = 'kpe-modal-tabs';
+        tabsBar.className = 'pe-modal-tabs';
         tabsBar.setAttribute('role', 'tablist');
         tabsBar.setAttribute('aria-label', 'Abas de configurações');
         const tabDefs = [
@@ -62,20 +64,20 @@
             { key: 'context', label: 'Contexto & Idioma', icon: 'folder', title: 'Contexto e idioma', description: 'Configure o contexto do projeto e o estilo das respostas.' },
             { key: 'systemPrompt', label: 'System prompt', icon: 'doc', title: 'System prompt', description: 'Edite as instruções e gerencie seus presets pessoais.' },
             { key: 'history', label: 'Histórico', icon: 'guide', title: 'Histórico de execuções', description: 'Revise resultados e detalhes das chamadas anteriores.' },
-            { key: 'provider', label: 'Provider', icon: 'gear', title: 'Provedor de API', description: 'Configure e teste o endpoint usado pelo script.' }
+            { key: 'provider', label: 'Provedor', icon: 'gear', title: 'Provedor de API', description: 'Configure e teste o endpoint usado pelo script.' }
         ];
         if (!tabDefs.some(tab => tab.key === activeTab)) activeTab = 'params';
         const tabButtons = {};
         tabDefs.forEach(t => {
             const b = document.createElement('button');
             b.type = 'button';
-            b.className = 'kpe-modal-tab';
-            b.id = `kpe-settings-tab-${t.key}`;
+            b.className = 'pe-modal-tab';
+            b.id = `pe-settings-tab-${t.key}`;
             b.setAttribute('role', 'tab');
-            b.setAttribute('aria-controls', 'kpe-settings-panel-body');
+            b.setAttribute('aria-controls', 'pe-settings-panel-body');
             b.setAttribute('aria-label', t.label);
             b.append(Atoms.icon(t.icon), Object.assign(document.createElement('span'), {
-                className: 'kpe-modal-tab__label',
+                className: 'pe-modal-tab__label',
                 textContent: t.label
             }));
             b.addEventListener('click', () => { if (activeTab !== t.key) { activeTab = t.key; render(); } });
@@ -84,20 +86,21 @@
         });
 
         const bodyEl = document.createElement('div');
-        bodyEl.className = 'kpe-panel__body';
-        bodyEl.id = 'kpe-settings-panel-body';
+        bodyEl.className = 'pe-panel__body';
+        bodyEl.id = 'pe-settings-panel-body';
         bodyEl.setAttribute('role', 'tabpanel');
         bodyEl.tabIndex = 0;
 
         const footerEl = document.createElement('div');
-        footerEl.className = 'kpe-panel__footer';
+        footerEl.className = 'pe-panel__footer';
         const main = document.createElement('div');
-        main.className = 'kpe-modal-main';
-        main.append(bodyEl, footerEl);
+        main.className = 'pe-modal-main';
+        main.append(bodyEl);
         const layout = document.createElement('div');
-        layout.className = 'kpe-modal-layout';
+        layout.className = 'pe-modal-layout';
         layout.append(tabsBar, main);
         panel.appendChild(layout);
+        panel.appendChild(footerEl);
 
         backdrop.appendChild(panel);
         document.body.appendChild(backdrop);
@@ -155,7 +158,7 @@
             const cleaned = ParamSchema.clean(draft);
             const errors = ParamSchema.validate(cleaned);
             errors.push(...SystemPromptManager.validatePrompt(systemPromptDraft.prompt).errors);
-            if (errors.length) { showErrors(errors); return; }
+            if (errors.length) { showErrors(errors); isSaving = false; renderFooter(activeTab, computeDirty(activeTab), false); return; }
             try {
                 systemPromptDraft = SystemPromptManager.save(systemPromptDraft);
             } catch (error) {
@@ -185,7 +188,7 @@
                     ProviderManager.setActive(next.id);
                 }
             } catch (_) {}
-            try { GM_setValue('kpe_params_configured', true); } catch (_) {}
+            try { GM_setValue('pe_params_configured', true); } catch (_) {}
             Molecules.toast('Configurações salvas.', 'success');
             try { onSave?.(cleaned); } catch (_) {}
             close();
@@ -198,13 +201,13 @@
         }
 
         function showErrors(errors) {
-            const existing = bodyEl.querySelector('.kpe-settings-errors');
+            const existing = bodyEl.querySelector('.pe-settings-errors');
             if (existing) existing.remove();
             const box = document.createElement('div');
-            box.className = 'kpe-settings-errors';
+            box.className = 'pe-settings-errors';
             errors.forEach(err => {
                 const el = document.createElement('div');
-                el.className = 'kpe-panel-error';
+                el.className = 'pe-panel-error';
                 el.textContent = err;
                 box.appendChild(el);
             });
@@ -219,26 +222,65 @@
             systemPromptDraft.presets = saved.presets;
         }
 
+        function computeDirty(tab) {
+            if (tab === 'params') return JSON.stringify(ParamSchema.clean(draft)) !== JSON.stringify(ParamSchema.clean(ParamSchema.load()));
+            if (tab === 'systemPrompt') return JSON.stringify(systemPromptDraft) !== JSON.stringify(SystemPromptManager.load());
+            if (tab === 'context') {
+                const cleaned = ParamSchema.clean(draft);
+                const saved = ParamSchema.clean(ParamSchema.load());
+                return ['response_language', 'response_persona', 'response_persona_custom']
+                    .some(k => (cleaned[k] ?? '') !== (saved[k] ?? ''));
+            }
+            return false;
+        }
+        function syncFooter(tab) {
+            if (isSaving || tab !== activeTab) return;
+            const dirty = computeDirty(tab);
+            if (prevFooterDirty === dirty) return; // evita animação a cada tecla
+            prevFooterDirty = dirty;
+            renderFooter(tab, dirty, false);
+        }
+        function renderFooter(tab, dirty, saving) {
+            isSaving = !!saving;
+            prevFooterDirty = dirty;
+            footerEl.innerHTML = '';
+            footerEl.setAttribute('aria-live', 'polite');
+            const editing = tab === 'params' || tab === 'context' || tab === 'systemPrompt';
+            if (!editing || !dirty) {
+                footerEl.appendChild(Atoms.button({ icon: 'x', label: 'Fechar', ariaLabel: 'Fechar', variant: 'outline', onClick: close }));
+            } else {
+                const cancelBtn = Atoms.button({ icon: 'x', label: 'Cancelar', ariaLabel: 'Cancelar', variant: 'outline', onClick: () => { close(); }, disabled: saving });
+                const saveBtn = Atoms.button({ icon: 'check', label: saving ? 'Salvando' : 'Salvar', ariaLabel: 'Salvar', variant: 'primary', onClick: () => { renderFooter(tab, true, true); applyAndClose(); }, disabled: saving });
+                if (saving) saveBtn.classList.add('is-loading');
+                footerEl.appendChild(cancelBtn);
+                footerEl.appendChild(saveBtn);
+            }
+            if (typeof gsap !== 'undefined') {
+                gsap.fromTo(footerEl, { opacity: 0.6 }, { opacity: 1, duration: 0.3, ease: 'power2.inOut' });
+            }
+        }
+
         function render() {
+            prevFooterDirty = false;
             Object.entries(tabButtons).forEach(([k, b]) => {
                 const selected = k === activeTab;
                 b.classList.toggle('is-active', selected);
                 b.setAttribute('aria-selected', String(selected));
                 b.tabIndex = selected ? 0 : -1;
             });
-            bodyEl.setAttribute('aria-labelledby', `kpe-settings-tab-${activeTab}`);
+            bodyEl.setAttribute('aria-labelledby', `pe-settings-tab-${activeTab}`);
             bodyEl.innerHTML = '';
             bodyEl.scrollTop = 0;
             bodyEl.style.overflowY = '';
             footerEl.innerHTML = '';
             const tab = tabDefs.find(item => item.key === activeTab);
             const intro = document.createElement('div');
-            intro.className = 'kpe-settings-intro';
+            intro.className = 'pe-settings-intro';
             const icon = document.createElement('span');
-            icon.className = 'kpe-settings-intro__icon';
+            icon.className = 'pe-settings-intro__icon';
             icon.appendChild(Atoms.icon(tab.icon));
             const text = document.createElement('div');
-            text.className = 'kpe-settings-intro__text';
+            text.className = 'pe-settings-intro__text';
             const title = document.createElement('h5');
             title.textContent = tab.title;
             const description = document.createElement('p');
@@ -251,13 +293,14 @@
             else if (activeTab === 'systemPrompt') renderSystemPrompt();
             else if (activeTab === 'provider') renderProvider();
             else renderHistory();
+            renderFooter(activeTab, computeDirty(activeTab), false);
         }
 
         function renderParams() {
             const form = document.createElement('div');
-            form.className = 'kpe-param-body';
+            form.className = 'pe-param-body';
             const presetsRow = document.createElement('div');
-            presetsRow.className = 'kpe-param-presets';
+            presetsRow.className = 'pe-param-presets';
             presetsRow.setAttribute('role', 'group');
             presetsRow.setAttribute('aria-label', 'Predefinições de parâmetros');
             const presetButtons = [];
@@ -274,16 +317,17 @@
             ParamSchema.PRESETS.forEach(p => {
                 const b = document.createElement('button');
                 b.type = 'button';
-                b.className = 'kpe-param-preset';
+                b.className = 'pe-param-preset';
                 b.textContent = p.label;
                 presetButtons.push({ button: b, preset: p });
                 b.addEventListener('click', () => {
                     Object.assign(draft, p.values);
                     ParamSchema.SCHEMA.filter(f => f.type === 'number').forEach(f => {
-                        const inp = form.querySelector(`#kpe-param-${f.key}`);
+                        const inp = form.querySelector(`#pe-param-${f.key}`);
                         if (inp) inp.value = draft[f.key] == null ? '' : String(draft[f.key]);
                     });
                     updatePresetSelection();
+                    syncFooter('params');
                 });
                 presetsRow.appendChild(b);
             });
@@ -292,61 +336,59 @@
 
             ParamSchema.SCHEMA.filter(f => f.type === 'number').forEach(f => {
                 const row = document.createElement('div');
-                row.className = 'kpe-param-row';
+                row.className = 'pe-param-row';
                 const placeholder = f.key === 'seed' ? 'Aleatório' : (f.default == null ? '' : f.default);
-                row.innerHTML = `<label class="kpe-param-label" for="kpe-param-${f.key}">${Utils.escapeHtml(f.label)}</label><div class="kpe-param-control"><input type="number" id="kpe-param-${f.key}" class="kpe-param-input" min="${f.min}" max="${f.max}" step="${f.step}" value="${draft[f.key] == null ? '' : String(draft[f.key])}" placeholder="${placeholder}">${f.hint ? `<div class="kpe-param-hint">${Utils.escapeHtml(f.hint)}</div>` : ''}</div>`;
+                row.innerHTML = `<label class="pe-param-label" for="pe-param-${f.key}">${Utils.escapeHtml(f.label)}</label><div class="pe-param-control"><input type="number" id="pe-param-${f.key}" class="pe-param-input" min="${f.min}" max="${f.max}" step="${f.step}" value="${draft[f.key] == null ? '' : String(draft[f.key])}" placeholder="${placeholder}">${f.hint ? `<div class="pe-param-hint">${Utils.escapeHtml(f.hint)}</div>` : ''}</div>`;
                 form.appendChild(row);
                 row.querySelector('input').addEventListener('input', (e) => {
                     const v = e.target.value.trim();
                     draft[f.key] = v === '' ? null : Number(v);
                     updatePresetSelection();
+                    syncFooter('params');
                 });
             });
 
             bodyEl.appendChild(form);
-            const cancelBtn = Atoms.button({ icon: 'x', label: 'Cancelar', ariaLabel: 'Cancelar', variant: 'outline', onClick: close });
-            const saveBtn = Atoms.button({ icon: 'check', label: 'Salvar', ariaLabel: 'Salvar', variant: 'primary', onClick: applyAndClose });
-            footerEl.appendChild(cancelBtn);
-            footerEl.appendChild(saveBtn);
+            renderFooter('params', computeDirty('params'), false);
         }
 
         function renderProvider() {
             const form = document.createElement('div');
-            form.className = 'kpe-param-body kpe-provider-settings';
+            form.className = 'pe-param-body pe-provider-settings';
 
             const heading = document.createElement('div');
-            heading.className = 'kpe-provider-section-heading';
+            heading.className = 'pe-provider-section-heading';
             heading.innerHTML = '<h6>Escolha um modelo</h6><p>Selecione um provedor ou busque diretamente pelo modelo. Abra um modelo para ver detalhes e gerenciar o roteamento.</p>';
             form.appendChild(heading);
 
             // Painel de roteamento (Principal + Fallback)
             const routingPanel = document.createElement('div');
-            routingPanel.className = 'kpe-routing-panel';
+            routingPanel.className = 'pe-routing-panel';
             routingPanel.setAttribute('aria-label', 'Roteamento de provedores');
 
             const primaryStep = document.createElement('div');
-            primaryStep.className = 'kpe-routing-step';
+            primaryStep.className = 'pe-routing-step';
             const primaryLabel = document.createElement('span');
-            primaryLabel.className = 'kpe-routing-label is-primary';
+            primaryLabel.className = 'pe-routing-label is-primary';
             primaryLabel.textContent = 'Principal';
             const primaryValue = document.createElement('span');
-            primaryValue.className = 'kpe-routing-value';
-            primaryValue.id = 'kpe-routing-primary';
+            primaryValue.className = 'pe-routing-value';
+            primaryValue.id = 'pe-routing-primary';
             primaryStep.append(primaryLabel, primaryValue);
 
             const arrow = document.createElement('span');
-            arrow.className = 'kpe-routing-arrow';
+            arrow.className = 'pe-routing-arrow';
             arrow.textContent = '→';
             arrow.setAttribute('aria-hidden', 'true');
 
             const fallbackStep = document.createElement('div');
-            fallbackStep.className = 'kpe-routing-step';
+            fallbackStep.className = 'pe-routing-step';
             const fallbackLabel = document.createElement('span');
-            fallbackLabel.className = 'kpe-routing-label is-fallback';
+            fallbackLabel.className = 'pe-routing-label is-fallback';
             fallbackLabel.textContent = 'Fallback';
             const fallbackValue = document.createElement('span');
-            fallbackValue.className = 'kpe-routing-value';
-            fallbackValue.id = 'kpe-routing-fallback';
+            fallbackValue.className = 'pe-routing-value';
+            fallbackValue.id = 'pe-routing-fallback';
             fallbackStep.append(fallbackLabel, fallbackValue);
 
             const clearBtn = Atoms.button({
@@ -363,47 +405,47 @@
                             renderList();
                         }
                     } catch (err) {
-                        console.warn('[KPE] Falha ao limpar roteamento:', err);
+                        console.warn('[PE] Falha ao limpar roteamento:', err);
                         Molecules.toast('Não foi possível limpar o roteamento.', 'error');
                     }
                 }
             });
-            clearBtn.className = 'kpe-routing-clear';
+            clearBtn.className = 'pe-routing-clear';
 
             routingPanel.append(primaryStep, arrow, fallbackStep, clearBtn);
             form.appendChild(routingPanel);
 
             const loading = document.createElement('div');
-            loading.className = 'kpe-catalog-loading';
+            loading.className = 'pe-catalog-loading';
             loading.textContent = 'Atualizando catálogo…';
             loading.hidden = true;
             form.appendChild(loading);
 
             const filters = document.createElement('div');
-            filters.className = 'kpe-catalog-filters';
+            filters.className = 'pe-catalog-filters';
             const search = document.createElement('input');
             search.type = 'search';
-            search.className = 'kpe-param-input';
+            search.className = 'pe-param-input';
             search.placeholder = 'Buscar modelo…';
             search.setAttribute('aria-label', 'Buscar modelo');
 
             const keylessLabel = document.createElement('label');
-            keylessLabel.className = 'kpe-catalog-toggle';
+            keylessLabel.className = 'pe-catalog-toggle';
             const keyless = document.createElement('input');
             keyless.type = 'checkbox';
-            keylessLabel.append(keyless, document.createTextNode('Keyless'));
+            keylessLabel.append(keyless, document.createTextNode('Sem chave'));
 
             const streamLabel = document.createElement('label');
-            streamLabel.className = 'kpe-catalog-toggle';
+            streamLabel.className = 'pe-catalog-toggle';
             const streaming = document.createElement('input');
             streaming.type = 'checkbox';
-            streamLabel.append(streaming, document.createTextNode('Stream'));
+            streamLabel.append(streaming, document.createTextNode('Streaming'));
 
             filters.append(search, keylessLabel, streamLabel);
             form.appendChild(filters);
 
             const accordion = document.createElement('div');
-            accordion.className = 'kpe-provider-accordion';
+            accordion.className = 'pe-provider-accordion';
             accordion.setAttribute('aria-label', 'Modelos por provedor');
             form.appendChild(accordion);
 
@@ -443,7 +485,7 @@
 
                 function renderDetails(entry, pinned, fallback) {
                     const details = document.createElement('dl');
-                    details.className = 'kpe-model-details';
+                    details.className = 'pe-model-details';
 
                 const addField = (label, value) => {
                     const dt = document.createElement('dt');
@@ -459,7 +501,7 @@
                 addField('Contexto', entry.modelId || 'Não informado');
 
                 const actions = document.createElement('div');
-                actions.className = 'kpe-model-details__actions';
+                actions.className = 'pe-model-details__actions';
 
                 const copyButton = Atoms.buttonNode({
                     label: 'Copiar JSON',
@@ -485,7 +527,7 @@
                         await navigator.clipboard.writeText(JSON.stringify(safeEntry, null, 2));
                         Molecules.toast('Configuração copiada.', 'success');
                     } catch (err) {
-                        console.warn('[KPE] Falha ao copiar a configuração do modelo.', err);
+                        console.warn('[PE] Falha ao copiar a configuração do modelo.', err);
                         Molecules.toast('Não foi possível copiar a configuração.', 'error');
                     }
                 });
@@ -543,7 +585,7 @@
                             Molecules.toast(`Fallback removido: ${entry.label}`, 'success');
                             renderList();
                         } catch (err) {
-                            console.warn('[KPE] Falha ao remover fallback:', err);
+                            console.warn('[PE] Falha ao remover fallback:', err);
                             Molecules.toast('Não foi possível remover o fallback.', 'error');
                         }
                         return;
@@ -592,14 +634,14 @@
                             }
                         }
                     } catch (err) {
-                        console.warn('[KPE] Falha ao definir fallback:', err);
+                        console.warn('[PE] Falha ao definir fallback:', err);
                         errMsg = err && err.message ? err.message : String(err);
                     }
                     if (ok) {
                         Molecules.toast(`Fallback definido: ${entry.label}`, 'success');
                         renderList();
                     } else {
-                        console.error('[KPE] Detalhes falha fallback:', errMsg);
+                        console.error('[PE] Detalhes falha fallback:', errMsg);
                         Molecules.toast('Não foi possível definir este modelo como fallback.' + (errMsg ? ' (' + errMsg + ')' : ''), 'error');
                     }
                 });
@@ -626,8 +668,8 @@
                 accordion.replaceChildren();
 
                 // Atualizar painel de roteamento
-                const primaryEl = form.querySelector('#kpe-routing-primary');
-                const fallbackEl = form.querySelector('#kpe-routing-fallback');
+                const primaryEl = form.querySelector('#pe-routing-primary');
+                const fallbackEl = form.querySelector('#pe-routing-fallback');
                 if (primaryEl) {
                     if (pinned) {
                         primaryEl.textContent = `${pinned.label} (${pinned.modelId || pinned.id})`;
@@ -647,7 +689,7 @@
 
                 if (!groups.length) {
                     const empty = document.createElement('div');
-                    empty.className = 'kpe-provider-empty';
+                    empty.className = 'pe-provider-empty';
                     empty.setAttribute('role', 'status');
                     const message = document.createElement('p');
                     message.textContent = query
@@ -671,51 +713,51 @@
 
                 groups.forEach((group) => {
                     const title = document.createElement('h6');
-                    title.className = 'kpe-provider-group-title';
+                    title.className = 'pe-provider-group-title';
                     title.textContent = group.providerLabel || group.providerId || 'Provedor';
                     accordion.appendChild(title);
 
                     (group.entries || []).forEach((entry) => {
                         const isActive = expandedModelId === entry.id;
                         const card = document.createElement('div');
-                        card.className = 'kpe-model-card';
+                        card.className = 'pe-model-card';
                         if (isActive) card.classList.add('is-active');
 
                         const header = document.createElement('div');
-                        header.className = 'kpe-model-header';
+                        header.className = 'pe-model-header';
                         header.setAttribute('role', 'button');
                         header.tabIndex = 0;
                         header.setAttribute('aria-expanded', String(isActive));
                         header.setAttribute('aria-label', `${entry.label}, ${group.providerLabel || 'provedor'}. ${isActive ? 'Recolher detalhes' : 'Expandir detalhes'}.`);
 
                         const info = document.createElement('div');
-                        info.className = 'kpe-model-info';
+                        info.className = 'pe-model-info';
                         const name = document.createElement('span');
-                        name.className = 'kpe-model-info__name';
+                        name.className = 'pe-model-info__name';
                         name.textContent = entry.label;
                         const id = document.createElement('span');
-                        id.className = 'kpe-model-info__id';
+                        id.className = 'pe-model-info__id';
                         id.textContent = entry.modelId || entry.id;
                         info.append(name, id);
 
                         const meta = document.createElement('div');
-                        meta.className = 'kpe-model-header__meta';
+                        meta.className = 'pe-model-header__meta';
                         const badges = document.createElement('div');
-                        badges.className = 'kpe-model-badges';
+                        badges.className = 'pe-model-badges';
                         const addBadge = (text, opts = {}) => {
                             const badge = document.createElement('span');
-                            badge.className = 'kpe-model-badge';
+                            badge.className = 'pe-model-badge';
                             if (opts.isPrimary) badge.classList.add('is-primary');
                             if (opts.isFallback) badge.classList.add('is-fallback');
                             badge.textContent = text;
                             badges.appendChild(badge);
                         };
-                        if (isFreeBadge(entry)) addBadge('free');
-                        if (entry.capabilities && entry.capabilities.streaming) addBadge('stream');
+                        if (isFreeBadge(entry)) addBadge('grátis');
+                        if (entry.capabilities && entry.capabilities.streaming) addBadge('streaming');
                         if (pinned && pinned.id === entry.id) addBadge('Principal', { isPrimary: true });
                         if (fallback && fallbackMatchesEntry(fallback, entry)) addBadge('Fallback', { isFallback: true });
                         const chevron = document.createElement('span');
-                        chevron.className = 'kpe-chevron';
+                        chevron.className = 'pe-chevron';
                         chevron.setAttribute('aria-hidden', 'true');
                         chevron.textContent = '▾';
                         meta.append(badges, chevron);
@@ -723,13 +765,13 @@
                         header.append(info, meta);
 
                         const expand = document.createElement('div');
-                        expand.className = 'kpe-model-expand';
+                        expand.className = 'pe-model-expand';
                         const clip = document.createElement('div');
-                        clip.className = 'kpe-model-expand__clip';
+                        clip.className = 'pe-model-expand__clip';
                         if (isActive) clip.appendChild(renderDetails(entry, pinned, fallback));
                         expand.appendChild(clip);
 
-                        const regionId = Utils.uid('kpe-model-region');
+                        const regionId = Utils.uid('pe-model-region');
                         header.setAttribute('aria-controls', regionId);
                         expand.id = regionId;
 
@@ -766,26 +808,26 @@
                 loading.hidden = true;
                 renderList();
             }).catch((err) => {
-                console.warn('[KPE] Falha ao atualizar catálogo na aba Provedor.', err);
+                console.warn('[PE] Falha ao atualizar catálogo na aba Provedor.', err);
                 loading.hidden = false;
                 loading.textContent = 'Não foi possível atualizar o catálogo; exibindo entradas disponíveis.';
                 renderList();
             });
 
-            const closeBtn = Atoms.button({ icon: 'check', label: 'Concluir', ariaLabel: 'Fechar janela de configurações', variant: 'primary', onClick: close });
+            const closeBtn = Atoms.button({ icon: 'x', label: 'Fechar', ariaLabel: 'Fechar janela de configurações', variant: 'primary', onClick: close });
             footerEl.appendChild(closeBtn);
         }
         function renderContext() {
             const form = document.createElement('div');
-            form.className = 'kpe-param-body';
+            form.className = 'pe-param-body';
 
             const infoBox = document.createElement('div');
-            infoBox.className = 'kpe-context-info';
+            infoBox.className = 'pe-context-info';
             const activeFiles = ProjectContext.list().filter(f => f.enabled);
-            infoBox.innerHTML = `<div class="kpe-context-info__title">Contexto do projeto</div><div class="kpe-context-info__text">${activeFiles.length} arquivo(s) ativo(s) · ${Utils.formatBytes(ProjectContext.getTotalSize())} · ${ProjectContext.isEnabled() ? 'injeção ON' : 'injeção OFF'}</div><div class="kpe-context-info__hint">Anexado automaticamente ao final do system prompt (quando ativado).</div>`;
+            infoBox.innerHTML = `<div class="pe-context-info__title">Contexto do projeto</div><div class="pe-context-info__text">${activeFiles.length} arquivo(s) ativo(s) · ${Utils.formatBytes(ProjectContext.getTotalSize())} · ${ProjectContext.isEnabled() ? 'injeção ON' : 'injeção OFF'}</div><div class="pe-context-info__hint">Anexado automaticamente ao final do system prompt (quando ativado).</div>`;
             const manageBtn = document.createElement('button');
             manageBtn.type = 'button';
-            manageBtn.className = 'kpe-context-manage';
+            manageBtn.className = 'pe-context-manage';
             manageBtn.textContent = 'Gerenciar arquivos';
             manageBtn.addEventListener('click', () => { close(); setTimeout(() => State.activeComposer?.actionbar?.contextBtn?.click(), 250); });
             infoBox.appendChild(manageBtn);
@@ -794,85 +836,83 @@
             ['response_language', 'response_persona'].forEach(key => {
                 const f = ParamSchema.SCHEMA.find(x => x.key === key);
                 const row = document.createElement('div');
-                row.className = 'kpe-param-row';
+                row.className = 'pe-param-row';
                 const opts = f.options.map(o => `<option value="${o.value}" ${draft[key] === o.value ? 'selected' : ''}>${Utils.escapeHtml(o.label)}</option>`).join('');
-                row.innerHTML = `<label class="kpe-param-label" for="kpe-param-${key}">${Utils.escapeHtml(f.label)}</label><div class="kpe-param-control"><select id="kpe-param-${key}" class="kpe-param-input">${opts}</select><div class="kpe-param-hint">${Utils.escapeHtml(f.hint)}</div></div>`;
+                row.innerHTML = `<label class="pe-param-label" for="pe-param-${key}">${Utils.escapeHtml(f.label)}</label><div class="pe-param-control"><select id="pe-param-${key}" class="pe-param-input">${opts}</select><div class="pe-param-hint">${Utils.escapeHtml(f.hint)}</div></div>`;
                 form.appendChild(row);
                 row.querySelector('select').addEventListener('change', (e) => {
                     draft[key] = e.target.value;
                     if (key === 'response_persona') updateCustomToneVisibility();
+                    syncFooter('context');
                 });
             });
 
             const customTone = ParamSchema.SCHEMA.find(f => f.key === 'response_persona_custom');
             const customToneRow = document.createElement('div');
-            customToneRow.className = 'kpe-param-row';
-            customToneRow.innerHTML = `<label class="kpe-param-label" for="kpe-param-${customTone.key}">${Utils.escapeHtml(customTone.label)}</label><div class="kpe-param-control"><input type="text" id="kpe-param-${customTone.key}" class="kpe-param-input" maxlength="${customTone.maxLength}" value="${Utils.escapeHtml(draft[customTone.key] || '')}" placeholder="Ex: sarcástico, mas didático"><div class="kpe-param-hint">${Utils.escapeHtml(customTone.hint)}</div></div>`;
+            customToneRow.className = 'pe-param-row';
+            customToneRow.innerHTML = `<label class="pe-param-label" for="pe-param-${customTone.key}">${Utils.escapeHtml(customTone.label)}</label><div class="pe-param-control"><input type="text" id="pe-param-${customTone.key}" class="pe-param-input" maxlength="${customTone.maxLength}" value="${Utils.escapeHtml(draft[customTone.key] || '')}" placeholder="Ex: sarcástico, mas didático"><div class="pe-param-hint">${Utils.escapeHtml(customTone.hint)}</div></div>`;
             form.appendChild(customToneRow);
-            customToneRow.querySelector('input').addEventListener('input', (e) => { draft[customTone.key] = e.target.value; });
+            customToneRow.querySelector('input').addEventListener('input', (e) => { draft[customTone.key] = e.target.value; syncFooter('context'); });
             function updateCustomToneVisibility() {
                 customToneRow.style.display = draft.response_persona === 'auto' ? 'none' : '';
             }
             updateCustomToneVisibility();
 
             bodyEl.appendChild(form);
-            const cancelBtn = Atoms.button({ icon: 'x', label: 'Cancelar', ariaLabel: 'Cancelar', variant: 'outline', onClick: close });
-            const saveBtn = Atoms.button({ icon: 'check', label: 'Salvar', ariaLabel: 'Salvar', variant: 'primary', onClick: applyAndClose });
-            footerEl.appendChild(cancelBtn);
-            footerEl.appendChild(saveBtn);
+            renderFooter('context', computeDirty('context'), false);
         }
 
         function renderSystemPrompt() {
             const form = document.createElement('div');
-            form.className = 'kpe-param-body kpe-system-prompt';
+            form.className = 'pe-param-body pe-system-prompt';
 
             const intro = document.createElement('div');
-            intro.className = 'kpe-system-prompt__intro';
+            intro.className = 'pe-system-prompt__intro';
             const title = document.createElement('h5');
-            title.className = 'kpe-system-prompt__title';
+            title.className = 'pe-system-prompt__title';
             title.textContent = 'Instruções de aprimoramento';
             const description = document.createElement('p');
-            description.className = 'kpe-system-prompt__description';
+            description.className = 'pe-system-prompt__description';
             description.textContent = 'Complementa o aprimoramento direto e o fluxo guiado. Contexto do projeto, idioma e personalidade são configurados separadamente.';
             intro.append(title, description);
             form.appendChild(intro);
 
             const editorCard = document.createElement('section');
-            editorCard.className = 'kpe-system-prompt__card kpe-system-prompt__editor-card';
-            editorCard.setAttribute('aria-labelledby', 'kpe-system-prompt-heading');
+            editorCard.className = 'pe-system-prompt__card pe-system-prompt__editor-card';
+            editorCard.setAttribute('aria-labelledby', 'pe-system-prompt-heading');
             const editorHeading = document.createElement('div');
-            editorHeading.className = 'kpe-system-prompt__section-heading';
+            editorHeading.className = 'pe-system-prompt__section-heading';
             const editorTitle = document.createElement('h6');
-            editorTitle.id = 'kpe-system-prompt-heading';
+            editorTitle.id = 'pe-system-prompt-heading';
             editorTitle.textContent = 'Prompt ativo';
             const editorHint = document.createElement('p');
             editorHint.textContent = 'Edite as instruções usadas pelo script.';
             editorHeading.append(editorTitle, editorHint);
 
             const editorLabel = document.createElement('label');
-            editorLabel.className = 'kpe-system-prompt__label';
-            editorLabel.htmlFor = 'kpe-system-prompt-editor';
+            editorLabel.className = 'pe-system-prompt__label';
+            editorLabel.htmlFor = 'pe-system-prompt-editor';
             editorLabel.textContent = 'Conteúdo do system prompt';
             const editor = document.createElement('textarea');
-            editor.id = 'kpe-system-prompt-editor';
-            editor.className = 'kpe-textarea kpe-system-prompt__textarea';
+            editor.id = 'pe-system-prompt-editor';
+            editor.className = 'pe-textarea pe-system-prompt__textarea';
             editor.rows = 12;
             editor.maxLength = SystemPromptManager.MAX_LENGTH;
             editor.value = systemPromptDraft.prompt;
-            editor.setAttribute('aria-describedby', 'kpe-system-prompt-feedback kpe-system-prompt-count');
+            editor.setAttribute('aria-describedby', 'pe-system-prompt-feedback pe-system-prompt-count');
             const count = document.createElement('div');
-            count.id = 'kpe-system-prompt-count';
-            count.className = 'kpe-system-prompt__count';
+            count.id = 'pe-system-prompt-count';
+            count.className = 'pe-system-prompt__count';
             const feedback = document.createElement('div');
-            feedback.id = 'kpe-system-prompt-feedback';
-            feedback.className = 'kpe-system-prompt__feedback';
+            feedback.id = 'pe-system-prompt-feedback';
+            feedback.className = 'pe-system-prompt__feedback';
             feedback.setAttribute('role', 'status');
             feedback.setAttribute('aria-live', 'polite');
             const updateValidation = () => {
                 const result = SystemPromptManager.validatePrompt(systemPromptDraft.prompt);
                 count.textContent = `${result.charCount.toLocaleString('pt-BR')} / ${SystemPromptManager.MAX_LENGTH.toLocaleString('pt-BR')} caracteres`;
                 const state = result.errors.length ? 'error' : (result.warnings.length ? 'warning' : 'valid');
-                feedback.className = `kpe-system-prompt__feedback is-${state}`;
+                feedback.className = `pe-system-prompt__feedback is-${state}`;
                 editor.setAttribute('aria-invalid', String(result.errors.length > 0));
                 feedback.textContent = result.errors.length
                     ? result.errors.join(' ')
@@ -881,12 +921,13 @@
             editor.addEventListener('input', () => {
                 systemPromptDraft.prompt = editor.value;
                 updateValidation();
+                syncFooter('systemPrompt');
             });
             const editorMeta = document.createElement('div');
-            editorMeta.className = 'kpe-system-prompt__meta';
+            editorMeta.className = 'pe-system-prompt__meta';
             editorMeta.append(count, feedback);
             const editorControls = document.createElement('div');
-            editorControls.className = 'kpe-system-prompt__editor-controls';
+            editorControls.className = 'pe-system-prompt__editor-controls';
 
             const resetBtn = Atoms.button({
                 icon: 'undo', label: 'Redefinir para o padrão', ariaLabel: 'Redefinir para o system prompt padrão',
@@ -894,6 +935,7 @@
                     systemPromptDraft.prompt = CONFIG.SYSTEM_PROMPT;
                     editor.value = systemPromptDraft.prompt;
                     updateValidation();
+                    syncFooter('systemPrompt');
                     Molecules.toast('Prompt padrão restaurado no editor. Salve para aplicar.', 'info');
                 }
             });
@@ -902,24 +944,24 @@
             form.appendChild(editorCard);
 
             const presetCard = document.createElement('section');
-            presetCard.className = 'kpe-system-prompt__card kpe-system-prompt__presets';
-            presetCard.setAttribute('aria-labelledby', 'kpe-system-presets-heading');
+            presetCard.className = 'pe-system-prompt__card pe-system-prompt__presets';
+            presetCard.setAttribute('aria-labelledby', 'pe-system-presets-heading');
             const presetHeading = document.createElement('div');
-            presetHeading.className = 'kpe-system-prompt__section-heading';
+            presetHeading.className = 'pe-system-prompt__section-heading';
             const presetTitle = document.createElement('h6');
-            presetTitle.id = 'kpe-system-presets-heading';
+            presetTitle.id = 'pe-system-presets-heading';
             presetTitle.textContent = 'Presets pessoais';
             const presetHint = document.createElement('p');
             presetHint.textContent = `Guarde até ${SystemPromptManager.MAX_PRESETS} versões para reutilizar. As alterações são persistidas ao salvar as configurações.`;
             presetHeading.append(presetTitle, presetHint);
 
             const presetSelectLabel = document.createElement('label');
-            presetSelectLabel.className = 'kpe-system-prompt__label';
-            presetSelectLabel.htmlFor = 'kpe-system-preset-select';
+            presetSelectLabel.className = 'pe-system-prompt__label';
+            presetSelectLabel.htmlFor = 'pe-system-preset-select';
             presetSelectLabel.textContent = 'Preset salvo';
             const presetSelect = document.createElement('select');
-            presetSelect.id = 'kpe-system-preset-select';
-            presetSelect.className = 'kpe-param-input kpe-system-prompt__select';
+            presetSelect.id = 'pe-system-preset-select';
+            presetSelect.className = 'pe-param-input pe-system-prompt__select';
             const emptyOption = document.createElement('option');
             emptyOption.value = '';
             emptyOption.textContent = 'Selecione um preset';
@@ -937,21 +979,21 @@
             }
 
             const presetNameLabel = document.createElement('label');
-            presetNameLabel.className = 'kpe-system-prompt__label';
-            presetNameLabel.htmlFor = 'kpe-system-preset-name';
+            presetNameLabel.className = 'pe-system-prompt__label';
+            presetNameLabel.htmlFor = 'pe-system-preset-name';
             presetNameLabel.textContent = 'Nome do preset';
             const presetName = document.createElement('input');
-            presetName.id = 'kpe-system-preset-name';
-            presetName.className = 'kpe-param-input kpe-system-prompt__name';
+            presetName.id = 'pe-system-preset-name';
+            presetName.className = 'pe-param-input pe-system-prompt__name';
             presetName.type = 'text';
             presetName.maxLength = SystemPromptManager.MAX_PRESET_NAME;
             presetName.autocomplete = 'off';
             presetName.placeholder = 'Ex.: Revisão de código';
-            presetName.setAttribute('aria-describedby', 'kpe-system-preset-name-hint');
+            presetName.setAttribute('aria-describedby', 'pe-system-preset-name-hint');
             presetName.value = presetSelect.value;
             const presetNameHint = document.createElement('div');
-            presetNameHint.id = 'kpe-system-preset-name-hint';
-            presetNameHint.className = 'kpe-system-prompt__helper';
+            presetNameHint.id = 'pe-system-preset-name-hint';
+            presetNameHint.className = 'pe-system-prompt__helper';
             presetNameHint.textContent = 'Use um nome novo para criar ou o nome selecionado para atualizar.';
             presetSelect.addEventListener('change', () => {
                 selectedSystemPreset = presetSelect.value;
@@ -963,23 +1005,24 @@
             });
 
             const presetFields = document.createElement('div');
-            presetFields.className = 'kpe-system-prompt__preset-fields';
+            presetFields.className = 'pe-system-prompt__preset-fields';
             const selectField = document.createElement('div');
-            selectField.className = 'kpe-system-prompt__field';
+            selectField.className = 'pe-system-prompt__field';
             selectField.append(presetSelectLabel, presetSelect);
             const nameField = document.createElement('div');
-            nameField.className = 'kpe-system-prompt__field';
+            nameField.className = 'pe-system-prompt__field';
             nameField.append(presetNameLabel, presetName, presetNameHint);
             presetFields.append(selectField, nameField);
 
             const presetActions = document.createElement('div');
-            presetActions.className = 'kpe-system-prompt__preset-actions';
+            presetActions.className = 'pe-system-prompt__preset-actions';
             const loadPresetBtn = Atoms.button({ icon: 'check', label: 'Carregar', ariaLabel: 'Carregar preset selecionado', variant: 'outline', onClick: () => {
                 const selected = systemPromptDraft.presets.find(p => p.name === presetSelect.value);
                 if (!selected) { Molecules.toast('Selecione um preset para carregar.', 'error'); return; }
                 systemPromptDraft.prompt = selected.prompt;
                 editor.value = selected.prompt;
                 updateValidation();
+                syncFooter('systemPrompt');
                 Molecules.toast(`Preset "${selected.name}" carregado. Salve para aplicar.`, 'success');
                 editor.focus();
             }});
@@ -1063,15 +1106,15 @@
             form.appendChild(presetCard);
 
             const defaultDetails = document.createElement('details');
-            defaultDetails.className = 'kpe-system-prompt__default';
+            defaultDetails.className = 'pe-system-prompt__default';
             const defaultSummary = document.createElement('summary');
             defaultSummary.textContent = 'Ver prompt padrão original';
             const defaultDescription = document.createElement('p');
-            defaultDescription.className = 'kpe-system-prompt__helper';
+            defaultDescription.className = 'pe-system-prompt__helper';
             defaultDescription.textContent = 'Referência somente leitura; redefinir copia este conteúdo para o editor.';
             const defaultEditor = document.createElement('textarea');
-            defaultEditor.id = 'kpe-system-prompt-default';
-            defaultEditor.className = 'kpe-textarea kpe-system-prompt__default-textarea';
+            defaultEditor.id = 'pe-system-prompt-default';
+            defaultEditor.className = 'pe-textarea pe-system-prompt__default-textarea';
             defaultEditor.rows = 6;
             defaultEditor.readOnly = true;
             defaultEditor.setAttribute('aria-label', 'System prompt padrão original do script, somente leitura');
@@ -1081,31 +1124,14 @@
 
             bodyEl.appendChild(form);
             updateValidation();
-            const cancelBtn = Atoms.button({ icon: 'x', label: 'Cancelar', ariaLabel: 'Cancelar', variant: 'outline', onClick: close });
-            const testBtn = Atoms.button({ icon: 'check', label: 'Testar localmente', ariaLabel: 'Validar e simular o system prompt localmente', variant: 'outline', onClick: () => {
-                const result = SystemPromptManager.simulate(systemPromptDraft.prompt);
-                if (!result.ok) {
-                    feedback.className = 'kpe-system-prompt__feedback is-error';
-                    feedback.textContent = result.errors.join(' ') || result.message;
-                    Molecules.toast(result.errors.join(' ') || result.message, 'error');
-                    Anim.shake(editor);
-                    return;
-                }
-                feedback.className = `kpe-system-prompt__feedback is-${result.warnings.length ? 'warning' : 'valid'}`;
-                feedback.textContent = [result.message, ...result.warnings].join(' ');
-                Molecules.toast(result.message, 'success');
-            }});
-            const saveBtn = Atoms.button({ icon: 'check', label: 'Salvar', ariaLabel: 'Salvar system prompt e configurações', variant: 'primary', onClick: applyAndClose });
-            footerEl.appendChild(cancelBtn);
-            footerEl.appendChild(testBtn);
-            footerEl.appendChild(saveBtn);
+            renderFooter('systemPrompt', computeDirty('systemPrompt'), false);
         }
 
         function renderHistory() {
             const runs = EnhancementHistory.listRuns();
             if (!runs.length) {
                 const empty = document.createElement('div');
-                empty.className = 'kpe-history-empty';
+                empty.className = 'pe-history-empty';
                 empty.textContent = 'Nenhuma execução registrada ainda. Cada execução (Aprimorar ou Guiado) aparecerá aqui com suas chamadas à API aninhadas.';
                 bodyEl.appendChild(empty);
                 const closeBtn = Atoms.button({ icon: 'x', label: 'Fechar', ariaLabel: 'Fechar', variant: 'primary', onClick: close });
@@ -1135,15 +1161,36 @@
                     }
                 }
             };
+            const deleteRun = (runId, runCard) => {
+                if (!runId) return;
+                if (!confirm('Excluir esta execução do histórico? Esta ação não pode ser desfeita.')) return;
+                try {
+                    const raw = GM_getValue('pe_runs', '[]');
+                    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                    const list = Array.isArray(parsed) ? parsed : [];
+                    const filtered = list.filter(r => r && r.id !== runId);
+                    GM_setValue('pe_runs', JSON.stringify(filtered));
+                    Molecules.toast('Execução removida do histórico.', 'success');
+                    runCard?.remove();
+                    render();
+                    setTimeout(() => {
+                        const closeBtn = footerEl.querySelector('.pe-btn');
+                        if (closeBtn) closeBtn.focus();
+                    }, 0);
+                } catch (error) {
+                    console.error('[PE] Falha ao excluir execução do histórico:', error);
+                    Molecules.toast('Não foi possível excluir a execução.', 'error', { details: error.message });
+                }
+            };
             runs.forEach((run) => {
                 const card = document.createElement('div');
-                card.className = 'kpe-history-item';
+                card.className = 'pe-history-item';
 
                 const heading = document.createElement('div');
-                heading.className = 'kpe-history-item__heading';
+                heading.className = 'pe-history-item__heading';
                 const header = document.createElement('button');
                 header.type = 'button';
-                header.className = 'kpe-history-item__header';
+                header.className = 'pe-history-item__header';
                 header.setAttribute('aria-expanded', 'false');
 
                 const statusIcon = statusIconMap[run.status] || '○';
@@ -1154,24 +1201,24 @@
                 const dur = run.durationMs >= 1000 ? `${(run.durationMs / 1000).toFixed(2)}s` : `${run.durationMs}ms`;
                 const callsCount = (run.calls && run.calls.length) || 0;
                 const outcomeLabel = outcomeLabels[run.outcome] || run.outcome || '—';
-                const outcomeClass = `kpe-outcome-${run.outcome || 'pending'}`;
-                const legacyBadge = run.meta && run.meta.legacy ? '<span class="kpe-history-legacy-badge">legado</span>' : '';
+                const outcomeClass = `pe-outcome-${run.outcome || 'pending'}`;
+                const legacyBadge = run.meta && run.meta.legacy ? '<span class="pe-history-legacy-badge">legado</span>' : '';
 
                 header.innerHTML = `
-                    <span class="kpe-history-item__status ${statusClass}">${statusIcon}</span>
-                    <span class="kpe-history-item__main">
-                        <span class="kpe-history-item__preview">
-                            <span class="kpe-history-badge">${Utils.escapeHtml(typeBadge)}</span>${legacyBadge}
+                    <span class="pe-history-item__status ${statusClass}">${statusIcon}</span>
+                    <span class="pe-history-item__main">
+                        <span class="pe-history-item__preview">
+                            <span class="pe-history-badge">${Utils.escapeHtml(typeBadge)}</span>${legacyBadge}
                             ${Utils.escapeHtml(preview)}
                         </span>
-                        <span class="kpe-history-item__meta">
+                        <span class="pe-history-item__meta">
                             <span>${Utils.escapeHtml(time)}</span>
                             <span>· ${dur}</span>
                             <span>· ${callsCount} chamada(s)</span>
-                            <span class="kpe-history-outcome ${outcomeClass}">${Utils.escapeHtml(outcomeLabel)}</span>
+                            <span class="pe-history-outcome ${outcomeClass}">${Utils.escapeHtml(outcomeLabel)}</span>
                         </span>
                     </span>
-                    <span class="kpe-history-item__chevron">${Atoms.icon('chevronD').outerHTML}</span>
+                    <span class="pe-history-item__chevron">${Atoms.icon('chevronD').outerHTML}</span>
                 `;
                 header.addEventListener('click', () => {
                     const isExpanded = card.classList.toggle('is-expanded');
@@ -1188,34 +1235,34 @@
                             await copyRunJson(run);
                             Molecules.toast('Execução copiada como JSON.', 'success');
                         } catch (error) {
-                            console.error('[KPE] Falha ao copiar execução do histórico:', error);
+                            console.error('[PE] Falha ao copiar execução do histórico:', error);
                             Molecules.toast('Não foi possível copiar o JSON desta execução.', 'error', { details: error.message });
                         }
                     }
                 });
-                copyBtn.classList.add('kpe-history-item__copy');
+                copyBtn.classList.add('pe-history-item__copy');
                 copyBtn.prepend(Atoms.icon('copy'));
                 heading.appendChild(copyBtn);
                 card.appendChild(heading);
 
                 const details = document.createElement('div');
-                details.className = 'kpe-history-item__details';
+                details.className = 'pe-history-item__details';
 
                 const addSection = (label, content, opts = {}) => {
                     const sec = document.createElement('div');
-                    sec.className = 'kpe-history-section';
+                    sec.className = 'pe-history-section';
                     const lbl = document.createElement('div');
-                    lbl.className = 'kpe-history-section__label';
+                    lbl.className = 'pe-history-section__label';
                     lbl.textContent = label;
                     sec.appendChild(lbl);
                     if (opts.isKV) {
                         const kv = document.createElement('div');
-                        kv.className = 'kpe-history-kv';
+                        kv.className = 'pe-history-kv';
                         kv.textContent = content;
                         sec.appendChild(kv);
                     } else {
                         const pre = document.createElement('pre');
-                        pre.className = 'kpe-history-pre' + (opts.isError ? ' is-error' : '');
+                        pre.className = 'pe-history-pre' + (opts.isError ? ' is-error' : '');
                         pre.textContent = content;
                         sec.appendChild(pre);
                     }
@@ -1241,18 +1288,32 @@
                     addSection('Resultado final', '(sem saída)', { isKV: true });
                 }
 
+                const deleteSection = document.createElement('div');
+                deleteSection.className = 'pe-history-section';
+                deleteSection.style.display = 'flex';
+                deleteSection.style.justifyContent = 'flex-end';
+                const deleteBtn = Atoms.button({
+                    icon: 'trash',
+                    label: 'Excluir execução',
+                    ariaLabel: `Excluir execução de ${typeBadge.toLowerCase()} de ${time} do histórico`,
+                    variant: 'outline',
+                    onClick: () => deleteRun(run.id, card)
+                });
+                deleteSection.appendChild(deleteBtn);
+                details.appendChild(deleteSection);
+
                 if (run.calls && run.calls.length) {
                     const callsLabel = document.createElement('div');
-                    callsLabel.className = 'kpe-history-section__label';
+                    callsLabel.className = 'pe-history-section__label';
                     callsLabel.textContent = `Chamadas à API (${run.calls.length})`;
                     details.appendChild(callsLabel);
 
                     run.calls.forEach((call) => {
                         const callEl = document.createElement('div');
-                        callEl.className = 'kpe-history-call';
+                        callEl.className = 'pe-history-call';
                         const callHeader = document.createElement('button');
                         callHeader.type = 'button';
-                        callHeader.className = 'kpe-history-call__header';
+                        callHeader.className = 'pe-history-call__header';
                         callHeader.setAttribute('aria-expanded', 'false');
 
                         const callStatus = call.error ? 'is-error' : 'is-success';
@@ -1264,12 +1325,12 @@
                         const fbTag = call.fallbackUsed ? ' · fallback' : '';
 
                         callHeader.innerHTML = `
-                            <span class="kpe-history-call__status ${callStatus}">${callStatusIcon}</span>
-                            <span class="kpe-history-call__main">
-                                <span class="kpe-history-call__title">${Utils.escapeHtml(kindLabel)} · tentativa ${call.attempt}${retryTag}</span>
-                                <span class="kpe-history-call__meta">${callDur}${streamTag}${fbTag}</span>
+                            <span class="pe-history-call__status ${callStatus}">${callStatusIcon}</span>
+                            <span class="pe-history-call__main">
+                                <span class="pe-history-call__title">${Utils.escapeHtml(kindLabel)} · tentativa ${call.attempt}${retryTag}</span>
+                                <span class="pe-history-call__meta">${callDur}${streamTag}${fbTag}</span>
                             </span>
-                            <span class="kpe-history-call__chevron">${Atoms.icon('chevronD').outerHTML}</span>
+                            <span class="pe-history-call__chevron">${Atoms.icon('chevronD').outerHTML}</span>
                         `;
                         callHeader.addEventListener('click', (e) => {
                             e.stopPropagation();
@@ -1279,23 +1340,23 @@
                         callEl.appendChild(callHeader);
 
                         const callDetails = document.createElement('div');
-                        callDetails.className = 'kpe-history-call__details';
+                        callDetails.className = 'pe-history-call__details';
 
                         const addCallSection = (label, content, opts = {}) => {
                             const sec = document.createElement('div');
-                            sec.className = 'kpe-history-section';
+                            sec.className = 'pe-history-section';
                             const lbl = document.createElement('div');
-                            lbl.className = 'kpe-history-section__label';
+                            lbl.className = 'pe-history-section__label';
                             lbl.textContent = label;
                             sec.appendChild(lbl);
                             if (opts.isKV) {
                                 const kv = document.createElement('div');
-                                kv.className = 'kpe-history-kv';
+                                kv.className = 'pe-history-kv';
                                 kv.textContent = content;
                                 sec.appendChild(kv);
                             } else {
                                 const pre = document.createElement('pre');
-                                pre.className = 'kpe-history-pre' + (opts.isError ? ' is-error' : '');
+                                pre.className = 'pe-history-pre' + (opts.isError ? ' is-error' : '');
                                 pre.textContent = content;
                                 sec.appendChild(pre);
                             }

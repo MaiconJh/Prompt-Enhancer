@@ -1,7 +1,7 @@
 // ===== src/host-shield.js =====
     const HostShield = (() => {
         let installed = false;
-        const isInsideScope = (t) => t && t.closest && t.closest('.kpe-scope');
+        const isInsideScope = (t) => t && t.closest && t.closest('.pe-scope');
         const findFocusable = (t) => t && t.closest && t.closest('input, textarea, [contenteditable=""], [contenteditable="true"]');
         function install() {
             if (installed) return;

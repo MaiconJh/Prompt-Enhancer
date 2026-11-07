@@ -25,8 +25,8 @@
             const composer = findComposer(input);
             if (!composer || mounted.has(composer)) return null;
             const root = document.createElement('div');
-            root.className = 'kpe-mount kpe-scope';
-            root.setAttribute('data-kpe-owner', Utils.uid());
+            root.className = 'pe-mount pe-scope';
+            root.setAttribute('data-pe-owner', Utils.uid());
             const bar = Molecules.actionBar(handlers);
             root.appendChild(bar.root);
             Utils.shieldFromHost(root);

@@ -4,7 +4,7 @@
         const KEY_ACTIVE = 'pe_active_provider';
         const KEY_FALLBACK = 'pe_fallback_provider';
         const KEY_PINNED = 'pe_pinned_route';
-        const KEY_VIRTUAL_FALLBACK_ENABLED = 'kpe_virtual_fallback_enabled';
+        const KEY_VIRTUAL_FALLBACK_ENABLED = 'pe_virtual_fallback_enabled';
         const KEY_MIGRATED = 'pe_providers_migrated';
         const KEY_KILO_GATEWAY_MIGRATED = 'pe_kilo_gateway_migrated';
         const LEGACY_DEFAULT_URL = 'https://api.kilo.ai/api/openrouter/chat/completions';

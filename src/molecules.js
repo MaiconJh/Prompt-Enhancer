@@ -4,22 +4,22 @@
 
         actionBar({ onEnhance, onGuided, onUndo, onParams, onSettings }) {
             const bar = document.createElement('div');
-            bar.className = 'kpe-actionbar';
+            bar.className = 'pe-actionbar';
             bar.setAttribute('role', 'toolbar');
             bar.setAttribute('aria-label', 'Ações do prompt');
 
             const enhanceBtn = Atoms.button({ icon: 'sparkles', label: 'Aprimorar', ariaLabel: 'Aprimorar prompt', variant: 'primary', onClick: () => onEnhance(enhanceBtn) });
             const guidedBtn = Atoms.button({ icon: 'guide', label: 'Guiado', ariaLabel: 'Iniciar aprimoramento guiado', variant: 'outline', onClick: () => onGuided(guidedBtn) });
             const contextBtn = Atoms.button({ icon: 'agentDoc', label: 'Contexto', ariaLabel: 'Gerenciar arquivos de contexto', variant: 'ghost', onClick: () => contextPopoverInst?.toggle() });
-            contextBtn.classList.add('kpe-btn--agents');
-            contextBtn.appendChild(Object.assign(document.createElement('span'), { className: 'kpe-status-dot' }));
+            contextBtn.classList.add('pe-btn--agents');
+            contextBtn.appendChild(Object.assign(document.createElement('span'), { className: 'pe-status-dot' }));
 
             let contextPopoverInst = Molecules.contextPopover({ anchor: contextBtn, onChange: () => refreshContextBtn() });
             function refreshContextBtn() {
                 const active = ProjectContext.list().filter(f => f.enabled);
                 const has = active.length > 0 && ProjectContext.isEnabled();
                 contextBtn.classList.toggle('is-loaded', has);
-                const lbl = contextBtn.querySelector('.kpe-label');
+                const lbl = contextBtn.querySelector('.pe-label');
                 if (lbl) {
                     if (!has) lbl.textContent = 'Contexto';
                     else if (active.length === 1) lbl.textContent = active[0].name;
@@ -49,16 +49,16 @@
                 root: bar, enhanceBtn, guidedBtn, contextBtn, paramsBtn, settingsBtn,
                 setBusy(isBusy) {
                     enhanceBtn.disabled = isBusy;
-                    enhanceBtn.replaceChildren(Atoms.icon(isBusy ? 'loader' : 'sparkles', isBusy ? 'kpe-spin' : ''));
-                    const lbl = Object.assign(document.createElement('span'), { className: 'kpe-label', textContent: isBusy ? 'Aprimorando…' : 'Aprimorar' });
+                    enhanceBtn.replaceChildren(Atoms.icon(isBusy ? 'loader' : 'sparkles', isBusy ? 'pe-spin' : ''));
+                    const lbl = Object.assign(document.createElement('span'), { className: 'pe-label', textContent: isBusy ? 'Aprimorando…' : 'Aprimorar' });
                     enhanceBtn.appendChild(lbl);
                     enhanceBtn.setAttribute('aria-busy', String(!!isBusy));
                     enhanceBtn.classList.toggle('is-loading', !!isBusy);
                 },
                 setGuidedBusy(isBusy, customLabel) {
                     guidedBtn.disabled = isBusy;
-                    guidedBtn.replaceChildren(Atoms.icon(isBusy ? 'loader' : 'guide', isBusy ? 'kpe-spin' : ''));
-                    const lbl = Object.assign(document.createElement('span'), { className: 'kpe-label', textContent: customLabel || (isBusy ? 'Analisando…' : 'Guiado') });
+                    guidedBtn.replaceChildren(Atoms.icon(isBusy ? 'loader' : 'guide', isBusy ? 'pe-spin' : ''));
+                    const lbl = Object.assign(document.createElement('span'), { className: 'pe-label', textContent: customLabel || (isBusy ? 'Analisando…' : 'Guiado') });
                     guidedBtn.appendChild(lbl);
                     guidedBtn.setAttribute('aria-busy', String(!!isBusy));
                     guidedBtn.classList.toggle('is-loading', !!isBusy);
@@ -71,51 +71,51 @@
 
         loadingOverlay({ text = '', subtext = '' } = {}) {
             const root = document.createElement('div');
-            root.className = 'kpe-panel-loading kpe-scope';
+            root.className = 'pe-panel-loading pe-scope';
             root.setAttribute('role', 'status');
             root.setAttribute('aria-live', 'polite');
             root.dataset.state = 'connecting';
 
             root.innerHTML = `
-                <div class="kpe-panel-loading__card">
-                    <div class="kpe-panel-loading__halo" aria-hidden="true"></div>
-                    <div class="kpe-panel-loading__top">
-                        <div class="kpe-gear-wrap"><canvas data-gear width="48" height="48"></canvas></div>
+                <div class="pe-panel-loading__card">
+                    <div class="pe-panel-loading__halo" aria-hidden="true"></div>
+                    <div class="pe-panel-loading__top">
+                        <div class="pe-gear-wrap"><canvas data-gear width="48" height="48"></canvas></div>
                     </div>
-                    <div class="kpe-panel-loading__body">
-                        <div class="kpe-panel-loading__title-wrap">
-                            <div class="kpe-panel-loading__title" data-title>Conectando</div>
+                    <div class="pe-panel-loading__body">
+                        <div class="pe-panel-loading__title-wrap">
+                            <div class="pe-panel-loading__title" data-title>Conectando</div>
                         </div>
-                        <div class="kpe-panel-loading__sub-wrap">
-                            <div class="kpe-panel-loading__sub" data-sub>
+                        <div class="pe-panel-loading__sub-wrap">
+                            <div class="pe-panel-loading__sub" data-sub>
                                 <span data-subtext>Estabelecendo conexão</span>
-                                <span class="kpe-dots" aria-hidden="true" data-dots><span></span><span></span><span></span></span>
-                                <span class="kpe-token-pill" data-tokpill hidden>0 tok</span>
-                                <span class="kpe-retry-pill" data-retrypill hidden></span>
+                                <span class="pe-dots" aria-hidden="true" data-dots><span></span><span></span><span></span></span>
+                                <span class="pe-token-pill" data-tokpill hidden>0 tok</span>
+                                <span class="pe-retry-pill" data-retrypill hidden></span>
                             </div>
                         </div>
                     </div>
-                    <div class="kpe-shimmer" aria-hidden="true"></div>
-                    <div class="kpe-panel-loading__meta">
-                        <div class="kpe-panel-loading__meta-l">
-                            <span class="kpe-time">
-                                <span class="kpe-time__label">decorrido</span>
+                    <div class="pe-shimmer" aria-hidden="true"></div>
+                    <div class="pe-panel-loading__meta">
+                        <div class="pe-panel-loading__meta-l">
+                            <span class="pe-time">
+                                <span class="pe-time__label">decorrido</span>
                                 <span data-elapsed>0.0s</span>
                             </span>
                         </div>
-                        <div class="kpe-panel-loading__meta-r">
-                            <button type="button" class="kpe-debug-toggle" aria-expanded="false" data-dtoggle>
+                        <div class="pe-panel-loading__meta-r">
+                            <button type="button" class="pe-debug-toggle" aria-expanded="false" data-dtoggle>
                                 <span>detalhes</span>
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                             </button>
-                            <button type="button" class="kpe-cancel" data-cancel>Cancelar</button>
+                            <button type="button" class="pe-cancel" data-cancel>Cancelar</button>
                         </div>
                     </div>
-                    <div class="kpe-debug" data-dpanel>
-                        <div class="kpe-debug__clip">
-                            <div class="kpe-debug__inner">
-                                <div class="kpe-debug__grid" data-dgrid></div>
-                                <div class="kpe-debug__log" data-dlog></div>
+                    <div class="pe-debug" data-dpanel>
+                        <div class="pe-debug__clip">
+                            <div class="pe-debug__inner">
+                                <div class="pe-debug__grid" data-dgrid></div>
+                                <div class="pe-debug__log" data-dlog></div>
                             </div>
                         </div>
                     </div>
@@ -146,12 +146,12 @@
             const metricEls = {};
             METRIC_DEFS.forEach(([key, label]) => {
                 const row = document.createElement('div');
-                row.className = 'kpe-debug__row';
+                row.className = 'pe-debug__row';
                 const k = document.createElement('span');
-                k.className = 'kpe-debug__key';
+                k.className = 'pe-debug__key';
                 k.textContent = label;
                 const v = document.createElement('span');
-                v.className = 'kpe-debug__val is-muted';
+                v.className = 'pe-debug__val is-muted';
                 v.textContent = '—';
                 row.appendChild(k); row.appendChild(v);
                 debugGrid.appendChild(row);
@@ -269,7 +269,7 @@
                 const el = metricEls[key];
                 if (!el) return;
                 el.textContent = val;
-                el.className = 'kpe-debug__val' + (tone ? ' is-' + tone : '');
+                el.className = 'pe-debug__val' + (tone ? ' is-' + tone : '');
             }
 
             function logEvent(kind, detail = '', tone = '') {
@@ -280,7 +280,7 @@
                 else if (tone === 'ok' || kind === 'first_byte' || kind === 'first_token' || kind === 'stream_done' || kind === 'redispatch') cls = 'is-ok';
                 events.push({ t, kind, detail, cls });
                 if (events.length > 12) events.shift();
-                debugLog.innerHTML = events.map(ev => `<div class="kpe-debug__log-line ${ev.cls}"><span class="kpe-debug__log-time">${ev.t.toFixed(1)}s</span><span class="kpe-debug__log-ev">${Utils.escapeHtml(ev.kind)}</span>${ev.detail ? `<span class="kpe-debug__log-detail">${Utils.escapeHtml(ev.detail)}</span>` : ''}</div>`).join('');
+                debugLog.innerHTML = events.map(ev => `<div class="pe-debug__log-line ${ev.cls}"><span class="pe-debug__log-time">${ev.t.toFixed(1)}s</span><span class="pe-debug__log-ev">${Utils.escapeHtml(ev.kind)}</span>${ev.detail ? `<span class="pe-debug__log-detail">${Utils.escapeHtml(ev.detail)}</span>` : ''}</div>`).join('');
                 debugLog.scrollTop = debugLog.scrollHeight;
             }
 
@@ -376,33 +376,33 @@
 
         panel({ title, anchor, ariaLabel, headerExtra, children, footer, onClose }) {
             const panel = document.createElement('div');
-            panel.className = 'kpe-panel kpe-scope';
+            panel.className = 'pe-panel pe-scope';
             panel.setAttribute('role', 'dialog');
             panel.setAttribute('aria-modal', 'false');
             panel.setAttribute('aria-label', ariaLabel || title);
             const header = document.createElement('div');
-            header.className = 'kpe-panel__header';
+            header.className = 'pe-panel__header';
             const h4 = document.createElement('h4');
             h4.textContent = title;
             header.appendChild(h4);
-            if (headerExtra) { const slot = document.createElement('div'); slot.className = 'kpe-panel__header-extra'; slot.appendChild(headerExtra); header.appendChild(slot); }
+            if (headerExtra) { const slot = document.createElement('div'); slot.className = 'pe-panel__header-extra'; slot.appendChild(headerExtra); header.appendChild(slot); }
             const close = document.createElement('button');
-            close.type = 'button'; close.className = 'kpe-panel__close';
+            close.type = 'button'; close.className = 'pe-panel__close';
             close.appendChild(Atoms.icon('x'));
             close.addEventListener('click', () => closeFn());
             header.appendChild(close);
             const body = document.createElement('div');
-            body.className = 'kpe-panel__body';
+            body.className = 'pe-panel__body';
             if (children) body.appendChild(children);
             const footerEl = document.createElement('div');
-            footerEl.className = 'kpe-panel__footer';
+            footerEl.className = 'pe-panel__footer';
             if (footer) footer.forEach(el => footerEl.appendChild(el));
             panel.appendChild(header); panel.appendChild(body); panel.appendChild(footerEl);
             const clip = document.createElement('div');
-            clip.className = 'kpe-inline-clip';
+            clip.className = 'pe-inline-clip';
             clip.appendChild(panel);
             const slot = document.createElement('div');
-            slot.className = 'kpe-inline-slot';
+            slot.className = 'pe-inline-slot';
             slot.appendChild(clip);
             Utils.shieldFromHost(slot);
             const parent = anchor?.parentElement;
@@ -423,37 +423,38 @@
 
         preview({ original, enhanced, anchor, onApply, onCancel, trigger }) {
             const prevActive = document.activeElement;
+            let wasApplied = false;
             const body = document.createElement('div');
-            body.innerHTML = `<div class="kpe-field"><span class="kpe-field-label">Original</span><div class="kpe-field-text">${Utils.escapeHtml(original)}</div></div><div class="kpe-field"><span class="kpe-field-label">Aprimorado</span><div class="kpe-field-text" data-kpe-stream>${Utils.escapeHtml(enhanced)}</div></div>`;
+            body.innerHTML = `<div class="pe-field"><span class="pe-field-label">Original</span><div class="pe-field-text">${Utils.escapeHtml(original)}</div></div><div class="pe-field"><span class="pe-field-label">Aprimorado</span><div class="pe-field-text" data-pe-stream>${Utils.escapeHtml(enhanced)}</div></div>`;
             const cancelBtn = Atoms.button({ icon: 'x', label: 'Cancelar', ariaLabel: 'Cancelar', variant: 'outline', onClick: () => handleCancel() });
             const applyBtn = Atoms.button({ icon: 'check', label: 'Aplicar', ariaLabel: 'Aplicar', variant: 'primary', onClick: () => handleApply() });
-            const { panel, close } = Molecules.panel({ title: 'Pré-visualização do prompt', anchor, children: body, footer: [cancelBtn, applyBtn], onClose: () => { try { (trigger || prevActive)?.focus?.(); } catch (_) {} onCancel?.(); } });
+            const { panel, close } = Molecules.panel({ title: 'Pré-visualização do prompt', anchor, children: body, footer: [cancelBtn, applyBtn], onClose: () => { try { (trigger || prevActive)?.focus?.(); } catch (_) {} if (!wasApplied) onCancel?.(); } });
             Anim.staggerIn(body, 0.06);
-            setTimeout(() => { const stream = panel.querySelector('[data-kpe-stream]'); if (stream) Anim.typewriter(stream, { duration: 0.85 }); }, 180);
+            setTimeout(() => { const stream = panel.querySelector('[data-pe-stream]'); if (stream) Anim.typewriter(stream, { duration: 0.85 }); }, 180);
             function handleCancel() { close(); }
-            function handleApply() { Anim.pulseSuccess(applyBtn); try { onApply?.(); } finally { close(); } }
+            function handleApply() { wasApplied = true; Anim.pulseSuccess(applyBtn); try { onApply?.(); } finally { close(); } }
             return { close: handleCancel, apply: handleApply };
         },
 
         promptBaseChip(prompt) {
             const root = document.createElement('div');
-            root.className = 'kpe-prompt-base';
+            root.className = 'pe-prompt-base';
             const wc = Utils.wordCount(prompt);
-            root.innerHTML = `<button type="button" class="kpe-prompt-base__trigger" aria-expanded="false">${Atoms.icon('doc', 'kpe-prompt-base__icon').outerHTML}<span class="kpe-prompt-base__label">Prompt base</span><span class="kpe-prompt-base__meta">${Utils.escapeHtml(Utils.truncate(prompt, 100))}</span><span class="kpe-prompt-base__count">${wc} ${wc === 1 ? 'palavra' : 'palavras'}</span>${Atoms.icon('chevron', 'kpe-prompt-base__chevron').outerHTML}</button><div class="kpe-prompt-base__content"><div><div class="kpe-prompt-base__text">${Utils.escapeHtml(prompt)}</div></div></div>`;
-            root.querySelector('.kpe-prompt-base__trigger').addEventListener('click', (e) => { e.preventDefault(); const expanded = root.classList.toggle('is-expanded'); root.querySelector('.kpe-prompt-base__trigger').setAttribute('aria-expanded', String(expanded)); });
+            root.innerHTML = `<button type="button" class="pe-prompt-base__trigger" aria-expanded="false">${Atoms.icon('doc', 'pe-prompt-base__icon').outerHTML}<span class="pe-prompt-base__label">Prompt base</span><span class="pe-prompt-base__meta">${Utils.escapeHtml(Utils.truncate(prompt, 100))}</span><span class="pe-prompt-base__count">${wc} ${wc === 1 ? 'palavra' : 'palavras'}</span>${Atoms.icon('chevron', 'pe-prompt-base__chevron').outerHTML}</button><div class="pe-prompt-base__content"><div><div class="pe-prompt-base__text">${Utils.escapeHtml(prompt)}</div></div></div>`;
+            root.querySelector('.pe-prompt-base__trigger').addEventListener('click', (e) => { e.preventDefault(); const expanded = root.classList.toggle('is-expanded'); root.querySelector('.pe-prompt-base__trigger').setAttribute('aria-expanded', String(expanded)); });
             return root;
         },
 
         contextIndicator() {
             const root = document.createElement('div');
-            root.className = 'kpe-agents-indicator';
+            root.className = 'pe-agents-indicator';
             function refresh() {
                 root.innerHTML = '';
                 if (!ProjectContext.hasContent() || !ProjectContext.isEnabled()) { root.style.display = 'none'; return; }
                 root.style.display = 'flex';
                 const active = ProjectContext.list().filter(f => f.enabled);
                 const title = active.length === 1 ? active[0].name : `${active.length} arquivos de contexto`;
-                root.innerHTML = `${Atoms.icon('check').outerHTML}<div class="kpe-agents-indicator__body"><span class="kpe-agents-indicator__title">${Utils.escapeHtml(title)}</span><span class="kpe-agents-indicator__meta">${Utils.formatBytes(ProjectContext.getTotalSize())} · injetado em cada chamada</span></div>`;
+                root.innerHTML = `${Atoms.icon('check').outerHTML}<div class="pe-agents-indicator__body"><span class="pe-agents-indicator__title">${Utils.escapeHtml(title)}</span><span class="pe-agents-indicator__meta">${Utils.formatBytes(ProjectContext.getTotalSize())} · injetado em cada chamada</span></div>`;
             }
             refresh();
             return { root, refresh };
@@ -462,20 +463,20 @@
         guidedWizard({ questions, prompt, anchor, trigger, onSubmit, onCancel }) {
             const prevActive = document.activeElement;
             const progressInline = document.createElement('div');
-            progressInline.className = 'kpe-progress-inline';
-            progressInline.innerHTML = `<div class="kpe-progress-track"><div class="kpe-progress-fill"></div></div><span class="kpe-progress-label">0 de ${questions.length}</span>`;
-            const progressFill = progressInline.querySelector('.kpe-progress-fill');
-            const progressLabel = progressInline.querySelector('.kpe-progress-label');
+            progressInline.className = 'pe-progress-inline';
+            progressInline.innerHTML = `<div class="pe-progress-track"><div class="pe-progress-fill"></div></div><span class="pe-progress-label">0 de ${questions.length}</span>`;
+            const progressFill = progressInline.querySelector('.pe-progress-fill');
+            const progressLabel = progressInline.querySelector('.pe-progress-label');
             const bodyContent = document.createElement('div');
             const errorSlot = document.createElement('div');
             errorSlot.setAttribute('aria-live', 'assertive');
             const contextInd = Molecules.contextIndicator();
             const promptLabel = document.createElement('div');
-            promptLabel.className = 'kpe-section-label';
+            promptLabel.className = 'pe-section-label';
             promptLabel.innerHTML = `${Atoms.icon('doc').outerHTML}<span>Prompt base</span>`;
             const chip = Molecules.promptBaseChip(prompt);
             const questionsLabel = document.createElement('div');
-            questionsLabel.className = 'kpe-section-label';
+            questionsLabel.className = 'pe-section-label';
             questionsLabel.innerHTML = `${Atoms.icon('guide').outerHTML}<span>Perguntas de esclarecimento</span>`;
             const list = document.createElement('div');
             bodyContent.appendChild(errorSlot); bodyContent.appendChild(contextInd.root);
@@ -487,66 +488,66 @@
             questions.forEach((q, idx) => {
                 const qs = state.get(q.id);
                 const item = document.createElement('div');
-                item.className = 'kpe-q-item';
+                item.className = 'pe-q-item';
                 item.dataset.qid = q.id;
                 if (idx === 0) item.classList.add('is-open');
                 const header = document.createElement('button');
-                header.type = 'button'; header.className = 'kpe-q-header';
+                header.type = 'button'; header.className = 'pe-q-header';
                 header.setAttribute('aria-expanded', String(idx === 0));
                 const num = document.createElement('span');
-                num.className = 'kpe-q-num';
+                num.className = 'pe-q-num';
                 num.innerHTML = `<span>${idx + 1}</span><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>`;
                 const main = document.createElement('div');
-                main.className = 'kpe-q-header-main';
+                main.className = 'pe-q-header-main';
                 const text = document.createElement('div');
-                text.className = 'kpe-q-text';
+                text.className = 'pe-q-text';
                 text.textContent = q.question || `Pergunta ${idx + 1}`;
                 main.appendChild(text);
                 const hint = document.createElement('span');
-                if (q.allowCode) { hint.className = 'kpe-q-hint kpe-q-hint--code'; hint.innerHTML = `${Atoms.icon('codeSpark').outerHTML}<span>Contexto de código útil aqui</span>`; }
-                else { hint.className = 'kpe-q-hint'; hint.textContent = q.type === 'multi' ? 'Pode selecionar mais de uma opção' : (q.type === 'choice' ? 'Escolha uma opção' : 'Digite sua resposta'); }
+                if (q.allowCode) { hint.className = 'pe-q-hint pe-q-hint--code'; hint.innerHTML = `${Atoms.icon('codeSpark').outerHTML}<span>Contexto de código útil aqui</span>`; }
+                else { hint.className = 'pe-q-hint'; hint.textContent = q.type === 'multi' ? 'Pode selecionar mais de uma opção' : (q.type === 'choice' ? 'Escolha uma opção' : 'Digite sua resposta'); }
                 main.appendChild(hint);
                 const summary = document.createElement('span');
-                summary.className = 'kpe-q-summary';
-                summary.innerHTML = 'Resposta: <span class="kpe-q-summary__value">—</span>';
-                const summaryValue = summary.querySelector('.kpe-q-summary__value');
+                summary.className = 'pe-q-summary';
+                summary.innerHTML = 'Resposta: <span class="pe-q-summary__value">—</span>';
+                const summaryValue = summary.querySelector('.pe-q-summary__value');
                 main.appendChild(summary);
                 const chevron = Atoms.icon('chevronD');
-                chevron.setAttribute('class', 'kpe-q-chevron');
+                chevron.setAttribute('class', 'pe-q-chevron');
                 header.appendChild(num); header.appendChild(main); header.appendChild(chevron);
                 header.addEventListener('click', () => { const isOpen = item.classList.toggle('is-open'); header.setAttribute('aria-expanded', String(isOpen)); });
                 const content = document.createElement('div');
-                content.className = 'kpe-q-content';
+                content.className = 'pe-q-content';
                 const contentInnerWrap = document.createElement('div');
                 const contentInner = document.createElement('div');
-                contentInner.className = 'kpe-q-content-inner';
+                contentInner.className = 'pe-q-content-inner';
                 const group = document.createElement('div');
-                group.className = 'kpe-options-group';
+                group.className = 'pe-options-group';
                 if (q.type === 'choice' && Array.isArray(q.options)) {
                     group.setAttribute('role', 'radiogroup');
                     q.options.forEach(opt => {
                         const lab = document.createElement('label');
-                        lab.className = 'kpe-option';
-                        lab.innerHTML = `<span class="kpe-radio"></span><span>${Utils.escapeHtml(opt)}</span>`;
-                        lab.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); group.querySelectorAll('.kpe-option').forEach(o => o.classList.remove('is-checked')); lab.classList.add('is-checked'); qs.value = String(opt); qs.freeActive = false; setAnswered(q, qs, String(opt), { collapse: true }); });
+                        lab.className = 'pe-option';
+                        lab.innerHTML = `<span class="pe-radio"></span><span>${Utils.escapeHtml(opt)}</span>`;
+                        lab.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); group.querySelectorAll('.pe-option').forEach(o => o.classList.remove('is-checked')); lab.classList.add('is-checked'); qs.value = String(opt); qs.freeActive = false; setAnswered(q, qs, String(opt), { collapse: true }); });
                         group.appendChild(lab);
                     });
-                    group.appendChild(Object.assign(document.createElement('div'), { className: 'kpe-options-divider', innerHTML: '<span>ou</span>' }));
-                    group.appendChild(buildFreeText({ q, qs, kind: 'radio', items, onActivate: () => { qs.freeActive = true; qs.value = ''; group.querySelectorAll('.kpe-option').forEach(o => o.classList.remove('is-checked')); }, onInput: (v) => { qs.freeText = v; if (v) setAnswered(q, qs, v, { collapse: false }); else if (!qs.value) unsetAnswered(q, qs); } }));
+                    group.appendChild(Object.assign(document.createElement('div'), { className: 'pe-options-divider', innerHTML: '<span>ou</span>' }));
+                    group.appendChild(buildFreeText({ q, qs, kind: 'radio', items, onActivate: () => { qs.freeActive = true; qs.value = ''; group.querySelectorAll('.pe-option').forEach(o => o.classList.remove('is-checked')); }, onInput: (v) => { qs.freeText = v; if (v) setAnswered(q, qs, v, { collapse: false }); else if (!qs.value) unsetAnswered(q, qs); } }));
                 } else if (q.type === 'multi' && Array.isArray(q.options)) {
                     group.setAttribute('role', 'group');
                     q.options.forEach(opt => {
                         const lab = document.createElement('label');
-                        lab.className = 'kpe-option';
-                        lab.innerHTML = `<span class="kpe-checkbox"></span><span>${Utils.escapeHtml(opt)}</span>`;
+                        lab.className = 'pe-option';
+                        lab.innerHTML = `<span class="pe-checkbox"></span><span>${Utils.escapeHtml(opt)}</span>`;
                         lab.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); lab.classList.toggle('is-checked'); if (lab.classList.contains('is-checked')) qs.values.add(String(opt)); else qs.values.delete(String(opt)); updateMultiAnswer(q, qs); });
                         group.appendChild(lab);
                     });
-                    group.appendChild(Object.assign(document.createElement('div'), { className: 'kpe-options-divider', innerHTML: '<span>e/ou</span>' }));
+                    group.appendChild(Object.assign(document.createElement('div'), { className: 'pe-options-divider', innerHTML: '<span>e/ou</span>' }));
                     group.appendChild(buildFreeText({ q, qs, kind: 'checkbox', items, onActivate: () => { qs.freeActive = true; }, onInput: (v) => { qs.freeText = v; updateMultiAnswer(q, qs); } }));
                 } else {
                     const ta = document.createElement('textarea');
-                    ta.className = 'kpe-textarea'; ta.rows = 2;
+                    ta.className = 'pe-textarea'; ta.rows = 2;
                     ta.placeholder = q.placeholder || 'Sua resposta…';
                     ta.addEventListener('input', () => { qs.value = ta.value.trim(); if (qs.value) setAnswered(q, qs, qs.value, { collapse: false }); else unsetAnswered(q, qs); });
                     ta.addEventListener('click', (e) => e.stopPropagation());
@@ -582,10 +583,10 @@
             }
             function buildFreeText({ q, qs, kind, items, onActivate, onInput }) {
                 const wrap = document.createElement('div');
-                wrap.className = 'kpe-free-text';
-                wrap.innerHTML = `<label class="kpe-free-text__row"><span class="${kind === 'radio' ? 'kpe-radio' : 'kpe-checkbox'}"></span><span class="kpe-free-text__label">${kind === 'radio' ? 'Nenhuma das opções — escrever resposta' : 'Outros elementos — escrever resposta'}</span></label><div class="kpe-free-text__input-wrap"><div><input type="text" class="kpe-free-text__input" placeholder="${kind === 'radio' ? 'Digite sua resposta…' : 'Ex: paginação, ordenação…'}"></div></div>`;
-                const row = wrap.querySelector('.kpe-free-text__row');
-                const input = wrap.querySelector('.kpe-free-text__input');
+                wrap.className = 'pe-free-text';
+                wrap.innerHTML = `<label class="pe-free-text__row"><span class="${kind === 'radio' ? 'pe-radio' : 'pe-checkbox'}"></span><span class="pe-free-text__label">${kind === 'radio' ? 'Nenhuma das opções — escrever resposta' : 'Outros elementos — escrever resposta'}</span></label><div class="pe-free-text__input-wrap"><div><input type="text" class="pe-free-text__input" placeholder="${kind === 'radio' ? 'Digite sua resposta…' : 'Ex: paginação, ordenação…'}"></div></div>`;
+                const row = wrap.querySelector('.pe-free-text__row');
+                const input = wrap.querySelector('.pe-free-text__input');
                 row.addEventListener('click', (e) => {
                     e.preventDefault(); e.stopPropagation();
                     const isActive = wrap.classList.toggle('is-active');
@@ -597,10 +598,10 @@
                 return wrap;
             }
             let allExpanded = false;
-            const expandAllBtn = Atoms.buttonNode({ label: 'Expandir tudo', ariaLabel: 'Expandir ou recolher', variant: 'ghost', onClick: (btn) => { allExpanded = !allExpanded; items.forEach(({ item, header }) => { item.classList.toggle('is-open', allExpanded); header.setAttribute('aria-expanded', String(allExpanded)); }); btn.querySelector('.kpe-label').textContent = allExpanded ? 'Recolher tudo' : 'Expandir tudo'; } });
-            expandAllBtn.classList.add('kpe-panel__expand');
+            const expandAllBtn = Atoms.buttonNode({ label: 'Expandir tudo', ariaLabel: 'Expandir ou recolher', variant: 'ghost', onClick: (btn) => { allExpanded = !allExpanded; items.forEach(({ item, header }) => { item.classList.toggle('is-open', allExpanded); header.setAttribute('aria-expanded', String(allExpanded)); }); btn.querySelector('.pe-label').textContent = allExpanded ? 'Recolher tudo' : 'Expandir tudo'; } });
+            expandAllBtn.classList.add('pe-panel__expand');
             const actions = document.createElement('div');
-            actions.className = 'kpe-panel__actions';
+            actions.className = 'pe-panel__actions';
             const cancelBtn = Atoms.button({ icon: 'x', label: 'Cancelar', ariaLabel: 'Cancelar', variant: 'outline', onClick: () => handleCancel() });
             const submitBtn = Atoms.button({ icon: 'arrow', label: 'Gerar prompt', ariaLabel: 'Gerar', variant: 'primary', onClick: () => handleSubmit() });
             submitBtn.disabled = true;
@@ -646,16 +647,16 @@
                     const idx = ErrorIndexer.classify(err);
                     ErrorIndexer.record(err);
                     const box = document.createElement('div');
-                    box.className = 'kpe-panel-error';
+                    box.className = 'pe-panel-error';
                     const title = document.createElement('div');
-                    title.className = 'kpe-panel-error__title';
+                    title.className = 'pe-panel-error__title';
                     title.textContent = idx.title;
                     const desc = document.createElement('div');
-                    desc.className = 'kpe-panel-error__desc';
+                    desc.className = 'pe-panel-error__desc';
                     desc.textContent = idx.description;
                     box.appendChild(title); box.appendChild(desc);
                     const details = document.createElement('details');
-                    details.className = 'kpe-panel-error__details';
+                    details.className = 'pe-panel-error__details';
                     const sum = document.createElement('summary');
                     sum.textContent = 'Ver detalhes técnicos';
                     const pre = document.createElement('pre');
@@ -674,22 +675,22 @@
 
         toast(message, type = 'info', { actionLabel, onAction, timeout = 3600, details = null } = {}) {
             const t = document.createElement('div');
-            t.className = 'kpe-toast kpe-scope' + (type === 'error' ? ' is-error' : type === 'success' ? ' is-success' : '');
+            t.className = 'pe-toast pe-scope' + (type === 'error' ? ' is-error' : type === 'success' ? ' is-success' : '');
             if (actionLabel && typeof onAction === 'function') t.classList.add('has-action');
             if (details) t.classList.add('has-details');
             t.setAttribute('role', type === 'error' ? 'alert' : 'status');
             t.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
             const row = document.createElement('div');
-            row.className = 'kpe-toast__row';
+            row.className = 'pe-toast__row';
             const msg = document.createElement('span');
-            msg.className = 'kpe-toast__msg';
+            msg.className = 'pe-toast__msg';
             const lines = String(message).split('\n').filter(Boolean);
             if (lines.length <= 1) msg.textContent = message;
             else {
                 msg.classList.add('is-multiline');
                 lines.forEach((line, i) => {
                     const s = document.createElement('span');
-                    s.className = i === 0 ? 'kpe-toast__line kpe-toast__line--headline' : 'kpe-toast__line kpe-toast__line--detail';
+                    s.className = i === 0 ? 'pe-toast__line pe-toast__line--headline' : 'pe-toast__line pe-toast__line--detail';
                     s.textContent = line;
                     msg.appendChild(s);
                 });
@@ -699,7 +700,7 @@
             if (lines.length > 1 || details) finalTimeout = Math.max(finalTimeout, 8000);
             if (actionLabel && typeof onAction === 'function') {
                 const btn = document.createElement('button');
-                btn.type = 'button'; btn.className = 'kpe-toast__action';
+                btn.type = 'button'; btn.className = 'pe-toast__action';
                 btn.textContent = actionLabel;
                 btn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); try { onAction(); } finally { Anim.toastOut(t); } });
                 row.appendChild(btn);
@@ -708,7 +709,7 @@
             t.appendChild(row);
             if (details) {
                 const d = document.createElement('details');
-                d.className = 'kpe-toast__details';
+                d.className = 'pe-toast__details';
                 const sum = document.createElement('summary');
                 sum.textContent = 'Detalhes técnicos';
                 const pre = document.createElement('pre');
@@ -724,7 +725,7 @@
 
         floatLoading({ onCancel } = {}) {
             const wrap = document.createElement('div');
-            wrap.className = 'kpe-float-wrap kpe-scope';
+            wrap.className = 'pe-float-wrap pe-scope';
             const overlay = Molecules.loadingOverlay({});
             overlay.root.classList.add('is-float');
             wrap.appendChild(overlay.root);

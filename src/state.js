@@ -4,6 +4,7 @@
         isProcessing: false, isGuiding: false, preview: null, wizard: null,
         _currentRequest: null, pendingAbort: null, lastError: null,
         params: null, paramsDraft: null,
+        systemPromptDraft: null, contextDraft: null,
         stream: { active: false, startedAt: 0, firstTokenAt: 0, tokenCount: 0, lastTokenAt: 0, observedTokS: 0, fullText: '' }
     };
 

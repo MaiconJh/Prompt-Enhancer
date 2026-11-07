@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import vm from 'node:vm';
 
-const enabled = process.env.KPE_API_SMOKE === '1';
+const enabled = process.env.PE_API_SMOKE === '1';
 const configSource = await readFile(new URL('../config.js', import.meta.url), 'utf8');
 const configContext = vm.createContext({
     GM_getValue: (_key, fallback) => fallback
@@ -13,7 +13,7 @@ vm.runInContext(configSource, configContext, { filename: 'src/config.js' });
 const defaultProvider = vm.runInContext('DEFAULT_PROVIDER', configContext);
 
 test('conexão real com o provider padrão Kilo retorna chat-completion válido', {
-    skip: !enabled && 'Defina KPE_API_SMOKE=1 para habilitar o teste que acessa a API.'
+    skip: !enabled && 'Defina PE_API_SMOKE=1 para habilitar o teste que acessa a API.'
 }, async () => {
     let response;
     try {

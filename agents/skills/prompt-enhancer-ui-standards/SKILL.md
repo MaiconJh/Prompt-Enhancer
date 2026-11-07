@@ -16,25 +16,25 @@ Esta skill consolida as convenções de arquitetura, design system e acessibilid
 
 ## Princípios de operação
 
-**Idioma é contrato, não preferência.** Identificadores, chaves de armazenamento (`kpe_*`, `pe_*`), nomes de funções e comentários técnicos permanecem em inglês. Toda string visível ou acessível (rótulos, `aria-label`, placeholders, toasts, mensagens de erro) é em português do Brasil. Traduzir identificadores ou expor termos em inglês na interface é uma falha de contrato, não um detalhe cosmético.
+**Idioma é contrato, não preferência.** Identificadores, chaves de armazenamento (`pe_*`, `pe_*`), nomes de funções e comentários técnicos permanecem em inglês. Toda string visível ou acessível (rótulos, `aria-label`, placeholders, toasts, mensagens de erro) é em português do Brasil. Traduzir identificadores ou expor termos em inglês na interface é uma falha de contrato, não um detalhe cosmético.
 
 **Dados reais, nunca demonstração.** Nenhum componente injetado pode conter as palavras "mock", "simulado", "fictício", "demonstração" ou "em breve". Todo fluxo deve ler e escrever nos módulos reais (`ProviderRegistry`, `ProviderManager`, `ParamSchema`, `ProjectContext`, `EnhancementHistory`, `State`). Componentes que não conseguem se conectar à infraestrutura existente devem ser removidos, não preenchidos com dados falsos.
 
-**Tokens antes de valores.** Nenhum nó DOM criado pode usar cores hexadecimais, `rgb()`, `hsl()` ou medidas soltas. Toda estilização passa pelas CSS Custom Properties declaradas no escopo `:where(.kpe-scope)`, com a hierarquia de tokens estabelecida (`--kpe-surface`, `--kpe-text`, `--kpe-accent`, `--kpe-success`, `--kpe-dur-fast`, `--kpe-ease-standard`). Tokens são escopados ao componente que os consome, não despejados indiscriminadamente em `:root`.
+**Tokens antes de valores.** Nenhum nó DOM criado pode usar cores hexadecimais, `rgb()`, `hsl()` ou medidas soltas. Toda estilização passa pelas CSS Custom Properties declaradas no escopo `:where(.pe-scope)`, com a hierarquia de tokens estabelecida (`--pe-surface`, `--pe-text`, `--pe-accent`, `--pe-success`, `--pe-dur-fast`, `--pe-ease-standard`). Tokens são escopados ao componente que os consome, não despejados indiscriminadamente em `:root`.
 
-**Isolamento de host é não-negociável.** Todo container, modal ou slot injetado deve conter a classe `.kpe-scope` e receber `Utils.shieldFromHost(el)` para impedir que eventos de clique, digitação e foco vazem para a página hospedeira (ChatGPT, Claude, DeepSeek). A ausência desse escudo transforma o userscript em uma fonte de bugs silenciosos na interface do chat.
+**Isolamento de host é não-negociável.** Todo container, modal ou slot injetado deve conter a classe `.pe-scope` e receber `Utils.shieldFromHost(el)` para impedir que eventos de clique, digitação e foco vazem para a página hospedeira (ChatGPT, Claude, DeepSeek). A ausência desse escudo transforma o userscript em uma fonte de bugs silenciosos na interface do chat.
 
 **Movimento tem função ou é removido.** Animações existem para guiar, confirmar ou esclarecer. Se a transição for instantânea e nada se perder, ela deve ser removida. No máximo três primitivas de movimento por view (uma revelação, um sinal de hover, um loop funcional). Reduzir movimento é um estado de primeira classe, não um afterthought: toda animação define explicitamente seu comportamento sob `prefers-reduced-motion`.
 
 ## Processo de implementação
 
-1. **Mapeie o módulo e o contrato de dados.** Identifique se a alteração pertence a `ParamSchema`, `SystemPromptManager`, `ProviderManager`, `ProviderRegistry`, `ApiClient`, `Atoms`, `Molecules` ou às telas (`settingsModal`, `guidedWizard`, `preview`, `contextPopover`). Liste as chaves de persistência envolvidas (`kpe_runs`, `kpe_params`, `pe_providers`, `pe_pinned_route`, `kpe_ctx_files`) e verifique se `migration.js` cobre o formato anterior.
+1. **Mapeie o módulo e o contrato de dados.** Identifique se a alteração pertence a `ParamSchema`, `SystemPromptManager`, `ProviderManager`, `ProviderRegistry`, `ApiClient`, `Atoms`, `Molecules` ou às telas (`settingsModal`, `guidedWizard`, `preview`, `contextPopover`). Liste as chaves de persistência envolvidas (`pe_runs`, `pe_params`, `pe_providers`, `pe_pinned_route`, `pe_ctx_files`) e verifique se `migration.js` cobre o formato anterior.
 
-2. **Construa o DOM de forma imperativa.** Utilize `document.createElement` e as primitivas de `Atoms` (`Atoms.button`, `Atoms.buttonNode`, `Atoms.icon`) em vez de strings HTML soltas. O container raiz recebe a classe `.kpe-scope`. Todo evento que não pertence ao fluxo interno é bloqueado com `Utils.shieldFromHost`.
+2. **Construa o DOM de forma imperativa.** Utilize `document.createElement` e as primitivas de `Atoms` (`Atoms.button`, `Atoms.buttonNode`, `Atoms.icon`) em vez de strings HTML soltas. O container raiz recebe a classe `.pe-scope`. Todo evento que não pertence ao fluxo interno é bloqueado com `Utils.shieldFromHost`.
 
 3. **Aplique WAI-ARIA desde o primeiro commit.** Modais declaram `role="dialog"`, `aria-modal="true"`, `aria-label` e gerenciam foco com ciclo de `Tab` e restauração ao elemento disparador. Accordions e disclosures usam `aria-expanded` e `aria-controls`. Listas de opções usam `role="listbox"` com `aria-activedescendant` ou `role="option"` com navegação por teclado.
 
-4. **Defina o comportamento de movimento.** Escolha entre os tokens de duração (`--kpe-dur-fast`, `--kpe-dur-base`) e easings (`--kpe-ease-standard`, `--kpe-ease-spring`). Evite animar `width`, `height`, `top` ou `left`; prefira `transform` e `opacity`. Envolva o bloco de animação em `@media (prefers-reduced-motion: no-preference)` para que usuários que solicitaram movimento reduzido recebam a versão estática por padrão.
+4. **Defina o comportamento de movimento.** Escolha entre os tokens de duração (`--pe-dur-fast`, `--pe-dur-base`) e easings (`--pe-ease-standard`, `--pe-ease-spring`). Evite animar `width`, `height`, `top` ou `left`; prefira `transform` e `opacity`. Envolva o bloco de animação em `@media (prefers-reduced-motion: no-preference)` para que usuários que solicitaram movimento reduzido recebam a versão estática por padrão.
 
 5. **Valide a integração reativa.** Após a implementação, confirme que o componente atualiza quando o estado subjacente muda (pin de rota, edição de parâmetro, carregamento de contexto) e que os eventos despachados (`click`, `input`, `change`) chegam aos manipuladores corretos sem propagação indesejada.
 
@@ -72,22 +72,22 @@ O anel de foco aparece instantaneamente, sem transição de opacidade ou escala.
 
 | Categoria | Tokens |
 | :--- | :--- |
-| Superfícies | `--kpe-surface`, `--kpe-surface-2`, `--kpe-surface-3`, `--kpe-surface-code` |
-| Texto | `--kpe-text`, `--kpe-text-muted`, `--kpe-text-faint` |
-| Bordas e sombras | `--kpe-border`, `--kpe-border-strong`, `--kpe-shadow-1`, `--kpe-shadow-2` |
-| Ação e destaque | `--kpe-accent`, `--kpe-accent-soft`, `--kpe-accent-border`, `--kpe-accent-text` |
-| Semântica | `--kpe-success`, `--kpe-error`, `--kpe-warning` |
-| Duração e easing | `--kpe-dur-fast`, `--kpe-dur-base`, `--kpe-ease-standard`, `--kpe-ease-spring` |
+| Superfícies | `--pe-surface`, `--pe-surface-2`, `--pe-surface-3`, `--pe-surface-code` |
+| Texto | `--pe-text`, `--pe-text-muted`, `--pe-text-faint` |
+| Bordas e sombras | `--pe-border`, `--pe-border-strong`, `--pe-shadow-1`, `--pe-shadow-2` |
+| Ação e destaque | `--pe-accent`, `--pe-accent-soft`, `--pe-accent-border`, `--pe-accent-text` |
+| Semântica | `--pe-success`, `--pe-error`, `--pe-warning` |
+| Duração e easing | `--pe-dur-fast`, `--pe-dur-base`, `--pe-ease-standard`, `--pe-ease-spring` |
 
 Tokens são escopados ao componente que os consome. Propriedades privadas usam o prefixo `--_`; propriedades públicas (sobrescrevíveis por consumidores) usam o nome do componente (`--card-bg`). Valores de fallback são usados apenas quando a variável não está definida, nunca como desculpa para hardcoding.
 
 ### Isolamento de host e escopo
 
-O seletor `:where(.kpe-scope)` define os tokens e evita conflitos com CSS da página hospedeira. Nenhum estilo é aplicado fora do escopo. O `GM_addStyle` injeta o bloco uma única vez, e os componentes consomem as variáveis sem conhecer o tema (claro/escuro) em que estão inseridos.
+O seletor `:where(.pe-scope)` define os tokens e evita conflitos com CSS da página hospedeira. Nenhum estilo é aplicado fora do escopo. O `GM_addStyle` injeta o bloco uma única vez, e os componentes consomem as variáveis sem conhecer o tema (claro/escuro) em que estão inseridos.
 
 ## Anti-padrões a evitar
 
-- Injetar classes de frameworks (Tailwind, Bootstrap) ou utilitários externos; toda classe deve ter prefixo `kpe-`.
+- Injetar classes de frameworks (Tailwind, Bootstrap) ou utilitários externos; toda classe deve ter prefixo `pe-`.
 - Usar `alert()`, `confirm()` ou `prompt()` nativos em fluxos críticos sem fallback de foco; prefira `Molecules.toast` e diálogos internos.
 - Omitir `Utils.shieldFromHost` em qualquer nó injetado; o vazamento de eventos é a causa mais comum de bugs intermitentes no host.
 - Traduzir identificadores ou chaves de armazenamento; o código permanece em inglês, a interface em pt-BR.

@@ -26,7 +26,7 @@
                 onabort: () => reject(new Error('Requisição cancelada'))
             });
         }).catch((err) => {
-            console.warn(`[KPE] discovery:${provider}`, err);
+            console.warn(`[PE] discovery:${provider}`, err);
             return null;
         });
     }
@@ -88,7 +88,7 @@
                 tools: (model?.supported_parameters || []).includes?.('tools') || false
             })).filter(Boolean);
         } catch (err) {
-            console.warn('[KPE] discovery:openrouter', err);
+            console.warn('[PE] discovery:openrouter', err);
             return [];
         }
     }
@@ -116,7 +116,7 @@
             if (!entries.some((entry) => entry.id === auto.id)) entries.push(auto);
             return entries;
         } catch (err) {
-            console.warn('[KPE] discovery:kilo', err);
+            console.warn('[PE] discovery:kilo', err);
             return [];
         }
     }
@@ -139,7 +139,7 @@
                 auth: { type: 'none', key: '', headerName: null }
             })).filter(Boolean);
         } catch (err) {
-            console.warn('[KPE] discovery:pollinations', err);
+            console.warn('[PE] discovery:pollinations', err);
             return [];
         }
     }
@@ -151,7 +151,7 @@
                 auth: { type: 'bearer', key: 'not-needed', headerName: null }
             })).filter(Boolean);
         } catch (err) {
-            console.warn('[KPE] discovery:keylessai', err);
+            console.warn('[PE] discovery:keylessai', err);
             return [];
         }
     }

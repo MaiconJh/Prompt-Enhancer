@@ -1,6 +1,6 @@
 // ===== src/system-prompt-manager.js =====
     const SystemPromptManager = (() => {
-        const STORAGE_KEY = 'kpe_system_prompt_v1';
+        const STORAGE_KEY = 'pe_system_prompt_v1';
         const MAX_LENGTH = 12_000;
         const MAX_PRESETS = 20;
         const MAX_PRESET_NAME = 60;
@@ -45,11 +45,11 @@
 
         function readLegacyPrompt() {
             try {
-                const raw = GM_getValue('kpe_params', null);
+                const raw = GM_getValue('pe_params', null);
                 const params = typeof raw === 'string' ? JSON.parse(raw) : raw;
                 if (params && typeof params.system_prompt === 'string' && params.system_prompt.trim()) return params.system_prompt;
             } catch (error) {
-                console.warn('[KPE] Não foi possível migrar o system prompt legado:', error);
+                console.warn('[PE] Não foi possível migrar o system prompt legado:', error);
             }
             return null;
         }

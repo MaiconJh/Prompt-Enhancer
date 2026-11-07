@@ -36,28 +36,28 @@
             svg.setAttribute('stroke-linecap', 'round');
             svg.setAttribute('stroke-linejoin', 'round');
             svg.setAttribute('aria-hidden', 'true');
-            svg.setAttribute('class', `kpe-ico ${extraClass}`.trim());
+            svg.setAttribute('class', `pe-ico ${extraClass}`.trim());
             svg.innerHTML = ICONS[name] || '';
             return svg;
         },
         button({ icon, label, ariaLabel, variant = 'ghost', onClick }) {
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = `kpe-btn kpe-btn--${variant}${!label ? ' kpe-btn--icon' : ''}`;
+            btn.className = `pe-btn pe-btn--${variant}${!label ? ' pe-btn--icon' : ''}`;
             btn.setAttribute('aria-label', ariaLabel);
             btn.title = ariaLabel;
             btn.appendChild(Atoms.icon(icon));
-            if (label) { const span = document.createElement('span'); span.className = 'kpe-label'; span.textContent = label; btn.appendChild(span); }
+            if (label) { const span = document.createElement('span'); span.className = 'pe-label'; span.textContent = label; btn.appendChild(span); }
             btn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); onClick?.(btn); });
             return btn;
         },
         buttonNode({ label, ariaLabel, variant = 'ghost', onClick }) {
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = `kpe-btn kpe-btn--${variant}`;
+            btn.className = `pe-btn pe-btn--${variant}`;
             btn.setAttribute('aria-label', ariaLabel);
             btn.title = ariaLabel;
-            if (label) { const span = document.createElement('span'); span.className = 'kpe-label'; span.textContent = label; btn.appendChild(span); }
+            if (label) { const span = document.createElement('span'); span.className = 'pe-label'; span.textContent = label; btn.appendChild(span); }
             btn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); onClick?.(btn); });
             return btn;
         }

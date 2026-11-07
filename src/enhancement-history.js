@@ -1,7 +1,7 @@
 // ===== src/enhancement-history.js =====
     // ===== EnhancementHistory (runs) =====
     const EnhancementHistory = (() => {
-        const KEY = 'kpe_runs';
+        const KEY = 'pe_runs';
         const runs = new Map();
 
         function _loadPersisted() {

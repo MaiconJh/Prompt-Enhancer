@@ -25,7 +25,7 @@
                 el.dispatchEvent(new Event('input', { bubbles: true }));
             }
         },
-        uid(prefix = 'kpe') { return `${prefix}-${Math.random().toString(36).slice(2, 9)}`; },
+        uid(prefix = 'pe') { return `${prefix}-${Math.random().toString(36).slice(2, 9)}`; },
         parseJSON(raw) {
             if (typeof raw !== 'string') return null;
             let txt = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');

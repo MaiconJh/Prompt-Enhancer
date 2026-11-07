@@ -20,10 +20,10 @@
     })();
 
     const ProjectContext = (() => {
-        const KEY_FILES = 'kpe_ctx_files';
-        const KEY_GLOBAL_ENABLED = 'kpe_ctx_global_enabled';
+        const KEY_FILES = 'pe_ctx_files';
+        const KEY_GLOBAL_ENABLED = 'pe_ctx_global_enabled';
         const safeGet = (k, d) => { try { return GM_getValue(k, d); } catch (_) { return d; } };
-        const safeSet = (k, v) => { try { GM_setValue(k, v); return true; } catch (e) { console.error('[KPE] GM_setValue falhou:', k, e); return false; } };
+        const safeSet = (k, v) => { try { GM_setValue(k, v); return true; } catch (e) { console.error('[PE] GM_setValue falhou:', k, e); return false; } };
         function _read() {
             const raw = safeGet(KEY_FILES, null);
             if (!raw) return [];
