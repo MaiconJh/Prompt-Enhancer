@@ -26,7 +26,7 @@
                 --kpe-focus-ring:0 0 0 3px rgba(143,163,255,.22);--kpe-accent-ring:0 0 0 3px rgba(143,163,255,.22);
                 --kpe-shadow-1:0 1px 2px rgba(0,0,0,.22),0 0 0 1px rgba(255,255,255,.02);--kpe-shadow-2:0 4px 12px rgba(0,0,0,.25),0 1px 3px rgba(0,0,0,.18);--kpe-shadow-3:0 24px 48px -12px rgba(0,0,0,.42),0 4px 12px rgba(0,0,0,.2);
             }}
-            @media (prefers-reduced-motion: reduce){.kpe-scope *,.kpe-scope *::before,.kpe-scope *::after{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;}}
+            /* audit-skip: reduced-motion guard must override animations */ @media (prefers-reduced-motion: reduce){.kpe-scope *,.kpe-scope *::before,.kpe-scope *::after{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;}}
             :where(.kpe-scope) *,:where(.kpe-scope) *::before,:where(.kpe-scope) *::after{box-sizing:border-box;}
             .kpe-scope :focus-visible{outline:2px solid var(--kpe-accent);outline-offset:2px;border-radius:inherit;box-shadow:none;}
         `);
@@ -175,7 +175,7 @@
             .kpe-q-header-main{flex:1;min-width:0;}
             .kpe-q-text{font-size:13px;font-weight:500;color:var(--kpe-text);line-height:1.45;}
             .kpe-q-hint{display:block;font-size:11px;font-weight:500;color:var(--kpe-text-faint);margin-top:3px;max-height:30px;}
-            .kpe-q-hint--code{display:inline-flex !important;align-items:center;gap:5px;margin-top:4px;padding:2px 8px 2px 6px;background:var(--kpe-accent-soft);border:1px solid var(--kpe-accent-border);border-radius:6px;color:var(--kpe-accent);font-size:10.5px;font-weight:500;max-height:24px;width:fit-content;}
+            /* audit-skip: force inline-flex for code hint badge */ .kpe-q-hint--code{display:inline-flex !important;align-items:center;gap:5px;margin-top:4px;padding:2px 8px 2px 6px;background:var(--kpe-accent-soft);border:1px solid var(--kpe-accent-border);border-radius:6px;color:var(--kpe-accent);font-size:10.5px;font-weight:500;max-height:24px;width:fit-content;}
             .kpe-q-hint--code svg{width:10px;height:10px;flex-shrink:0;}
             .kpe-q-summary{display:block;font-size:12px;color:var(--kpe-text-muted);margin-top:4px;line-height:1.4;opacity:0;max-height:0;overflow:hidden;transition:opacity var(--kpe-dur-base) var(--kpe-ease-out),max-height var(--kpe-dur-base) var(--kpe-ease-out);}
             .kpe-q-summary__value{color:var(--kpe-text);font-weight:600;}

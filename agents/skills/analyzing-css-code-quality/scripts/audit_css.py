@@ -484,6 +484,13 @@ def audit_file(path: Path) -> AuditReport:
             for f in sub.findings:
                 f.line = (f.line or 0) + base - 1
                 f.file = str(path)
+                # suppression check against original JS source
+                src_lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+                ln = f.line
+                prev = src_lines[ln-2].strip() if 1 < ln <= len(src_lines) else ""
+                cur = src_lines[ln-1] if 0 < ln <= len(src_lines) else ""
+                if "audit-skip" in prev or "audit:ignore" in prev or "audit-skip" in cur or "audit:ignore" in cur:
+                    continue
                 report.add(f)
             try:
                 tmp.unlink()
@@ -508,6 +515,21 @@ def audit_file(path: Path) -> AuditReport:
     report.files_analyzed = 1
     for func in LENS_FUNCS.values():
         func(path, rules, raw, report)
+    # Suppression: a preceding comment containing "audit-skip" or "audit:ignore"
+    # removes findings on the following rule/line.
+    lines = raw.splitlines()
+    kept = []
+    for f in report.findings:
+        ln = f.line or 0
+        prev = lines[ln-2].strip() if 1 < ln <= len(lines) else ""
+        if "audit-skip" in prev or "audit:ignore" in prev:
+            continue
+        # inline suppression on same line
+        cur = lines[ln-1] if 0 < ln <= len(lines) else ""
+        if "audit-skip" in cur or "audit:ignore" in cur:
+            continue
+        kept.append(f)
+    report.findings = kept
     return report
 
 

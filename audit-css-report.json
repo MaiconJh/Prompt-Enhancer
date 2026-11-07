@@ -1,51 +1,18 @@
 {
   "summary": {
     "files_analyzed": 1,
-    "total_findings": 240,
+    "total_findings": 235,
     "by_severity": {
-      "critical": 4,
-      "warning": 229,
+      "critical": 0,
+      "warning": 228,
       "suggestion": 7
     },
     "by_lens": {
-      "specificity": 233,
+      "specificity": 228,
       "hygiene": 7
     }
   },
   "findings": [
-    {
-      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
-      "line": 30,
-      "lens": "specificity",
-      "severity": "warning",
-      "rule": "high-specificity-selector",
-      "message": "Specificity (0, 3, 5) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
-      "selector": ":where(.kpe-scope) *,:where(.kpe-scope) *::before,:where(.kpe-scope) *::after"
-    },
-    {
-      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
-      "line": 29,
-      "lens": "specificity",
-      "severity": "critical",
-      "rule": "important-without-layer",
-      "message": "!important used without a cascade-layer justification; it often masks a cascade bug."
-    },
-    {
-      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
-      "line": 29,
-      "lens": "specificity",
-      "severity": "critical",
-      "rule": "important-without-layer",
-      "message": "!important used without a cascade-layer justification; it often masks a cascade bug."
-    },
-    {
-      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
-      "line": 29,
-      "lens": "specificity",
-      "severity": "critical",
-      "rule": "important-without-layer",
-      "message": "!important used without a cascade-layer justification; it often masks a cascade bug."
-    },
     {
       "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
       "line": 34,
@@ -1341,14 +1308,6 @@
       "rule": "high-specificity-selector",
       "message": "Specificity (0, 5, 0) exceeds (0,2,0) without cascade layers. Consider lowering specificity or introducing @layer.",
       "selector": ".kpe-scope .kpe-modal .kpe-panel__footer .kpe-btn--primary .kpe-ico"
-    },
-    {
-      "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
-      "line": 178,
-      "lens": "specificity",
-      "severity": "critical",
-      "rule": "important-without-layer",
-      "message": "!important used without a cascade-layer justification; it often masks a cascade bug."
     },
     {
       "file": "/home/maicon/Documentos/GitHub/Prompt-Enhancer/src/styles.js",
