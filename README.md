@@ -10,14 +10,15 @@ A userscript that enhances prompts in LLM chat interfaces. It intercepts the
 input field, rewrites the prompt through a language model, and returns the
 improved version without leaving the page.
 
-Works on **DeepSeek**, **ChatGPT**, **Claude**, **Gemini** and **Perplexity**.
+Works on **DeepSeek**, **ChatGPT**, **Claude**, **Gemini**, and **Perplexity**.
 
-> **Status:** v1.0.0 — stable base. New features will be added incrementally.
+> **Status:** v1.0.0 — stable base. Features are added incrementally.
 
 ---
 
 ## Table of contents
 
+- [Quick start](#quick-start)
 - [Features](#features)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -25,6 +26,8 @@ Works on **DeepSeek**, **ChatGPT**, **Claude**, **Gemini** and **Perplexity**.
 - [Keyboard shortcuts](#keyboard-shortcuts)
 - [Architecture](#architecture)
 - [Development](#development)
+- [Troubleshooting](#troubleshooting)
+- [Privacy & Security](#privacy--security)
 - [Roadmap](#roadmap)
 - [Accessibility](#accessibility)
 - [Contributing](#contributing)
@@ -33,38 +36,60 @@ Works on **DeepSeek**, **ChatGPT**, **Claude**, **Gemini** and **Perplexity**.
 
 ---
 
+## Quick start
+
+1. **Install a userscript manager** — [Tampermonkey](https://www.tampermonkey.net/), [Greasemonkey](https://www.greasespot.net/), or [Violentmonkey](https://violentmonkey.github.io/).
+2. **Build and install the script**:
+   ```bash
+   git clone https://github.com/MaiconJh/Prompt-Enhancer.git
+   cd Prompt-Enhancer
+   npm install
+   npm run build
+   ```
+   Open `dist/prompt-enhancer.user.js`, copy its contents, and paste it into a
+   new userscript in your manager.
+3. **Use it** — Open a supported chat, type a prompt, and press `Ctrl+Shift+E`
+   or click **Aprimorar**. Review the preview and click **Aplicar**.
+
+Default provider: **Kilo AI Gateway**
+(`https://ai-gateway.kilo.ai/api/v1/chat/completions`, model
+`cohere/north-mini-code:free`, header `X-KILOCODE-EDITORNAME: PromptEnhancer`).
+You can pin a catalog route or use a fallback in **Configurações → Provider**.
+
+---
+
 ## Features
 
 ### Prompt enhancement
 
-- **Direct enhancement** — one click rewrites the prompt for clarity,
-  specificity and structure, preserving the original intent.
+- **Direct enhancement** — rewrites a prompt for clarity, specificity, and
+  structure while preserving the original intent.
 - **Guided wizard** — the model proposes 1–5 clarification questions
-  (free-form, single choice, or multi-choice). Answers are incorporated
-  into the final prompt. Optional code attachment per question.
-- **Preview before applying** — original vs enhanced, side by side, in an
-  inline panel. Nothing is committed until you confirm.
+  (free-form, single choice, or multi-choice). Answers are incorporated into
+  the final prompt. Optional code attachment per question.
+- **Preview before applying** — original vs. enhanced in an inline panel.
+  Nothing is committed until you confirm.
 - **Undo** — one-click revert to the original text.
 
 ### Project context
 
 - Load `.md`, `.markdown`, `.mdc`, `.txt` files (or paste text) as project
-  context. Common names like `AGENTS.md`, `CLAUDE.md`, `.cursorrules` are
+  context. Common names like `AGENTS.md`, `CLAUDE.md`, and `.cursorrules` are
   recognized.
 - Multiple files per project, each toggleable independently.
-- Context is injected as a delimited block, wrapped differently per host
+- Context is injected as a delimited block, wrapped per host
   (`<project_context>` for Claude, `### CONTEXTO DO PROJETO ###` for
   OpenAI/Gemini, generic delimiters otherwise).
-- Per-file limit 32 KB, total 32 KB, up to 5 files.
+- Limits: 32 KB per file, 32 KB total, up to 5 files.
 - Export context as JSON.
 
 ### System prompt
 
 - Editable system prompt with live validation.
-- Local presets — save, load, rename, delete and apply named variants
-  (up to 20).
+- Local presets — save, load, rename, delete, and apply named variants (up to
+  20).
 - Read-only reference of the default prompt.
-- "Test locally" validation before saving.
+- Local simulation before saving (no API call).
 
 ### Generation parameters
 
@@ -80,52 +105,83 @@ Works on **DeepSeek**, **ChatGPT**, **Claude**, **Gemini** and **Perplexity**.
 | `response_persona` | auto, formal, casual, technical, friendly, concise, custom | auto |
 | `response_persona_custom` | Free-form style, up to 200 characters | empty |
 
-Presets: **Precise**, **Balanced**, **Creative**.
-Selected tones guide both the generated prompt and its requested response style.
+Presets: **Precise**, **Balanced**, **Creative**. Preset values fill the form;
+changes are persisted only when you save.
+
+### Provider catalog and routing
+
+- Browse curated model entries and models discovered from supported providers.
+- Search by model/provider and filter by provider, keyless access, and streaming
+  capability.
+- **Pin** a route to use it for API calls. Models requiring a key prompt for it
+  when pinned.
+- Optional **fallback** route; virtual fallback can route after HTTP 429 or 5xx
+  (when eligible).
+- Catalog discovery is cached locally (`CATALOG_CACHE_TTL_MS`: 5 minutes). Use
+  the userscript menu to refresh the catalog.
+- Legacy `pe_api_url` / `pe_model` / `pe_api_key` settings are migrated into the
+  provider system.
+
+### Interface language (i18n)
+
+The userscript UI supports `pt-BR` and `en`.
+
+Resolution order:
+1. Explicit choice in `pe_ui_language` (`pt-BR` or `en`) — always respected.
+2. `auto` (default on first run) — `navigator.language` starting with `pt`
+   resolves to `pt-BR`; otherwise `en`.
+
+Change it via **Parameters → Interface language** or the menu
+**🌐 Idioma / Language**.
+
+Scope notes:
+- `CONFIG.SYSTEM_PROMPT`, question/enhance-with-answers system prompts, model
+  continuation/answer messages, and the editable `pe_system_prompt_v1` are
+  prompt content (not UI chrome) and are kept as designed.
+- `response_language` controls the **model's response language** and is
+  independent from UI language.
+- `scripts/check-i18n.sh` flags accented PT-BR literals in user-facing calls.
 
 ### Execution history
 
-- Every enhancement run is recorded with its nested API calls.
-- Each call captures the system prompt, messages, parameters, output,
-  duration, streaming/fallback flags and error details.
+- Each enhancement run is recorded with nested API calls.
+- Calls capture system prompt/messages, parameters, output, duration, streaming
+  flags, and error details.
 - Expandable cards with per-call inspection.
-- Last 5 runs kept locally (32 KB cap).
+- Last 5 runs kept locally (32 KB cap, per-run/call truncation limits).
 
 ### Error handling and resilience
 
-- **Typed errors** with 14+ codes: `NETWORK`, `PROVIDER_DOWN`,
-  `PROVIDER_RATE_LIMIT`, `PROVIDER_QUOTA`, `TIMEOUT`, `NO_FIRST_BYTE`,
-  `STALL`, `EMPTY_RESPONSE`, `BAD_JSON`, `ABORTED`, `OFFLINE`,
-  `LOCAL_RATE_LIMIT`, `STREAM_PARSE_ERROR`, and more.
-- **Selective retry** — only retryable codes trigger automatic retry
-  (1 attempt, 2.5 s backoff).
-- **Truncated output** — when a provider ends with `finish_reason: length`,
-  the client requests up to two continuations; if still incomplete, it reports
+- **Typed errors**: `NETWORK`, `PROVIDER_DOWN`, `PROVIDER_RATE_LIMIT`,
+  `PROVIDER_QUOTA`, `TIMEOUT`, `NO_FIRST_BYTE`, `STALL`, `EMPTY_RESPONSE`,
+  `OUTPUT_TRUNCATED`, `BAD_JSON`, `ABORTED`, `OFFLINE`, `LOCAL_RATE_LIMIT`,
+  `STREAM_PARSE_ERROR`, and HTTP client errors.
+- **Selective retry** — retryable codes trigger automatic retry (1 attempt,
+  2.5 s backoff).
+- **Truncated output** — when a provider ends with `finish_reason: length`, the
+  client requests up to two continuations; if still incomplete, it reports
   `OUTPUT_TRUNCATED` instead of returning a partial result as successful.
-- **Contextual actions** — error toasts offer "Retry", "Retry without
-  context", "Retry without streaming" or "Open parameters" based on the
-  failure type.
+- **Contextual actions** — error toasts can offer retry, retry without context,
+  retry without streaming, or open parameters (based on failure type).
 - **Local rate limit** — 10 requests per 60 s per host.
-- **Adaptive timeout** — 30 s base, scaling with payload size and an additional
-  per-KB allowance for attached project context and code, up to 120 s.
-- **Streaming watchdogs** — warn if no first byte arrives within 8 s or if
-  the stream stalls for 5 s.
+- **Adaptive timeout** — 30 s base, scaled by payload size and attached
+  context/code, up to 120 s.
+- **Streaming watchdogs** — warn if no first byte arrives within 8 s or if the
+  stream stalls for 5 s.
 
 ### Streaming feedback
 
-- Live token counter and estimated throughput during streaming.
-- Animated gear canvas that morphs through five states: connecting,
-  waiting, streaming, finalizing, retrying.
-- Expandable debug panel with metrics (model, endpoint, payload size,
-  attempt, status, first-token latency, tokens, rate).
+- Live token counter and estimated throughput.
+- Animated gear canvas (connecting, waiting, streaming, finalizing, retrying).
+- Expandable debug panel (model, endpoint, payload size, attempt, status,
+  first-token latency, tokens, rate).
 - Cancelable at any time.
 
 ### Cross-provider compatibility
 
-- Automatically detects the host and wraps project context accordingly.
-- Respects each chat interface's input model (`<textarea>`, `<input>`,
-  `contenteditable`).
-- Shields interactions from the host page's own event handlers.
+- Detects the host and wraps project context appropriately.
+- Supports `<textarea>`, `<input>`, and `contenteditable` inputs.
+- `HostShield` isolates script interactions from host-page event handlers.
 
 ---
 
@@ -134,27 +190,24 @@ Selected tones guide both the generated prompt and its requested response style.
 ### Prerequisites
 
 - A userscript manager: [Tampermonkey](https://www.tampermonkey.net/),
-  [Greasemonkey](https://www.greasespot.net/) or
+  [Greasemonkey](https://www.greasespot.net/), or
   [Violentmonkey](https://violentmonkey.github.io/).
-- A supported chat interface (see [Features](#features)).
+- Node.js ≥ 20 (to build from source).
 
 ### From source
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/MaiconJh/Prompt-Enhancer.git
-   cd prompt-enhancer
-   ```
-2. Build:
-   ```bash
-   npm run build
-   ```
-3. Open `dist/prompt-enhancer.user.js`, copy its contents, and paste into a
-   new userscript in your userscript manager.
-4. Save. The script activates on supported hosts.
+```bash
+git clone https://github.com/MaiconJh/Prompt-Enhancer.git
+cd Prompt-Enhancer
+npm install
+npm run build
+```
 
-Install dependencies with `npm install` before building; `playwright` is
-used for test tooling.
+Open `dist/prompt-enhancer.user.js`, copy its contents, and paste it into a new
+userscript. Save — the script activates on supported hosts.
+
+`playwright` is installed as a dependency for test/tooling support. Runtime is a
+single concatenated userscript with no bundler/transpiler.
 
 ---
 
@@ -162,28 +215,27 @@ used for test tooling.
 
 ### Basic flow
 
-1. Focus any prompt input on a supported chat.
-2. A toolbar appears above the input: **Aprimorar · Guiado · Contexto ·
-   Parâmetros · Config · Desfazer**.
+1. Focus a prompt input on a supported chat.
+2. Use the toolbar: **Aprimorar · Guiado · Contexto · Parâmetros · Config ·
+   Desfazer**.
 3. Type your prompt.
-4. Click **Aprimorar** to enhance directly, or **Guiado** to answer
-   clarification questions first.
-5. Review the inline preview and click **Aplicar** to commit.
+4. Click **Aprimorar** (direct) or **Guiado** (clarification questions).
+5. Review the inline preview and click **Aplicar**.
 
 ### Adding project context
 
-1. Click **Contexto** in the toolbar.
-2. Upload a `.md`/`.txt` file or paste content directly.
-3. Toggle files on or off; the master switch controls injection.
-4. Context is appended to the system prompt for every subsequent enhancement.
+1. Click **Contexto**.
+2. Upload a `.md`/`.txt` file or paste content.
+3. Toggle files and/or the master injection switch.
+4. Enabled context is appended to the composed system prompt.
 
 ### Editing the system prompt
 
 1. Open **Config → System prompt**.
-2. Edit the active prompt. Validation runs live.
-3. Optionally save a named preset for reuse.
-4. Click **Testar localmente** to validate composition (no API call).
-5. Click **Salvar** to apply.
+2. Edit the active prompt (live validation).
+3. Optionally save a named preset.
+4. Use local simulation to validate composition.
+5. Save to apply.
 
 ---
 
@@ -191,41 +243,36 @@ used for test tooling.
 
 ### Generation parameters
 
-Open **Parâmetros** from the toolbar to configure temperature, max_tokens,
-top_p, frequency_penalty, presence_penalty, seed, response language and
-persona. Presets (**Precise**, **Balanced**, **Creative**) fill the fields
-in one click — changes are only persisted when you click Save.
-
-Stored locally in `pe_params`.
+Open **Parâmetros** to configure generation settings and UI/response language
+preferences. Use presets (**Precise**, **Balanced**, **Creative**) to fill
+values, then save. Stored in `pe_params`.
 
 ### System prompt and presets
 
-Editable system prompt, stored in `pe_system_prompt_v1`. Local presets are
-stored alongside the prompt and can be loaded, renamed or deleted
-individually.
+Editable system prompt stored in `pe_system_prompt_v1`. Presets are managed in
+settings and persisted with prompt data.
 
 ### Provider
 
-Open **Configurações → Provider** to browse the curated model catalog and
-models discovered from supported providers. Search by model or provider,
-filter by provider, keyless access, and streaming capability, then select
-**Fixar** to route API calls through that model. Models requiring a key ask
-for it when pinned. Catalog discovery is cached locally; existing provider
-settings remain active until a catalog route is pinned. The optional virtual
-fallback can route requests to an automatic free model after HTTP 429 or 5xx.
+Open **Configurações → Provider** to search/filter the catalog, pin a route,
+configure fallback behavior, and manage API keys for models that require them.
+Catalog state is cached locally; routing is stored separately.
 
 ### Menu commands
 
-Accessible from the userscript manager's menu:
+Accessible from the userscript manager menu:
 
-- **Sobre** — version, context stats, history counts and current provider.
-- **Configurações** — full settings modal (params, context, system prompt,
-  history and provider).
-- **Limpar arquivos de contexto** — remove all project context files.
-- **Gerenciar contexto** — open the context popover from the menu.
-- **Histórico de erros** — list the last 20 errors with codes and messages.
-- **Limpar histórico de erros** — reset the error history.
-- **Limpar histórico de aprimoramentos** — reset the run history.
+- **Sobre / About** — version, context stats, history counts, provider, runtime
+  details.
+- **Configurações / Settings** — parameters, context, system prompt, history,
+  provider.
+- **Limpar arquivos de contexto / Clear context files**.
+- **Gerenciar contexto / Manage context**.
+- **Histórico de erros / Error history**.
+- **Limpar histórico de erros / Clear error history**.
+- **Limpar histórico de aprimoramentos / Clear enhancement history**.
+- **Idioma / Language** — toggle UI language (`pt-BR`/`en`).
+- **Atualizar catálogo de provedores / Refresh provider catalog**.
 
 ---
 
@@ -234,7 +281,7 @@ Accessible from the userscript manager's menu:
 | Shortcut | Action |
 | :--- | :--- |
 | `Ctrl+Shift+E` | Enhance the current prompt |
-| `Ctrl+Shift+P` | Open parameters modal |
+| `Ctrl+Shift+P` | Open parameters/settings (parameters flow) |
 | `Ctrl+Shift+S` | Open settings modal |
 | `Esc` | Close preview or guided wizard |
 
@@ -244,81 +291,89 @@ Shortcuts are ignored when focus is inside the script's own UI.
 
 ## Architecture
 
-The userscript is composed of ordered modules under `src/` that are
-concatenated by `build.js` into a single installable file at
-`dist/prompt-enhancer.user.js`.
+The userscript is built from ordered modules under `src/` and concatenated by
+`build.js` into `dist/prompt-enhancer.user.js`.
 
 ```
 src/
-├── banner.js               UserScript metadata header
-├── open.js                 IIFE open + 'use strict'
-├── config.js               CONFIG and animation constants
-├── provider-catalog.js     Curated free and local provider model entries
-├── provider-discovery.js   Discovers free model catalogs cross-origin
-├── provider-registry.js    Caches, normalizes, filters, merges catalog entries
-├── host-shield.js          HostShield (event isolation)
-├── utils.js                Utils and truncation helpers
-├── providers-project-context.js Providers and ProjectContext (host detection, context and files)
-├── migration.js            Legacy storage and history migration
-├── network-errors.js       NetError and ErrorIndexer (catalog and history)
-├── enhancement-history.js  EnhancementHistory (run history)
-├── rate-limiter.js         RateLimiter (10 req / 60 s per host)
-├── param-schema.js         ParamSchema (declarative definition + presets)
-├── system-prompt-manager.js SystemPromptManager (validation + presets)
-├── stream-parser-anim.js   StreamParser (SSE) and Anim (GSAP wrappers)
-├── gear.js                 Loading gear states and canvas
-├── styles.js               injectStyles (full CSS)
-├── icons-atoms.js          ICONS and Atoms (SVG + button builders)
-├── code-attachment.js      codeAttachment (paste + file attachment)
-├── context-popover.js      contextPopover (anchored popover)
-├── state.js                Shared state object
-├── settings-modal.js       settingsModal (params, context, prompt, history)
-├── overlay-events.js       wireOverlayToEvents (loading overlay events)
-├── molecules.js            Molecules (toolbar, overlays, panels, wizard, toast)
-├── api-client.js           ApiClient (HTTP client with streaming + history)
-├── composer.js             Composer (toolbar mounting per input)
-├── orchestration.js        Event handlers, flow orchestration, menu
-├── bootstrap.js            DOMContentLoaded / init dispatch
-└── close.js                IIFE close
+├── banner.js                   UserScript metadata header
+├── open.js                     IIFE open + 'use strict'
+├── config.js                   Defaults, CONFIG, animation constants
+├── provider-catalog.js         Curated free/local provider model entries
+├── provider-discovery.js       Cross-origin model catalog discovery
+├── provider-registry.js        Cache/normalize/filter/merge catalog entries
+├── host-shield.js              Host event/UI isolation
+├── utils.js                    Shared DOM/text/timing/format helpers
+├── i18n.js                     UI i18n dictionaries and helpers
+├── providers-project-context.js Host detection + project context/files
+├── migration.js                Legacy storage/history migrations
+├── provider-manager.js         Provider settings, pinned route, fallback
+├── network-errors.js           Typed errors and error history
+├── enhancement-history.js      Run/call history persistence
+├── rate-limiter.js             Local rate limiting per host
+├── param-schema.js             Parameter schema, presets, validation
+├── system-prompt-manager.js    System prompt validation and presets
+├── stream-parser-anim.js       SSE parsing and animation helpers
+├── gear.js                     Loading gear canvas states
+├── styles.js                   Injected UI styles
+├── icons-atoms.js              SVG icons and primitive UI controls
+├── code-attachment.js          Guided-mode code/file attachments
+├── context-popover.js          Project-context popover UI
+├── state.js                    Shared runtime state
+├── settings-modal.js           Settings UI (params/context/prompt/history/provider)
+├── overlay-events.js           Wire API events to loading overlay
+├── molecules.js                Composite UI (toolbar, overlays, wizard, toasts)
+├── api-client.js               Request building, streaming, retries, history capture
+├── composer.js                 Detect/mount toolbar on supported inputs
+├── orchestration.js            Enhancement flows and action handlers
+├── bootstrap.js                Init, observers, migrations, menu commands
+└── close.js                    IIFE close
 ```
 
-The concatenation order of the 28 middle modules is controlled by the
-root-level `manifest.json`; `banner.js`, `open.js` and `close.js` remain in
-fixed structural positions.
+Build/manifest facts:
+- `manifest.json` defines **29 modules** in concatenation order (middle).
+- `banner.js`, `open.js`, and `close.js` are fixed structural files.
+- Each manifest module includes `description`, `interfaces` (`provides` /
+  `consumes`), and `interactions`. `manifest-schema.js` validates this metadata.
+- `build.js` writes module metadata blocks before each module in the bundle.
+- `check.js` verifies `src/` ↔ `manifest.json` consistency, required markers,
+  banner/metadata presence, key symbols, and `node --check` syntax.
 
-Each `manifest.json` module entry includes a `description`, `interfaces`
-(`provides` and `consumes`), and `interactions`. The build validates these
-fields and writes them as a metadata block immediately before the module's
-source in the generated userscript. This documents the module boundary and
-its connections without changing runtime behavior.
-
-**Composition order for every request:**
+Composition order for requests:
 
 ```
-SYSTEM_PROMPT
+system prompt
   + language hint (if not auto)
-  + persona hint (if not auto)
+  + persona hint (if applicable)
   + project context (if enabled)
   → messages[]
-  → API call
+  → API call (streaming or non-stream fallback path)
 ```
 
-**Storage keys** (via `GM_setValue` / `GM_getValue`):
+### Storage keys
 
-| Key | Content |
+Managed via `GM_getValue` / `GM_setValue` / `GM_deleteValue`:
+
+| Key | Purpose |
 | :--- | :--- |
 | `pe_ctx_files` | Project context files |
 | `pe_ctx_global_enabled` | Master toggle for context injection |
 | `pe_params` | Generation parameters |
 | `pe_system_prompt_v1` | System prompt and presets |
-| `pe_runs` | Enhancement history |
-| `pe_error_history` | Error catalog history (last 20) |
-| `pe_api_url` | Optional provider endpoint override |
-| `pe_model` | Optional provider model override |
-| `pe_api_key` | Provider API key (defaults to `anonymous`) |
-| `pe_pinned_route` | Optional selected catalog route |
-| `pe_provider_catalog_cache` | Cached curated and discovered model catalog |
-| `pe_virtual_fallback_enabled` | Whether virtual 429/5xx fallback is enabled |
+| `pe_runs` | Enhancement run history |
+| `pe_error_history` | Error history (last 20) |
+| `pe_ui_language` | UI language preference (`auto`/`pt-BR`/`en`) |
+| `pe_pinned_route` | Selected catalog route |
+| `pe_provider_catalog_cache` | Cached catalog entries |
+| `pe_virtual_fallback_enabled` | Virtual fallback enabled flag |
+| `pe_providers` | Provider manager provider list |
+| `pe_active_provider` | Active provider id |
+| `pe_fallback_provider` | Fallback provider id |
+| `pe_providers_migrated` | Provider migration marker |
+| `pe_kilo_gateway_migrated` | Kilo gateway migration marker |
+
+Legacy keys `pe_api_url`, `pe_model`, and `pe_api_key` are read/migrated by the
+provider system and removed during migration when applicable.
 
 ---
 
@@ -327,49 +382,83 @@ SYSTEM_PROMPT
 ### Requirements
 
 - Node.js ≥ 20.
-- A userscript manager with developer mode enabled (for testing).
+- Userscript manager with developer mode (for manual testing).
 
-### Build
+### Commands
 
 ```bash
-npm run build    # concatenates src/ into dist/prompt-enhancer.user.js
-npm run check    # structural sanity check
-npm test         # build + check
+npm run build     # Build dist/prompt-enhancer.user.js from manifest order
+npm run check     # Structural checks + i18n literal check
+npm run test      # check + node --test src/tests/*-tests.js
+npm run test:api  # PE_API_SMOKE=1 integration smoke tests
+npm run sandbox   # Local sandbox helper (sandbox.cjs)
 ```
-
-The build is a straight concatenation — no bundler, no transpiler, no
-external dependencies.
 
 ### Editing workflow
 
-1. Edit the relevant module in `src/`.
-2. Keep the module's description and interface/interactions metadata in
-   `manifest.json` up to date.
+1. Edit modules in `src/`.
+2. If module boundaries/behavior contracts change, update the corresponding
+   `manifest.json` entry (`description`, `interfaces`, `interactions`).
 3. Run `npm run build`.
-4. Paste the new `dist/prompt-enhancer.user.js` into your userscript
-   manager.
+4. Paste `dist/prompt-enhancer.user.js` into your userscript manager.
 5. Reload the target chat and test.
 
-### Testing checklist
+### Test coverage (current)
 
-- [ ] Toolbar appears on all five supported hosts.
-- [ ] Direct enhancement returns a preview with the original and enhanced
-      text.
-- [ ] Guided mode generates 1–5 questions with correct types.
-- [ ] Project context is injected when enabled.
-- [ ] Parameter changes are reflected in the debug panel.
-- [ ] History records the run with nested calls.
-- [ ] Errors trigger the correct action key (`retry`, `retry-no-context`,
-      `retry-nostream`, `open-params`).
-- [ ] Streaming watchdogs fire when the connection is artificially slowed.
-- [ ] `prefers-reduced-motion` disables animations.
+Unit/integration-style Node tests under `src/tests/`:
+- `provider-default-tests.js`
+- `provider-catalog-tests.js`
+- `provider-api-tests.js`
+- `provider-api-integration-tests.js` (smoke; gated by `PE_API_SMOKE=1`)
+
+### Manual testing checklist
+
+- [ ] Toolbar appears on supported hosts (DeepSeek, ChatGPT, Claude, Gemini, Perplexity).
+- [ ] Direct enhancement returns a preview (original/enhanced).
+- [ ] Guided mode generates valid questions and produces a final prompt.
+- [ ] Project context injection works when enabled.
+- [ ] Parameter/system prompt/provider changes are persisted and reflected.
+- [ ] History records runs and nested calls.
+- [ ] Error actions behave correctly (`retry`, no-context/no-stream, params).
+- [ ] Streaming watchdogs and cancellation behave as expected.
+- [ ] UI language toggle works; `npm run check:i18n` passes.
+- [ ] `prefers-reduced-motion` reduces animation.
 
 ### Code style
 
-- No build tools, no transpilation beyond concatenation.
-- All modules share the same IIFE scope; no `import`/`export` between them.
-- All user-facing strings in Portuguese (pt-BR); code comments and
-  identifiers in English.
+- No runtime bundler/transpilation; modules share the same IIFE scope.
+- Keep module metadata in `manifest.json` accurate.
+- UI strings should go through `I18n.t(...)` (both `pt-BR` and `en` keys).
+- Do not add unnecessary comments or unrelated refactors.
+
+---
+
+## Troubleshooting
+
+| Issue | Solution |
+| :--- | :--- |
+| Toolbar doesn't appear | Reload the page. Confirm the userscript is enabled and the host matches supported URLs. |
+| Rate limited / 429 | Wait (local limit: 10 req/60 s per host). Consider fallback/another pinned route. |
+| Timeout / slow response | Reduce context, disable streaming, or adjust parameters. Check network/provider status. |
+| `OUTPUT_TRUNCATED` | The client requests continuations automatically; if still truncated, simplify the request or increase relevant limits. |
+| Context not injected | Check **Contexto** master toggle and file toggles. Limits: 32 KB/file, 32 KB total, max 5 files. |
+| Provider key/auth issues | Re-pin the route and provide the required key; verify provider authentication type. |
+| Catalog looks stale | Use **Atualizar catálogo de provedores / Refresh provider catalog**. |
+
+---
+
+## Privacy & Security
+
+- **Local-first** — settings, context, presets, and history are stored locally
+  via userscript storage APIs.
+- **No telemetry** — no analytics/tracking is built in.
+- **API calls** — prompt/context/system data is sent only to the configured
+  provider endpoint when you trigger enhancement flows.
+- **API keys** — stored locally in userscript manager storage; sent only to the
+  configured provider as required.
+- **Sensitive data** — avoid placing secrets/tokens in prompts or context files.
+- **Host isolation** — `HostShield` reduces interference from host-page event
+  handling.
 
 ---
 
@@ -377,36 +466,33 @@ external dependencies.
 
 ### Known gaps
 
-- The API endpoint and model are fixed at build time. Changing them requires
-  editing `src/config.js` and rebuilding.
-- Only OpenAI-compatible APIs are supported. Other providers need a
-  dedicated adapter.
-- Context files are text-only; binary or rich formats are not handled.
+- Provider behavior can vary by endpoint/model; not every OpenAI-compatible edge
+  case is normalized.
+- Context files are text-only.
+- Some prompt templates sent to the model remain pt-BR by design.
 
 ### Under consideration
 
-- Model selection from the settings modal.
-- API key configuration for custom endpoints.
-- Multi-provider support (Anthropic, Gemini, custom OpenAI-compatible).
-- Additional error codes and provider-specific handling.
+- Broader provider normalization and diagnostics.
+- Additional catalog/discovery sources and health signals.
+- UX refinements for provider routing and history inspection.
 
 ### Long term
 
-- Publish to GreasyFork with a CDN install URL.
+- Publish to GreasyFork with a stable install/update URL.
 
 ---
 
 ## Accessibility
 
 - Animations respect `prefers-reduced-motion`.
-- The guided wizard uses semantic buttons with `aria-expanded` and
-  `aria-controls`.
-- Live regions announce streaming milestones and errors.
-- Modals trap focus and restore it on close.
-- The loading overlay exposes `role="status"` and a visible cancel button.
+- Guided wizard uses semantic controls and ARIA attributes where applicable.
+- Streaming/error states are surfaced in the UI with status feedback.
+- Modals manage focus and provide close/cancel controls.
+- Loading overlay exposes status and a visible cancel action.
 
-WCAG 2.2 AA compliance is a target, not a current guarantee. Accessibility
-issues are tracked as bugs.
+WCAG 2.2 AA is a target, not a guaranteed certification. Accessibility issues
+should be reported as bugs.
 
 ---
 
@@ -414,54 +500,27 @@ issues are tracked as bugs.
 
 1. Fork the repository.
 2. Create a branch: `git checkout -b feature/your-feature`.
-3. Make your changes. Keep the module structure consistent.
-4. Run `npm test` and confirm it passes.
-5. Test on at least two of the supported hosts.
-6. Open a pull request with a clear description of the change, the
-   rationale, and the test cases covered.
+3. Make focused changes (keep module boundaries clear).
+4. Run `npm test`.
+5. Test on at least two supported hosts.
+6. Open a pull request with rationale and test coverage.
 
-For bug reports, please include:
-
-- The chat interface and browser version.
-- The input prompt (redacted if sensitive).
-- The error code shown in the toast (if any).
-- A screenshot of the debug panel if streaming is involved.
+For bug reports, include:
+- Host chat and browser version.
+- Reproduction steps and prompt/context shape (redacted if sensitive).
+- Error code/toast details.
+- Debug/streaming details if relevant.
 
 ---
 
 ## License
 
-[MIT](LICENSE) — see the `LICENSE` file for details.
+[MIT](LICENSE)
 
 ---
 
 ## Acknowledgments
 
-- [GSAP](https://gsap.com/) for the animation library used in the loading
-  overlay and transitions.
-- [OpenRouter](https://openrouter.ai/) for the anonymous free API used as
-  the default backend.
-- The userscript community for the patterns and conventions that this
-  project builds on.
-
-### Interface language (i18n)
-
-The userscript UI supports `pt-BR` and `en`. The active language is resolved in this order:
-
-1. **Explicit user choice** stored in `pe_ui_language` (`pt-BR` or `en`) — always respected.
-2. **`auto`** (default for first-run) — analyzes `navigator.language`:
-   - starts with `pt` → `pt-BR`
-   - otherwise (including missing) → `en`
-
-The default effective language is therefore **English after browser detection**, not a hardcoded `en`.
-
-Change it via **Parameters → Interface language** or the userscript menu **🌐 Idioma / Language**.
-
-**Scope — what is *not* translated:**
-
-- `CONFIG.SYSTEM_PROMPT`, `CONFIG.QUESTIONS_SYSTEM_PROMPT`, `CONFIG.ENHANCE_WITH_ANSWERS_SYSTEM_PROMPT` — these are prompts sent to the LLM, not UI. Kept in pt-BR by design.
-- Continuation/answer messages sent to the model inside `api-client.js`.
-- The `pe_system_prompt_v1` user-editable prompt.
-- Dev-only diagnostic strings in `console.*` logs.
-
-The `response_language` parameter (in Parameters) controls the **model's answer language**, which is orthogonal to UI language. Do not conflate the two.
+- [GSAP](https://gsap.com/) — animation library used in the UI.
+- [Kilo AI Gateway](https://ai-gateway.kilo.ai/) — default backend route.
+- The userscript ecosystem and community patterns this project builds on.
