@@ -338,14 +338,6 @@
             updatePresetSelection();
             form.appendChild(presetsRow);
 
-            const langRow = document.createElement('div');
-            langRow.className = 'pe-param-row';
-            langRow.innerHTML = `<label class="pe-param-label" for="pe-ui-language">${Utils.escapeHtml(I18n.t('param.ui_language.label'))}</label><div class="pe-param-control"><select id="pe-ui-language" class="pe-param-input"><option value="auto">${Utils.escapeHtml(I18n.t('param.ui_language.opt.auto'))}</option><option value="pt-BR">${Utils.escapeHtml(I18n.t('param.ui_language.opt.ptBR'))}</option><option value="en">${Utils.escapeHtml(I18n.t('param.ui_language.opt.en'))}</option></select><div class="pe-param-hint">${Utils.escapeHtml(I18n.t('param.ui_language.hint'))}</div></div>`;
-            const langSelect = langRow.querySelector('select');
-            langSelect.value = I18n.getStoredLanguage() || 'auto';
-            langSelect.addEventListener('change', (e) => { I18n.setLanguage(e.target.value); Molecules.toast(I18n.t('bs.langChanged'), 'info'); });
-            form.appendChild(langRow);
-
             ParamSchema.SCHEMA.filter(f => f.type === 'number').forEach(f => {
                 const row = document.createElement('div');
                 row.className = 'pe-param-row';
@@ -846,6 +838,26 @@
             manageBtn.addEventListener('click', () => { close(); setTimeout(() => State.activeComposer?.actionbar?.contextBtn?.click(), 250); });
             infoBox.appendChild(manageBtn);
             form.appendChild(infoBox);
+
+            // ── Seção 2: idioma da interface (script) ──────────────────────
+            const uiLangLabel = document.createElement('div');
+            uiLangLabel.className = 'pe-section-label';
+            uiLangLabel.innerHTML = `${Atoms.icon('gear').outerHTML}<span>${Utils.escapeHtml(I18n.t('sm.context.section.uiLanguage'))}</span>`;
+            form.appendChild(uiLangLabel);
+
+            const langRow = document.createElement('div');
+            langRow.className = 'pe-param-row';
+            langRow.innerHTML = `<label class="pe-param-label" for="pe-ui-language">${Utils.escapeHtml(I18n.t('param.ui_language.label'))}</label><div class="pe-param-control"><select id="pe-ui-language" class="pe-param-input"><option value="auto">${Utils.escapeHtml(I18n.t('param.ui_language.opt.auto'))}</option><option value="pt-BR">${Utils.escapeHtml(I18n.t('param.ui_language.opt.ptBR'))}</option><option value="en">${Utils.escapeHtml(I18n.t('param.ui_language.opt.en'))}</option></select><div class="pe-param-hint">${Utils.escapeHtml(I18n.t('param.ui_language.hint'))}</div></div>`;
+            const langSelect = langRow.querySelector('select');
+            langSelect.value = I18n.getStoredLanguage() || 'auto';
+            langSelect.addEventListener('change', (e) => { I18n.setLanguage(e.target.value); Molecules.toast(I18n.t('bs.langChanged'), 'info'); });
+            form.appendChild(langRow);
+
+            // ── Seção 3: idioma e estilo da resposta ───────────────────────
+            const responseStyleLabel = document.createElement('div');
+            responseStyleLabel.className = 'pe-section-label';
+            responseStyleLabel.innerHTML = `${Atoms.icon('sparkles').outerHTML}<span>${Utils.escapeHtml(I18n.t('sm.context.section.responseStyle'))}</span>`;
+            form.appendChild(responseStyleLabel);
 
             ['response_language', 'response_persona'].forEach(key => {
                 const f = ParamSchema.SCHEMA.find(x => x.key === key);
