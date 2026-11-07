@@ -109,7 +109,7 @@ CLASS_SELECTOR_RE = re.compile(r"\.[\w-]+")
 ELEMENT_SELECTOR_RE = re.compile(r"(?:^|[\s>+~,(])([a-zA-Z][\w-]*)")
 
 # Specificity threshold above which a normal component rule is flagged.
-SPEC_WARNING_THRESHOLD = (0, 2, 0)  # (id, class, element) → anything ≥ (0,2,0)
+SPEC_WARNING_THRESHOLD = (0, 3, 0)  # (id, class, element) → anything ≥ (0,3,0)
 
 
 # ---------------------------------------------------------------------------
