@@ -1,15 +1,19 @@
 // ===== src/providers-project-context.js =====
     const Providers = (() => {
+        // Fachada delegadora (F2-T1/C-018): detecção e wrapping delegam ao registry/adaptador.
         function detect() {
             const host = (location.hostname || '').toLowerCase();
-            if (host.includes('claude.ai')) return 'claude';
-            if (host.includes('chatgpt.com') || host.includes('chat.openai.com')) return 'openai';
-            if (host.includes('gemini.google.com')) return 'gemini';
-            return 'generic';
+            const adapter = SiteAdapterRegistry.getAdapter({ hostname: host, href: location.href, pathname: location.pathname || '' });
+            return adapter ? adapter.id : 'generic';
         }
         function wrap(body, provider) {
             if (!body) return '';
-            switch (provider) {
+            const host = (location.hostname || '').toLowerCase();
+            const adapter = SiteAdapterRegistry.getAdapter({ hostname: host, href: location.href, pathname: location.pathname || '' });
+            const targetId = provider || (adapter ? adapter.id : 'generic');
+            if (adapter && adapter.id === targetId) return adapter.wrapContext(body);
+            // Fallback para id sem adaptador correspondente (compatibilidade)
+            switch (targetId) {
                 case 'claude': return `<project_context>\n${body}\n</project_context>`;
                 case 'openai':
                 case 'gemini': return `### CONTEXTO DO PROJETO ###\n${body}\n### FIM DO CONTEXTO DO PROJETO ###`;

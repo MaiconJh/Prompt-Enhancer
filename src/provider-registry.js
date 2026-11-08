@@ -85,7 +85,7 @@
         }
 
         async function _fetchAllDynamic() {
-            const adapters = [discoverOpenRouter, discoverKilo, discoverPollinations, discoverKeylessAI];
+            const adapters = [discoverOpenRouter, discoverGateway, discoverPollinations, discoverKeylessAI];
             const results = await Promise.allSettled(adapters.map((adapter) => adapter()));
             return results.flatMap((result) => result.status === 'fulfilled' && Array.isArray(result.value) ? result.value : []);
         }

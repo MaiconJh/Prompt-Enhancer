@@ -35,7 +35,8 @@ function createProviderHarness(initialValues = {}) {
     return {
         defaultProvider,
         providerManager,
-        values
+        values,
+        CONFIG: vm.runInContext('CONFIG', context)
     };
 }
 
@@ -44,45 +45,46 @@ function plain(value) {
 }
 
 test('Kilo é o provider padrão configurado', () => {
-    const { defaultProvider } = createProviderHarness();
-    assert.equal(defaultProvider.id, 'kilo');
+    const { defaultProvider, CONFIG } = createProviderHarness();
+    assert.equal(defaultProvider.id, 'default');
     assert.equal(defaultProvider.name, 'Kilo');
     assert.equal(defaultProvider.url, 'https://ai-gateway.kilo.ai/api/v1/chat/completions');
     assert.equal(defaultProvider.model, 'cohere/north-mini-code:free');
     assert.equal(defaultProvider.apiKey, 'anonymous');
     assert.deepEqual(plain(defaultProvider.headers), {
-        'X-KILOCODE-EDITORNAME': 'PromptEnhancer'
+        [CONFIG.PROVIDER_HEADER_NAME]: 'PromptEnhancer'
     });
 });
 
 test('primeira execução salva Kilo como único provider ativo', () => {
-    const { providerManager } = createProviderHarness();
+    const { providerManager, CONFIG } = createProviderHarness();
 
     const active = providerManager.getActive();
     const providers = providerManager.list();
     const resolved = providerManager.resolveForRequest();
 
-    assert.equal(active.id, 'kilo');
+    assert.equal(active.id, 'default');
     assert.equal(active.builtin, true);
     assert.equal(providers.length, 1);
-    assert.equal(providers[0].id, 'kilo');
+    assert.equal(providers[0].id, 'default');
     assert.equal(resolved.primary.url, 'https://ai-gateway.kilo.ai/api/v1/chat/completions');
     assert.equal(resolved.primary.model, 'cohere/north-mini-code:free');
     assert.equal(resolved.primary.apiKey, 'anonymous');
     assert.deepEqual(plain(resolved.primary.headers), {
-        'X-KILOCODE-EDITORNAME': 'PromptEnhancer'
+        [CONFIG.PROVIDER_HEADER_NAME]: 'PromptEnhancer'
     });
     assert.equal(resolved.fallback, null);
 });
 
 test('provider Kilo salvo na versão antiga migra para o endpoint e modelo funcionais', () => {
+    const { CONFIG } = createProviderHarness();
     const storedKilo = {
         id: 'kilo',
         name: 'Kilo (padrão)',
         url: 'https://api.kilo.ai/api/openrouter/chat/completions',
         model: 'kilo-auto/free',
         apiKey: 'anonymous',
-        headers: { 'X-KILOCODE-EDITORNAME': 'PromptEnhancer' },
+        headers: { [CONFIG.PROVIDER_HEADER_NAME]: 'PromptEnhancer' },
         builtin: true,
         fallback: false
     };
@@ -97,13 +99,13 @@ test('provider Kilo salvo na versão antiga migra para o endpoint e modelo funci
     assert.equal(active.url, 'https://ai-gateway.kilo.ai/api/v1/chat/completions');
     assert.equal(active.model, 'cohere/north-mini-code:free');
     assert.equal(active.apiKey, 'anonymous');
-    assert.equal(active.headers['X-KILOCODE-EDITORNAME'], 'PromptEnhancer');
+    assert.equal(active.headers[CONFIG.PROVIDER_HEADER_NAME], 'PromptEnhancer');
     assert.equal(values.get('pe_kilo_gateway_migrated'), true);
 });
 
 test('migração Kilo preserva URL e modelo customizados', () => {
     const customizedKilo = {
-        id: 'kilo',
+        id: 'default',
         name: 'Kilo (padrão)',
         url: 'https://my-kilo-proxy.example/v1/chat/completions',
         model: 'custom-kilo-model',
@@ -114,7 +116,7 @@ test('migração Kilo preserva URL e modelo customizados', () => {
     };
     const { providerManager } = createProviderHarness({
         pe_providers: JSON.stringify([customizedKilo]),
-        pe_active_provider: 'kilo',
+        pe_active_provider: 'default',
         pe_providers_migrated: true
     });
 
@@ -136,7 +138,7 @@ test('configuração legada customizada é preservada e passa a ser ativa', () =
     const active = providerManager.getActive();
 
     assert.equal(providers.length, 2);
-    assert.equal(providers[0].id, 'kilo');
+    assert.equal(providers[0].id, 'default');
     assert.equal(active.name, 'Meu provider (legado)');
     assert.equal(active.url, legacy.pe_api_url);
     assert.equal(active.model, legacy.pe_model);
@@ -156,7 +158,7 @@ test('valores legados padrão do Kilo não são importados como provider customi
     const providers = providerManager.list();
 
     assert.equal(providers.length, 1);
-    assert.equal(providers[0].id, 'kilo');
+    assert.equal(providers[0].id, 'default');
     assert.equal(providerManager.getActive().url, 'https://ai-gateway.kilo.ai/api/v1/chat/completions');
     assert.equal(providerManager.getActive().model, 'cohere/north-mini-code:free');
 });

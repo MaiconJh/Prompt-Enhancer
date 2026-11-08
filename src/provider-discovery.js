@@ -93,7 +93,7 @@
         }
     }
 
-    async function discoverKilo() {
+    async function discoverGateway() {
         try {
             const payload = await catalogRequest('https://ai-gateway.kilo.ai/api/v1/models', 'kilo');
             const freeModels = payload ? modelRows(payload).filter((model) => {
@@ -104,13 +104,13 @@
             }) : [];
             const entries = freeModels.map((model) => discoveryEntry('kilo', 'Kilo', 'https://ai-gateway.kilo.ai/api/v1', model, {
                 auth: { type: 'bearer', key: 'anonymous', headerName: null },
-                headers: { 'X-KILOCODE-EDITORNAME': 'PromptEnhancer' }
+                headers: { [CONFIG.PROVIDER_HEADER_NAME]: 'PromptEnhancer' }
             })).filter(Boolean);
             const auto = discoveryEntry('kilo', 'Kilo', 'https://ai-gateway.kilo.ai/api/v1', {}, {
                 modelId: 'kilo-auto/free',
                 label: 'Kilo · auto (free)',
                 auth: { type: 'bearer', key: 'anonymous', headerName: null },
-                headers: { 'X-KILOCODE-EDITORNAME': 'PromptEnhancer' },
+                headers: { [CONFIG.PROVIDER_HEADER_NAME]: 'PromptEnhancer' },
                 virtual: true
             });
             if (!entries.some((entry) => entry.id === auto.id)) entries.push(auto);
@@ -168,7 +168,7 @@
             modelId: 'kilo-auto/free',
             label: 'Kilo · auto (free)',
             auth: { type: 'bearer', key: 'anonymous', headerName: null },
-            headers: { 'X-KILOCODE-EDITORNAME': 'PromptEnhancer' },
+            headers: { [CONFIG.PROVIDER_HEADER_NAME]: 'PromptEnhancer' },
             virtual: true
         })
     ];

@@ -2,7 +2,7 @@
     // Default provider configuration. Override these values, or add a
     // provider abstraction layer, to point at another API.
     const DEFAULT_PROVIDER = {
-        id: 'kilo',
+        id: 'default',
         name: 'Kilo',
         url: 'https://ai-gateway.kilo.ai/api/v1/chat/completions',
         model: 'cohere/north-mini-code:free',

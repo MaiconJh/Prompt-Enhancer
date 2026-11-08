@@ -83,7 +83,7 @@ function createApiHarness(responses, customPrompt = '', projectContextSuffix = '
 
     const api = vm.runInContext('ApiClient', context);
     const providers = vm.runInContext('ProviderManager', context);
-    return { api, providers, requests, context };
+    return { api, providers, requests, context, CONFIG: vm.runInContext('CONFIG', context) };
 }
 
 const successResponse = {
@@ -97,7 +97,7 @@ const successResponse = {
 };
 
 test('requisição ao provider padrão envia o formato esperado e interpreta resposta chat-completions', async () => {
-    const { api, requests } = createApiHarness([{ body: successResponse }]);
+    const { api, requests, CONFIG } = createApiHarness([{ body: successResponse }]);
 
     const result = await api._post('system prompt', 'prompt de teste', { forceNonStream: true });
 
@@ -107,7 +107,7 @@ test('requisição ao provider padrão envia o formato esperado e interpreta res
     assert.equal(requests[0].url, 'https://ai-gateway.kilo.ai/api/v1/chat/completions');
     assert.equal(requests[0].headers.Authorization, 'Bearer anonymous');
     assert.equal(requests[0].headers['Content-Type'], 'application/json');
-    assert.equal(requests[0].headers['X-KILOCODE-EDITORNAME'], 'PromptEnhancer');
+    assert.equal(requests[0].headers[CONFIG.PROVIDER_HEADER_NAME], 'PromptEnhancer');
 
     const payload = JSON.parse(requests[0].data);
     assert.equal(payload.model, 'cohere/north-mini-code:free');

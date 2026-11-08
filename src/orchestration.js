@@ -4,6 +4,21 @@
     const closeWizard = () => { State.wizard?.close?.(); State.wizard = null; };
     const closeAll = () => { closePreview(); closeWizard(); };
 
+    function _activeAdapter() {
+        if (typeof SiteAdapterRegistry === 'undefined') return null;
+        const host = (location.hostname || '').toLowerCase();
+        return SiteAdapterRegistry.getAdapter({ hostname: host, href: location.href, pathname: location.pathname || '' });
+    }
+    function _insertText(el, text) {
+        const adapter = _activeAdapter();
+        if (adapter && typeof adapter.insertText === 'function') {
+            const ok = adapter.insertText(el, text);
+            if (ok === false) { Utils.applyText(el, text); }
+            return;
+        }
+        Utils.applyText(el, text);
+    }
+
     async function onParams() {
         return new Promise((resolve) => {
             let settled = false, saved = null;
@@ -100,7 +115,7 @@
                 },
                 onApply: () => {
                     State.previousText = original;
-                    Utils.applyText(el, enhanced);
+                    _insertText(el, enhanced);
                     State.activeComposer?.actionbar.setUndoEnabled(true);
                     EnhancementHistory.setOutcome(capturedRunId, 'applied');
                     State.preview = null;
@@ -209,7 +224,7 @@
                                 },
                                 onApply: () => {
                                     State.previousText = base;
-                                    Utils.applyText(el, enhanced);
+                                    _insertText(el, enhanced);
                                     State.activeComposer?.actionbar.setUndoEnabled(true);
                                     EnhancementHistory.setOutcome(capturedRunId, 'applied');
                                     State.preview = null;

@@ -38,7 +38,7 @@
       "interfaces": {
         "provides": [
           "discoverOpenRouter",
-          "discoverKilo",
+          "discoverGateway",
           "discoverPollinations",
           "discoverKeylessAI",
           "VIRTUAL_ROUTERS"
@@ -116,6 +116,37 @@
       },
       "interactions": [
         "UI modules consume t() for localized strings."
+      ]
+    },
+    {
+      "file": "site-adapter-base.js",
+      "description": "Defines the SiteAdapter contract, defaults, and factory for platform adapters.",
+      "interfaces": {
+        "provides": [
+          "SiteAdapter"
+        ],
+        "consumes": [
+          "Utils"
+        ]
+      },
+      "interactions": [
+        "SiteAdapterRegistry consumes SiteAdapter.create and defaults to build concrete adapters."
+      ]
+    },
+    {
+      "file": "site-adapter-registry.js",
+      "description": "Resolves the active SiteAdapter by location with deterministic order and generic fallback.",
+      "interfaces": {
+        "provides": [
+          "SiteAdapterRegistry"
+        ],
+        "consumes": [
+          "SiteAdapter",
+          "console"
+        ]
+      },
+      "interactions": [
+        "Providers and Composer consume the registry to obtain the active adapter."
       ]
     },
     {

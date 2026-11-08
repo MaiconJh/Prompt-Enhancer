@@ -2,6 +2,12 @@
     const Composer = (() => {
         const mounted = new WeakSet();
         function findComposer(input) {
+            // DEPRECADO: delega ao adaptador genérico (F2-T2). Mantido para compatibilidade.
+            const adapter = (typeof SiteAdapterRegistry !== 'undefined')
+                ? SiteAdapterRegistry.getAdapter({ hostname: (location.hostname || '').toLowerCase(), href: location.href, pathname: location.pathname || '' })
+                : null;
+            if (adapter && typeof adapter.findMountPoint === 'function') return adapter.findMountPoint(input);
+            // Fallback inline (mesma heurística do default do adaptador)
             let node = input;
             for (let i = 0; i < 6 && node; i++) {
                 const style = getComputedStyle(node);

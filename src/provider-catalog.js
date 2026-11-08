@@ -10,7 +10,7 @@
             modelId: 'cohere/north-mini-code:free',
             label: 'North Mini Code (free)',
             auth: { type: 'bearer', key: 'anonymous', headerName: null },
-            headers: { 'X-KILOCODE-EDITORNAME': 'PromptEnhancer' },
+            headers: { [CONFIG.PROVIDER_HEADER_NAME]: 'PromptEnhancer' },
             limits: { rpm: null, rpd: null, tpm: null, note: '200 req/h por IP', noteKey: 'provider.note.kilo' },
             capabilities: { streaming: true, tools: false, jsonMode: false },
             contextWindow: null,

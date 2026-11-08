@@ -11,7 +11,7 @@
         const LEGACY_DEFAULT_MODEL = 'kilo-auto/free';
 
         const DEFAULT_TEMPLATE = {
-            id: 'kilo',
+            id: 'default',
             name: 'Kilo',
             url: DEFAULT_PROVIDER.url,
             model: DEFAULT_PROVIDER.model,
