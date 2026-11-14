@@ -477,9 +477,9 @@
 
     const VIRTUAL_BUFFER = 50;
     const OVERSCAN_PX = 200;
-    const GROUP_EST = 36;
-    const MODEL_EST = 66;
-    const MODEL_EXPANDED_EST = 360;
+    const GROUP_EST = 44;        // 36 (texto) + 8 (padding-bottom)
+    const MODEL_EST = 74;        // 66 (card) + 8 (padding-bottom)
+    const MODEL_EXPANDED_EST = 368; // 360 + 8
 
     // ── Helpers de labels ────────────────────────────────────────────
     function limitsLabel(entry) {
@@ -935,7 +935,10 @@
                 const el = entry.target;
                 const key = el.getAttribute('data-vkey');
                 if (!key) return;
-                const h = entry.contentRect.height;
+                // Mede a border-box (inclui padding-bottom) — contentRect
+                // ignora o padding e subestima o offset do próximo item.
+                const h = entry.borderBoxSize?.[0]?.blockSize
+                       ?? entry.target.offsetHeight;
                 const prev = heights.get(key);
                 if (prev == null || Math.abs(prev - h) > 1) {
                     heights.set(key, h);
