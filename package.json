@@ -7,6 +7,7 @@
     "sandbox": "node sandbox.cjs",
     "build": "node build.js",
     "build:dev": "node build.js --dev",
+    "build:prod": "node build.js --minify-css",
     "check:i18n": "bash scripts/check-i18n.sh",
     "check": "npm run check:i18n && node check.js",
     "check:dev": "node check.js --dev",

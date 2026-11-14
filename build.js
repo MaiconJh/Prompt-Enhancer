@@ -9,6 +9,7 @@ const outputDir = path.join(root, 'dist');
 const outputFile = path.join(outputDir, 'prompt-enhancer.user.js');
 
 const dev = process.argv.includes('--dev') || process.env.PE_DEV === '1';
+const minifyCss = process.argv.includes('--minify-css') || process.env.PE_MINIFY_CSS === '1';
 
 let manifest;
 try {
@@ -43,7 +44,8 @@ const modules = await Promise.all(manifest.modules.map(async (module) => {
     let source = await readSource(module.file);
 
     // Minifica o bloco CSS do styles.js (mantém o source legível no repo).
-    if (module.file === 'styles.js') {
+    // Ative com --minify-css ou PE_MINIFY_CSS=1 (ex.: build de produção).
+    if (module.file === 'styles.js' && minifyCss) {
         const match = source.match(/const css = `([\s\S]*)`;/);
         if (match) {
             const minified = match[1]
@@ -72,6 +74,10 @@ if (dev) {
     bundle = bundle.replace(/^(\/\/ @version\s+)1\.0\.0(\s*)$/m, `$11.0.0-dev.${timestamp}$2`);
     bundle = `// pe-dev-build\n${bundle}`;
     console.log(`[build:dev] updateURL + version bump ${new Date().toISOString()}`);
+}
+
+if (minifyCss) {
+    console.log('[build:css] minificação do styles.js ativada');
 }
 
 await writeFile(outputFile, bundle, 'utf8');
