@@ -40,7 +40,22 @@ async function readSource(name) {
 const banner = await readSource('banner.js');
 const open = await readSource('open.js');
 const modules = await Promise.all(manifest.modules.map(async (module) => {
-    const source = await readSource(module.file);
+    let source = await readSource(module.file);
+
+    // Minifica o bloco CSS do styles.js (mantém o source legível no repo).
+    if (module.file === 'styles.js') {
+        const match = source.match(/const css = `([\s\S]*)`;/);
+        if (match) {
+            const minified = match[1]
+                .replace(/\/\*[\s\S]*?\*\//g, '')          // remove comentários CSS
+                .replace(/\s+/g, ' ')                      // colapsa whitespace
+                .replace(/\s*([{}:;,>+~\[\]()])\s*/g, '$1') // remove espaço ao redor de tokens
+                .replace(/;}/g, '}')                        // remove ; antes de }
+                .trim();
+            source = source.replace(match[1], minified);
+        }
+    }
+
     return `${renderModuleMetadata(module)}\n${source}`;
 }));
 const close = await readSource('close.js');
