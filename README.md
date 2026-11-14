@@ -137,6 +137,7 @@ Accessible from the userscript manager menu:
 - **Clear error history**.
 - **Clear enhancement history**.
 - **Language** — toggle UI language (`en`/`pt-BR`).
+- **Theme** — cycle interface theme (`auto`/`light`/`dark`).
 - **Refresh provider catalog**.
 
 Menu commands are automatically re-registered when the UI language changes (`pe:i18n-changed` event), ensuring labels reflect the selected language.
@@ -220,6 +221,7 @@ Managed via `GM_getValue` / `GM_setValue` / `GM_deleteValue`, except `pe_system_
 | `pe_runs` | Enhancement run history |
 | `pe_error_history` | Error history (last 20) |
 | `pe_ui_language` | UI language preference (`auto`/`en`/`pt-BR`) |
+| `pe_theme` | Interface theme preference (`auto`/`light`/`dark`) |
 | `pe_pinned_route` | Selected catalog route |
 | `pe_provider_catalog_cache` | Cached catalog entries |
 | `pe_virtual_fallback_enabled` | Virtual fallback enabled flag |

@@ -96,7 +96,7 @@ const requiredSymbols = [
     'SystemPromptManager', 'StreamParser', 'Anim', 'GEAR_STATES', 'createGear',
     'injectStyles', 'ICONS', 'Atoms', 'codeAttachment', 'contextPopover', 'State',
     'settingsModal', 'wireOverlayToEvents', 'Molecules', 'ApiClient', 'Composer',
-    'init'
+    'Theme', 'init'
 ];
 
 for (const symbol of requiredSymbols) {

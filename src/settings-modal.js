@@ -1030,6 +1030,21 @@
             langSelect.addEventListener('change', (e) => { I18n.setLanguage(e.target.value); Molecules.toast(I18n.t('bs.langChanged'), 'info'); });
             form.appendChild(langRow);
 
+            // ── Seção: aparência (tema) ──────────────────────────────────
+            const appearanceLabel = document.createElement('div');
+            appearanceLabel.className = 'pe-section-label';
+            appearanceLabel.innerHTML = `${Atoms.icon('sparkles').outerHTML}<span>${Utils.escapeHtml(I18n.t('sm.context.section.appearance'))}</span>`;
+            form.appendChild(appearanceLabel);
+
+            const themeRow = document.createElement('div');
+            themeRow.className = 'pe-param-row';
+            const themeOpts = Theme.MODES.map(m => `<option value="${m}">${Utils.escapeHtml(I18n.t(`param.theme.opt.${m}`))}</option>`).join('');
+            themeRow.innerHTML = `<label class="pe-param-label" for="pe-ui-theme">${Utils.escapeHtml(I18n.t('param.theme.label'))}</label><div class="pe-param-control"><select id="pe-ui-theme" class="pe-param-input">${themeOpts}</select><div class="pe-param-hint">${Utils.escapeHtml(I18n.t('param.theme.hint'))}</div></div>`;
+            const themeSelect = themeRow.querySelector('select');
+            themeSelect.value = Theme.get();
+            themeSelect.addEventListener('change', (e) => Theme.set(e.target.value));
+            form.appendChild(themeRow);
+
             // ── Seção 3: idioma e estilo da resposta ───────────────────────
             const responseStyleLabel = document.createElement('div');
             responseStyleLabel.className = 'pe-section-label';

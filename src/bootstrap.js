@@ -1,5 +1,6 @@
 // ===== src/bootstrap.js =====
     function init() {
+        Theme.apply();
         injectStyles();
         HostShield.install();
         migrateLegacy();
@@ -9,6 +10,15 @@
         observe();
         document.addEventListener('focusin', onFocusIn, true);
         document.addEventListener('keydown', onKeydown, true);
+
+        // Re-aplica o tema após um atraso para permitir que o site defina seu próprio tema primeiro.
+        setTimeout(() => Theme.apply(), 150);
+
+        // Observa mudanças no tema do site host (classe/atributo dark/light) e re-aplica.
+        let disconnectThemeObserver = null;
+        try {
+            disconnectThemeObserver = Theme.observe(() => Theme.apply());
+        } catch (_) {}
 
         let menuIds = [];
         function registerMenus() {
@@ -72,6 +82,10 @@
                 const next = current === 'en' ? 'pt-BR' : 'en';
                 I18n.setLanguage(next);
                 alert(I18n.t('bs.langChanged'));
+            });
+            reg(I18n.t('bs.menu.theme'), () => {
+                const next = Theme.cycle();
+                Molecules.toast(I18n.t('bs.themeChanged', { mode: I18n.t(`param.theme.opt.${next}`) }), 'info');
             });
             reg(I18n.t('bs.menu.refreshCatalog'), () => {
                 ProviderRegistry.hydrate(true).then((entries) => {

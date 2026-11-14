@@ -4,12 +4,8 @@ let peStylesInjected = false;
 function injectStyles() {
     if (peStylesInjected || document.getElementById('pe-core-styles')) return;
 
-    const css = `
-        /* ════════════════════════════════════════════════════════════════════
-           1. DESIGN TOKENS & ESCOPO BASE (Light & Dark Mode)
-           ════════════════════════════════════════════════════════════════════ */
-        :where(.pe-scope),
-        :where(.pe-modal-backdrop, .pe-agents-popover, .pe-float-wrap, .pe-toast) {
+    const PE_SCOPES = '.pe-scope, .pe-modal-backdrop, .pe-agents-popover, .pe-float-wrap, .pe-toast';
+    const PE_LIGHT_TOKENS = `
             /* Superfícies Sólidas */
             --pe-surface: #ffffff;
             --pe-surface-2: #f7f8fa;
@@ -22,7 +18,7 @@ function injectStyles() {
             --pe-glass-modal-bg: linear-gradient(180deg, rgba(255, 255, 255, .18) 0%, rgba(255, 255, 255, 0) 42%), rgba(255, 255, 255, .64);
             --pe-glass-modal-border: rgba(255, 255, 255, .72);
             --pe-glass-modal-shadow: 0 28px 90px -24px rgba(20, 24, 36, .26), 0 4px 16px rgba(20, 24, 36, .06), inset 0 1px 0 rgba(255, 255, 255, .95), inset 0 0 0 1px rgba(255, 255, 255, .40);
-            --pe-glass- specular: linear-gradient(90deg, transparent, rgba(255, 255, 255, .78), transparent);
+            --pe-glass-specular: linear-gradient(90deg, transparent, rgba(255, 255, 255, .78), transparent);
             --pe-glass-bar-bg: rgba(255, 255, 255, .28);
             --pe-glass-bar-border: rgba(255, 255, 255, .35);
             --pe-glass-sidebar-bg: linear-gradient(180deg, rgba(255, 255, 255, .26), rgba(255, 255, 255, .06));
@@ -46,6 +42,7 @@ function injectStyles() {
             --pe-border-soft: #eef0f3;
             --pe-control-border: #8c93a0;
             --pe-switch-track: #9ca3af;
+            --pe-switch-knob: #fff;
 
             /* Cores Semânticas & Feedback */
             --pe-success: #0b755b;
@@ -127,63 +124,85 @@ function injectStyles() {
             --pe-ease-spring: cubic-bezier(.34, 1.56, .64, 1);
             --pe-ease-emph: cubic-bezier(.2, 0, 0, 1);
             --pe-ease-out: cubic-bezier(0, 0, .2, 1);
+    `;
+    const PE_DARK_TOKENS = `
+            /* Superfícies Sólidas */
+            --pe-surface: #17181c;
+            --pe-surface-2: #1f2127;
+            --pe-surface-3: #2a2d34;
+            --pe-surface-code: #1b1d22;
+            --pe-overlay: rgba(0, 0, 0, .55);
+
+            /* Superfícies Translúcidas (Glassmorphism Tokenizado) */
+            --pe-glass-backdrop: rgba(2, 6, 23, .48);
+            --pe-glass-modal-bg: rgba(15, 17, 22, .62);
+            --pe-glass-modal-border: rgba(255, 255, 255, .14);
+            --pe-glass-modal-shadow: 0 18px 44px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .1);
+            --pe-glass-specular: linear-gradient(90deg, transparent, rgba(255, 255, 255, .15), transparent);
+            --pe-glass-bar-bg: rgba(255, 255, 255, .02);
+            --pe-glass-bar-border: rgba(255, 255, 255, .06);
+            --pe-glass-sidebar-bg: rgba(255, 255, 255, .01);
+            --pe-glass-sidebar-border: rgba(255, 255, 255, .06);
+            --pe-glass-card-bg: rgba(255, 255, 255, .04);
+            --pe-glass-card-border: rgba(255, 255, 255, .08);
+            --pe-glass-card-shadow: inset 0 1px 0 rgba(255, 255, 255, .04), 0 4px 12px rgba(0, 0, 0, .15);
+            --pe-glass-context-bg: rgba(255, 255, 255, .04);
+            --pe-glass-context-border: rgba(255, 255, 255, .08);
+            --pe-loading-card-bg: linear-gradient(180deg, rgba(255, 255, 255, .03), transparent 35%), var(--pe-surface);
+            --pe-loading-card-shadow: 0 24px 56px -12px rgba(15, 18, 25, .45), 0 8px 18px rgba(15, 18, 25, .18), inset 0 1px 0 rgba(255, 255, 255, .06);
+
+            /* Tipografia & Cores de Texto */
+            --pe-text: #f2f3f5;
+            --pe-text-muted: #a3a8b3;
+            --pe-text-faint: #8d94a2;
+
+            /* Bordas & Controles */
+            --pe-border: #2a2d34;
+            --pe-border-strong: #3d414a;
+            --pe-border-soft: #22252b;
+            --pe-control-border: #525866;
+            --pe-switch-track: #474d5b;
+            --pe-switch-knob: var(--pe-surface);
+
+            /* Cores Semânticas & Feedback */
+            --pe-success: #2ecc9b;
+            --pe-success-soft: #16332b;
+            --pe-error: #ff6b6b;
+            --pe-error-soft: #3a1a1a;
+            --pe-warning: #f5b94c;
+            --pe-warning-soft: #3a2b0f;
+
+            /* Cor de Destaque (Brand / Accent) */
+            --pe-accent: #8fa3ff;
+            --pe-accent-hover: #a3b3ff;
+            --pe-accent-soft: #232945;
+            --pe-accent-border: #38427a;
+            --pe-accent-text: #b8c5ff;
+
+            /* Elevação & Focus Rings */
+            --pe-focus-ring: 0 0 0 3px rgba(143, 163, 255, .22);
+            --pe-accent-ring: 0 0 0 3px rgba(143, 163, 255, .22);
+            --pe-shadow-1: 0 1px 2px rgba(0, 0, 0, .22), 0 0 0 1px rgba(255, 255, 255, .02);
+            --pe-shadow-2: 0 4px 12px rgba(0, 0, 0, .25), 0 1px 3px rgba(0, 0, 0, .18);
+            --pe-shadow-3: 0 24px 48px -12px rgba(0, 0, 0, .42), 0 4px 12px rgba(0, 0, 0, .2);
+    `;
+
+    const css = `
+        /* ════════════════════════════════════════════════════════════════════
+           1. DESIGN TOKENS & ESCOPO BASE (Light & Dark Mode)
+           ════════════════════════════════════════════════════════════════════ */
+        :where(${PE_SCOPES}) {
+            ${PE_LIGHT_TOKENS}
         }
 
-        @media (prefers-color-scheme: dark) {
-            :where(.pe-scope),
-            :where(.pe-modal-backdrop, .pe-agents-popover, .pe-float-wrap, .pe-toast) {
-                --pe-surface: #17181c;
-                --pe-surface-2: #1f2127;
-                --pe-surface-3: #2a2d34;
-                --pe-surface-code: #1b1d22;
-                --pe-overlay: rgba(0, 0, 0, .55);
+        /* escuro forçado ou tema do site/sistema resolvido pelo JS */
+        :root[data-pe-theme="dark"] :where(${PE_SCOPES}) {
+            ${PE_DARK_TOKENS}
+        }
 
-                --pe-glass-backdrop: rgba(2, 6, 23, .48);
-                --pe-glass-modal-bg: rgba(15, 17, 22, .62);
-                --pe-glass-modal-border: rgba(255, 255, 255, .14);
-                --pe-glass-modal-shadow: 0 18px 44px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .1);
-                --pe-glass-specular: linear-gradient(90deg, transparent, rgba(255, 255, 255, .15), transparent);
-                --pe-glass-bar-bg: rgba(255, 255, 255, .02);
-                --pe-glass-bar-border: rgba(255, 255, 255, .06);
-                --pe-glass-sidebar-bg: rgba(255, 255, 255, .01);
-                --pe-glass-sidebar-border: rgba(255, 255, 255, .06);
-                --pe-glass-card-bg: rgba(255, 255, 255, .04);
-                --pe-glass-card-border: rgba(255, 255, 255, .08);
-                --pe-glass-card-shadow: inset 0 1px 0 rgba(255, 255, 255, .04), 0 4px 12px rgba(0, 0, 0, .15);
-                --pe-glass-context-bg: rgba(255, 255, 255, .04);
-                --pe-glass-context-border: rgba(255, 255, 255, .08);
-                --pe-loading-card-bg: linear-gradient(180deg, rgba(255, 255, 255, .03), transparent 35%), var(--pe-surface);
-                --pe-loading-card-shadow: 0 24px 56px -12px rgba(15, 18, 25, .45), 0 8px 18px rgba(15, 18, 25, .18), inset 0 1px 0 rgba(255, 255, 255, .06);
-
-                --pe-text: #f2f3f5;
-                --pe-text-muted: #a3a8b3;
-                --pe-text-faint: #8d94a2;
-
-                --pe-border: #2a2d34;
-                --pe-border-strong: #3d414a;
-                --pe-border-soft: #22252b;
-                --pe-control-border: #525866;
-                --pe-switch-track: #474d5b;
-
-                --pe-success: #2ecc9b;
-                --pe-success-soft: #16332b;
-                --pe-error: #ff6b6b;
-                --pe-error-soft: #3a1a1a;
-                --pe-warning: #f5b94c;
-                --pe-warning-soft: #3a2b0f;
-
-                --pe-accent: #8fa3ff;
-                --pe-accent-hover: #a3b3ff;
-                --pe-accent-soft: #232945;
-                --pe-accent-border: #38427a;
-                --pe-accent-text: #b8c5ff;
-
-                --pe-focus-ring: 0 0 0 3px rgba(143, 163, 255, .22);
-                --pe-accent-ring: 0 0 0 3px rgba(143, 163, 255, .22);
-                --pe-shadow-1: 0 1px 2px rgba(0, 0, 0, .22), 0 0 0 1px rgba(255, 255, 255, .02);
-                --pe-shadow-2: 0 4px 12px rgba(0, 0, 0, .25), 0 1px 3px rgba(0, 0, 0, .18);
-                --pe-shadow-3: 0 24px 48px -12px rgba(0, 0, 0, .42), 0 4px 12px rgba(0, 0, 0, .2);
-            }
+        /* luz forçada */
+        :root[data-pe-theme="light"] :where(${PE_SCOPES}) {
+            ${PE_LIGHT_TOKENS}
         }
 
         /* Reset de Escopo & Focus Global */
@@ -618,7 +637,7 @@ function injectStyles() {
             width: 12px;
             height: 12px;
             border-radius: 50%;
-            background: #fff;
+            background: var(--pe-switch-knob);
             transition: transform var(--pe-dur-base) var(--pe-ease-spring), background-color var(--pe-dur-fast) ease;
         }
         .pe-pop-toggle input:checked + .pe-pop-toggle-switch {
@@ -626,11 +645,6 @@ function injectStyles() {
         }
         .pe-pop-toggle input:checked + .pe-pop-toggle-switch::after {
             transform: translateX(12px);
-        }
-        @media (prefers-color-scheme: dark) {
-            .pe-pop-toggle input:checked + .pe-pop-toggle-switch::after {
-                background: var(--pe-surface);
-            }
         }
         .pe-pop-toggle input:focus-visible + .pe-pop-toggle-switch {
             outline: 2px solid var(--pe-accent);

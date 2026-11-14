@@ -161,7 +161,7 @@ SiteAdapterRegistry.register(SiteAdapter.create({
         .pe-actionbar {
           background: transparent !important;
           border: none !important;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important; /* Linha sutil */
+          border-bottom: 1px solid color-mix(in srgb, var(--pe-text) 8%, transparent) !important;
           border-radius: 0 !important;
           box-shadow: none !important;
           width: 100% !important;
@@ -207,18 +207,6 @@ SiteAdapterRegistry.register(SiteAdapter.create({
         .pe-claude-container > :not(.pe-inline-slot) {
           padding-top: 2px !important;
           padding-bottom: 6px !important;
-        }
-
-        /* Ajuste para o tema claro do Claude (bege) */
-        @media (prefers-color-scheme: light) {
-          .pe-actionbar {
-            border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
-          }
-          .pe-actionbar .pe-btn--primary {
-            background: var(--pe-surface-3, #e5e5e5) !important;
-            border: 1px solid var(--pe-border, #d4d4d4) !important;
-            color: var(--pe-text, #111) !important;
-          }
         }
       `;
       document.head.appendChild(style);
@@ -334,7 +322,7 @@ SiteAdapterRegistry.register(SiteAdapter.create({
         .pe-actionbar {
           background: transparent !important;
           border: none !important;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+          border-bottom: 1px solid color-mix(in srgb, var(--pe-text) 8%, transparent) !important;
           border-radius: 0 !important;
           box-shadow: none !important;
           width: 100% !important;
@@ -379,10 +367,6 @@ SiteAdapterRegistry.register(SiteAdapter.create({
         .pe-chatgpt-container > :not(.pe-inline-slot) {
           padding-top: 2px !important;
           padding-bottom: 8px !important;
-        }
-
-        @media (prefers-color-scheme: light) {
-          .pe-actionbar { border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important; }
         }
       `;
       document.head.appendChild(style);
@@ -489,18 +473,12 @@ SiteAdapterRegistry.register(SiteAdapter.create({
         body.pe-host-gemini .pe-actionbar {
           background: transparent !important;
           border: none !important;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important; /* Linha embaixo */
+          border-bottom: 1px solid color-mix(in srgb, var(--pe-text) 8%, transparent) !important; /* Linha embaixo */
           border-radius: 24px 24px 0 0 !important; /* Arredonda o topo */
           box-shadow: none !important;
           padding: 4px 16px !important;
           justify-content: flex-start !important;
           min-height: 42px !important;
-        }
-
-        @media (prefers-color-scheme: light) {
-          body.pe-host-gemini .pe-actionbar {
-            border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
-          }
         }
       `;
       document.head.appendChild(style);
@@ -599,7 +577,7 @@ SiteAdapterRegistry.register(SiteAdapter.create({
           display: flex !important;
           width: 100% !important;
           padding: 8px 16px !important;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+          border-bottom: 1px solid color-mix(in srgb, var(--pe-text) 8%, transparent) !important;
           box-sizing: border-box !important;
           background: transparent !important;
           margin: 0 !important;

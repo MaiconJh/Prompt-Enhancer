@@ -119,6 +119,22 @@
       ]
     },
     {
+      "file": "theme.js",
+      "description": "Stores and applies the interface theme preference (auto, light, or dark).",
+      "interfaces": {
+        "provides": [
+          "Theme"
+        ],
+        "consumes": [
+          "GM_getValue",
+          "GM_setValue"
+        ]
+      },
+      "interactions": [
+        "Bootstrap applies the stored theme; settings and menu commands change it; styles.js reads the data-pe-theme attribute."
+      ]
+    },
+    {
       "file": "site-adapter-base.js",
       "description": "Defines the SiteAdapter contract, defaults, and factory for platform adapters.",
       "interfaces": {
@@ -418,7 +434,8 @@
           "ProjectContext",
           "EnhancementHistory",
           "Atoms",
-          "Molecules"
+          "Molecules",
+          "Theme"
         ]
       },
       "interactions": [
@@ -547,7 +564,8 @@
           "injectStyles",
           "migrateLegacy",
           "migrateHistoryRuns",
-          "EnhancementHistory"
+          "EnhancementHistory",
+          "Theme"
         ]
       },
       "interactions": [

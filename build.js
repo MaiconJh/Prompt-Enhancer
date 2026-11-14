@@ -45,16 +45,22 @@ const modules = await Promise.all(manifest.modules.map(async (module) => {
 
     // Minifica o bloco CSS do styles.js (mantém o source legível no repo).
     // Ative com --minify-css ou PE_MINIFY_CSS=1 (ex.: build de produção).
+    // Colapsa apenas o interior de cada bloco { ... } (seletor + propriedades
+    // em uma linha) e preserva quebras entre blocos/seções.
     if (module.file === 'styles.js' && minifyCss) {
         const match = source.match(/const css = `([\s\S]*)`;/);
         if (match) {
-            const minified = match[1]
-                .replace(/\/\*[\s\S]*?\*\//g, '')          // remove comentários CSS
-                .replace(/\s+/g, ' ')                      // colapsa whitespace
-                .replace(/\s*([{}:;,>+~\[\]()])\s*/g, '$1') // remove espaço ao redor de tokens
-                .replace(/;}/g, '}')                        // remove ; antes de }
-                .trim();
-            source = source.replace(match[1], minified);
+            let css = match[1]
+                .replace(/\/\*[\s\S]*?\*\//g, '');            // remove comentários CSS
+            css = css.replace(/\{([\s\S]*?)\}/g, (_m, body) => {
+                const minBody = body
+                    .replace(/\s+/g, ' ')
+                    .replace(/\s*([{}:;,>+~\[\]()])\s*/g, '$1')
+                    .replace(/;}\s*$/, '}')
+                    .trim();
+                return `{${minBody}}`;
+            });
+            source = source.replace(match[1], css.trim());
         }
     }
 
