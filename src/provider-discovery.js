@@ -84,7 +84,7 @@
                     || (String(pricing.prompt) === '0' && String(pricing.completion) === '0');
             }).map((model) => discoveryEntry('openrouter', 'OpenRouter', 'https://openrouter.ai/api/v1', model, {
                 label: `${model.name || model.id}${String(model.id || '').endsWith(':free') ? '' : ' (free)'}`,
-                headers: { 'HTTP-Referer': 'https://github.com/EdgeTypE/better-deepseek', 'X-Title': 'Prompt-Enhancer' },
+                headers: { 'HTTP-Referer': 'https://github.com/MaiconJh/Prompt-Enhancer', 'X-Title': 'Prompt-Enhancer' },
                 tools: (model?.supported_parameters || []).includes?.('tools') || false
             })).filter(Boolean);
         } catch (err) {
@@ -161,7 +161,7 @@
             modelId: 'openrouter/free',
             label: 'OpenRouter · auto (free)',
             auth: { type: 'bearer', key: '', headerName: null },
-            headers: { 'HTTP-Referer': 'https://github.com/EdgeTypE/better-deepseek', 'X-Title': 'Prompt-Enhancer' },
+            headers: { 'HTTP-Referer': 'https://github.com/MaiconJh/Prompt-Enhancer', 'X-Title': 'Prompt-Enhancer' },
             virtual: true
         }),
         discoveryEntry('kilo', 'Kilo', 'https://ai-gateway.kilo.ai/api/v1', {}, {

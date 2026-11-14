@@ -357,472 +357,646 @@
         }
 
         function renderProvider() {
-            const form = document.createElement('div');
-            form.className = 'pe-param-body pe-provider-settings';
+    const form = document.createElement('div');
+    form.className = 'pe-param-body pe-provider-settings';
 
-            const heading = document.createElement('div');
-            heading.className = 'pe-provider-section-heading';
-            heading.innerHTML = `<h6>${Utils.escapeHtml(I18n.t('sm.provider.heading'))}</h6><p>${Utils.escapeHtml(I18n.t('sm.provider.headingDesc'))}</p>`;
-            form.appendChild(heading);
+    // ── Heading ──────────────────────────────────────────────────────
+    const heading = document.createElement('div');
+    heading.className = 'pe-provider-section-heading';
+    heading.innerHTML = `<h6>${Utils.escapeHtml(I18n.t('sm.provider.heading'))}</h6><p>${Utils.escapeHtml(I18n.t('sm.provider.headingDesc'))}</p>`;
+    form.appendChild(heading);
 
-            // Painel de roteamento (Principal + Fallback)
-            const routingPanel = document.createElement('div');
-            routingPanel.className = 'pe-routing-panel';
-            routingPanel.setAttribute('aria-label', I18n.t('sm.provider.routingAria'));
+    // ── Painel de roteamento (preservado) ────────────────────────────
+    const routingPanel = document.createElement('div');
+    routingPanel.className = 'pe-routing-panel';
+    routingPanel.setAttribute('aria-label', I18n.t('sm.provider.routingAria'));
 
-            const primaryStep = document.createElement('div');
-            primaryStep.className = 'pe-routing-step';
-            const primaryLabel = document.createElement('span');
-            primaryLabel.className = 'pe-routing-label is-primary';
-            primaryLabel.textContent = I18n.t('sm.provider.primary');
-            const primaryValue = document.createElement('span');
-            primaryValue.className = 'pe-routing-value';
-            primaryValue.id = 'pe-routing-primary';
-            primaryStep.append(primaryLabel, primaryValue);
+    const primaryStep = document.createElement('div');
+    primaryStep.className = 'pe-routing-step';
+    const primaryLabel = document.createElement('span');
+    primaryLabel.className = 'pe-routing-label is-primary';
+    primaryLabel.textContent = I18n.t('sm.provider.primary');
+    const primaryValue = document.createElement('span');
+    primaryValue.className = 'pe-routing-value';
+    primaryValue.id = 'pe-routing-primary';
+    primaryStep.append(primaryLabel, primaryValue);
 
-            const arrow = document.createElement('span');
-            arrow.className = 'pe-routing-arrow';
-            arrow.textContent = '→';
-            arrow.setAttribute('aria-hidden', 'true');
+    const arrow = document.createElement('span');
+    arrow.className = 'pe-routing-arrow';
+    arrow.textContent = '→';
+    arrow.setAttribute('aria-hidden', 'true');
 
-            const fallbackStep = document.createElement('div');
-            fallbackStep.className = 'pe-routing-step';
-            const fallbackLabel = document.createElement('span');
-            fallbackLabel.className = 'pe-routing-label is-fallback';
-            fallbackLabel.textContent = I18n.t('sm.provider.fallback');
-            const fallbackValue = document.createElement('span');
-            fallbackValue.className = 'pe-routing-value';
-            fallbackValue.id = 'pe-routing-fallback';
-            fallbackStep.append(fallbackLabel, fallbackValue);
+    const fallbackStep = document.createElement('div');
+    fallbackStep.className = 'pe-routing-step';
+    const fallbackLabel = document.createElement('span');
+    fallbackLabel.className = 'pe-routing-label is-fallback';
+    fallbackLabel.textContent = I18n.t('sm.provider.fallback');
+    const fallbackValue = document.createElement('span');
+    fallbackValue.className = 'pe-routing-value';
+    fallbackValue.id = 'pe-routing-fallback';
+    fallbackStep.append(fallbackLabel, fallbackValue);
 
-            const clearBtn = Atoms.button({
-                icon: 'trash',
-                label: I18n.t('sm.provider.clearRouting'),
-                ariaLabel: I18n.t('sm.provider.clearRoutingAria'),
-                variant: 'ghost',
-                onClick: () => {
-                    try {
-                        if (typeof ProviderManager !== 'undefined') {
-                            ProviderManager.unpin();
-                            ProviderManager.setFallback('');
-                            Molecules.toast(I18n.t('sm.provider.clearRoutingOk'), 'success');
-                            renderList();
-                        }
-                    } catch (err) {
-                        console.warn('[PE] Falha ao limpar roteamento:', err);
-                        Molecules.toast(I18n.t('sm.provider.clearRoutingFail'), 'error');
-                    }
+    const clearBtn = Atoms.button({
+        icon: 'trash',
+        label: I18n.t('sm.provider.clearRouting'),
+        ariaLabel: I18n.t('sm.provider.clearRoutingAria'),
+        variant: 'ghost',
+        onClick: () => {
+            try {
+                if (typeof ProviderManager !== 'undefined') {
+                    ProviderManager.unpin();
+                    ProviderManager.setFallback('');
+                    Molecules.toast(I18n.t('sm.provider.clearRoutingOk'), 'success');
+                    updateRoutingPanel();
+                    rebuildVisible();
                 }
-            });
-            clearBtn.className = 'pe-routing-clear';
-
-            routingPanel.append(primaryStep, arrow, fallbackStep, clearBtn);
-            form.appendChild(routingPanel);
-
-            const loading = document.createElement('div');
-            loading.className = 'pe-catalog-loading';
-            loading.textContent = I18n.t('sm.provider.updating');
-            loading.hidden = true;
-            form.appendChild(loading);
-
-            const filters = document.createElement('div');
-            filters.className = 'pe-catalog-filters';
-            const search = document.createElement('input');
-            search.type = 'search';
-            search.className = 'pe-param-input';
-            search.placeholder = I18n.t('sm.provider.searchPlaceholder');
-            search.setAttribute('aria-label', I18n.t('sm.provider.searchAria'));
-
-            const keylessLabel = document.createElement('label');
-            keylessLabel.className = 'pe-catalog-toggle';
-            const keyless = document.createElement('input');
-            keyless.type = 'checkbox';
-            keylessLabel.append(keyless, document.createTextNode(I18n.t('sm.provider.noKey')));
-
-            const streamLabel = document.createElement('label');
-            streamLabel.className = 'pe-catalog-toggle';
-            const streaming = document.createElement('input');
-            streaming.type = 'checkbox';
-            streamLabel.append(streaming, document.createTextNode(I18n.t('sm.provider.streaming')));
-
-            filters.append(search, keylessLabel, streamLabel);
-            form.appendChild(filters);
-
-            const accordion = document.createElement('div');
-            accordion.className = 'pe-provider-accordion';
-            accordion.setAttribute('aria-label', I18n.t('sm.provider.modelsAria'));
-            form.appendChild(accordion);
-
-            bodyEl.appendChild(form);
-
-            let expandedModelId = null;
-
-            function limitsLabel(entry) {
-                const parts = [];
-                if (entry.limits && entry.limits.rpm !== null && entry.limits.rpm !== undefined) parts.push(I18n.t('sm.provider.limits.rpm', { n: entry.limits.rpm }));
-                if (entry.limits && entry.limits.rpd !== null && entry.limits.rpd !== undefined) parts.push(I18n.t('sm.provider.limits.rpd', { n: entry.limits.rpd }));
-                if (entry.limits && entry.limits.note) {
-                    parts.push(entry.limits.noteKey ? I18n.t(entry.limits.noteKey) : entry.limits.note);
-                }
-                return parts.join(' · ') || I18n.t('sm.provider.notInformedPl');
+            } catch (err) {
+                console.warn('[PE] Falha ao limpar roteamento:', err);
+                Molecules.toast(I18n.t('sm.provider.clearRoutingFail'), 'error');
             }
-
-            function authLabel(entry) {
-                if (!entry.auth || entry.auth.type === 'none') return I18n.t('sm.provider.noAuth');
-                return entry.auth.key === 'anonymous' ? I18n.t('sm.provider.bearerAnon') : I18n.t('sm.provider.bearer');
-            }
-
-            function isFreeBadge(entry) {
-                return (entry.auth && (entry.auth.type === 'none' || entry.auth.key === 'anonymous'))
-                    || /free|gratuit/i.test((entry.limits && entry.limits.note) || '');
-            }
-
-            function fallbackMatchesEntry(fallback, entry) {
-                    if (!fallback || !entry) return false;
-                    // fallback is a ProviderManager entry (id, name, url, model)
-                    // entry is a ProviderRegistry entry (id, modelId, baseUrl)
-                    if (fallback.id === entry.id) return true;
-                    if (fallback.url && entry.baseUrl) {
-                        const normUrl = (s) => String(s || '').replace(/\/+$/, '').replace(/\/chat\/completions\/?$/, '');
-                        if (normUrl(fallback.url) === normUrl(entry.baseUrl) && fallback.model === entry.modelId) return true;
-                    }
-                    return false;
-                }
-
-                function renderDetails(entry, pinned, fallback) {
-                    const details = document.createElement('dl');
-                    details.className = 'pe-model-details';
-
-                const addField = (label, value) => {
-                    const dt = document.createElement('dt');
-                    dt.textContent = label;
-                    const dd = document.createElement('dd');
-                    dd.textContent = value;
-                    details.append(dt, dd);
-                };
-
-                addField(I18n.t('sm.provider.fieldProvider'), entry.providerLabel || entry.providerId || I18n.t('sm.provider.unknown'));
-                addField(I18n.t('sm.provider.fieldAuth'), authLabel(entry));
-                addField(I18n.t('sm.provider.fieldLimits'), limitsLabel(entry));
-                addField(I18n.t('sm.provider.fieldContext'), entry.modelId || I18n.t('sm.provider.notInformed'));
-
-                const actions = document.createElement('div');
-                actions.className = 'pe-model-details__actions';
-
-                const copyButton = Atoms.buttonNode({
-                    label: I18n.t('sm.provider.copyJson'),
-                    ariaLabel: I18n.t('sm.provider.copyJsonAria', { label: entry.label }),
-                    variant: 'ghost'
-                });
-                copyButton.type = 'button';
-                copyButton.addEventListener('click', async (event) => {
-                    event.stopPropagation();
-                    if (!navigator.clipboard?.writeText) {
-                        Molecules.toast(I18n.t('sm.provider.copyUnavailable'), 'error');
-                        return;
-                    }
-                    const safeEntry = {
-                        ...entry,
-                        auth: entry.auth ? { type: entry.auth.type, headerName: entry.auth.headerName } : undefined,
-                        headers: entry.headers ? Object.fromEntries(Object.entries(entry.headers).map(([name, value]) => [
-                            name,
-                            /authorization|api[-_]?key|token|secret/i.test(name) ? I18n.t('sm.provider.redacted') : value
-                        ])) : undefined
-                    };
-                    try {
-                        await navigator.clipboard.writeText(JSON.stringify(safeEntry, null, 2));
-                        Molecules.toast(I18n.t('sm.provider.copyOk'), 'success');
-                    } catch (err) {
-                        console.warn('[PE] Falha ao copiar a configuração do modelo.', err);
-                        Molecules.toast(I18n.t('sm.provider.copyFail'), 'error');
-                    }
-                });
-
-                const pinButton = Atoms.buttonNode({
-                    label: pinned && pinned.id === entry.id ? I18n.t('sm.provider.routePinned') : I18n.t('sm.provider.pinRoute'),
-                    ariaLabel: pinned && pinned.id === entry.id ? I18n.t('sm.provider.pinnedAria') : I18n.t('sm.provider.pinAria', { label: entry.label }),
-                    variant: 'primary'
-                });
-                pinButton.type = 'button';
-                pinButton.disabled = !!(pinned && pinned.id === entry.id);
-                pinButton.addEventListener('click', (event) => {
-                    event.stopPropagation();
-                    if (pinned && pinned.id === entry.id) return;
-                    if (entry.auth && entry.auth.type === 'bearer' && entry.auth.key === '') {
-                        const apiKey = prompt(I18n.t('sm.provider.apiKeyPrompt', { provider: entry.providerLabel || I18n.t('sm.provider.fieldProvider') }));
-                        if (apiKey === null) return;
-                        if (!apiKey.trim()) {
-                            Molecules.toast(I18n.t('sm.provider.apiKeyEmpty'), 'error');
-                            return;
-                        }
-                        try {
-                            GM_setValue('pe_api_key', apiKey.trim());
-                        } catch (err) {
-                            Molecules.toast(I18n.t('sm.provider.apiKeySaveFail'), 'error', { details: err && err.message });
-                            return;
-                        }
-                    }
-                    if (!ProviderManager.pin(entry.id)) {
-                        Molecules.toast(I18n.t('sm.provider.pinFail'), 'error');
-                        return;
-                    }
-                    Molecules.toast(I18n.t('sm.provider.pinOk', { label: entry.label }), 'success');
-                    renderList();
-                });
-
-                const isFallback = fallbackMatchesEntry(fallback, entry);
-                const isPinned = pinned && pinned.id === entry.id;
-                const fallbackButton = Atoms.buttonNode({
-                    label: isFallback ? I18n.t('sm.provider.removeFallback') : I18n.t('sm.provider.setFallback'),
-                    ariaLabel: isFallback ? I18n.t('sm.provider.removeFallbackAria', { label: entry.label }) : I18n.t('sm.provider.setFallbackAria', { label: entry.label }),
-                    variant: isFallback ? 'ghost' : 'outline'
-                });
-                fallbackButton.type = 'button';
-                fallbackButton.disabled = !!isPinned;
-                if (isPinned) {
-                    fallbackButton.title = I18n.t('sm.provider.fallbackPinnedTitle');
-                }
-                fallbackButton.addEventListener('click', (event) => {
-                    event.stopPropagation();
-                    if (isPinned) return;
-                    if (isFallback) {
-                        try {
-                            ProviderManager.setFallback('');
-                            Molecules.toast(I18n.t('sm.provider.fallbackRemovedOk', { label: entry.label }), 'success');
-                            renderList();
-                        } catch (err) {
-                            console.warn('[PE] Falha ao remover fallback:', err);
-                            Molecules.toast(I18n.t('sm.provider.fallbackRemoveFail'), 'error');
-                        }
-                        return;
-                    }
-                    // Definir como fallback
-                    if (entry.auth && entry.auth.type === 'bearer' && entry.auth.key === '') {
-                        const apiKey = prompt(I18n.t('sm.provider.apiKeyPrompt', { provider: entry.providerLabel || I18n.t('sm.provider.fieldProvider') }));
-                        if (apiKey === null) return;
-                        if (!apiKey.trim()) {
-                            Molecules.toast(I18n.t('sm.provider.apiKeyEmpty'), 'error');
-                            return;
-                        }
-                        try {
-                            GM_setValue('pe_api_key', apiKey.trim());
-                        } catch (err) {
-                            Molecules.toast(I18n.t('sm.provider.apiKeySaveFail'), 'error', { details: err && err.message });
-                            return;
-                        }
-                    }
-                    // Criar provider no ProviderManager a partir do entry do catálogo
-                    let ok = false;
-                    let errMsg = '';
-                    try {
-                        if (typeof ProviderManager === 'undefined') {
-                            errMsg = 'ProviderManager unavailable';
-                        } else if (typeof ProviderManager.add !== 'function') {
-                            errMsg = 'ProviderManager.add is not a function';
-                        } else {
-                            const providerPayload = {
-                                name: String(entry.providerLabel || entry.label || 'Fallback').trim().slice(0, 60),
-                                url: String(entry.baseUrl || '').trim(),
-                                model: String(entry.modelId || '').trim(),
-                                apiKey: String(entry.auth?.key || (entry.auth?.type === 'none' ? '' : 'anonymous')).trim(),
-                                headers: { ...(entry.headers || {}) }
-                            };
-                            if (!providerPayload.url || !providerPayload.model) {
-                                errMsg = 'Empty URL or model';
-                            } else {
-                                const newProvider = ProviderManager.add(providerPayload);
-                                if (newProvider && newProvider.id) {
-                                    ProviderManager.setFallback(newProvider.id);
-                                    ok = true;
-                                } else {
-                                    errMsg = 'add returned: ' + JSON.stringify(newProvider);
-                                }
-                            }
-                        }
-                    } catch (err) {
-                        console.warn('[PE] Falha ao definir fallback:', err);
-                        errMsg = err && err.message ? err.message : String(err);
-                    }
-                    if (ok) {
-                        Molecules.toast(I18n.t('sm.provider.fallbackOk', { label: entry.label }), 'success');
-                        renderList();
-                    } else {
-                        console.error('[PE] Detalhes falha fallback:', errMsg);
-                        Molecules.toast(I18n.t('sm.provider.fallbackFail'), 'error');
-                    }
-                });
-
-                actions.append(copyButton, pinButton, fallbackButton);
-                details.appendChild(actions);
-                return details;
-            }
-
-            function renderList() {
-                const query = search.value.trim();
-                const pinned = ProviderManager.getPinned ? ProviderManager.getPinned() : null;
-                const fallback = ProviderManager.getFallback ? ProviderManager.getFallback() : null;
-                const activeProvider = ProviderManager.getActive ? ProviderManager.getActive() : null;
-                const groups = ProviderRegistry.groupByProvider(ProviderRegistry.list({
-                    keylessOnly: keyless.checked,
-                    streamingOnly: streaming.checked,
-                    search: query
-                }));
-                const entries = groups.flatMap((group) => group.entries || []);
-                if (expandedModelId && !entries.some((entry) => entry.id === expandedModelId)) {
-                    expandedModelId = null;
-                }
-                accordion.replaceChildren();
-
-                // Atualizar painel de roteamento
-                const primaryEl = form.querySelector('#pe-routing-primary');
-                const fallbackEl = form.querySelector('#pe-routing-fallback');
-                if (primaryEl) {
-                    if (pinned) {
-                        primaryEl.textContent = `${pinned.label} (${pinned.modelId || pinned.id})`;
-                    } else if (activeProvider) {
-                        primaryEl.textContent = `${activeProvider.name || 'Kilo'} (${activeProvider.model || I18n.t('sm.provider.default')})`;
-                    } else {
-                        primaryEl.textContent = I18n.t('sm.provider.defaultSystem');
-                    }
-                }
-                if (fallbackEl) {
-                    if (fallback) {
-                        fallbackEl.textContent = `${fallback.name || 'Fallback'} (${fallback.model || ''})`.trim();
-                    } else {
-                        fallbackEl.textContent = I18n.t('sm.provider.none');
-                    }
-                }
-
-                if (!groups.length) {
-                    const empty = document.createElement('div');
-                    empty.className = 'pe-provider-empty';
-                    empty.setAttribute('role', 'status');
-                    const message = document.createElement('p');
-                    message.textContent = query
-                        ? I18n.t('sm.provider.emptySearch', { query })
-                        : I18n.t('sm.provider.emptyFilters');
-                    const clear = Atoms.buttonNode({ label: I18n.t('sm.provider.clearFilters'), variant: 'ghost' });
-                    clear.type = 'button';
-                    clear.setAttribute('aria-label', I18n.t('sm.provider.clearFiltersAria'));
-                    clear.addEventListener('click', () => {
-                        search.value = '';
-                        keyless.checked = false;
-                        streaming.checked = false;
-                        expandedModelId = null;
-                        renderList();
-                        search.focus({ preventScroll: true });
-                    });
-                    empty.append(message, clear);
-                    accordion.appendChild(empty);
-                    return;
-                }
-
-                groups.forEach((group) => {
-                    const title = document.createElement('h6');
-                    title.className = 'pe-provider-group-title';
-                    title.textContent = group.providerLabel || group.providerId || I18n.t('sm.provider.fieldProvider');
-                    accordion.appendChild(title);
-
-                    (group.entries || []).forEach((entry) => {
-                        const isActive = expandedModelId === entry.id;
-                        const card = document.createElement('div');
-                        card.className = 'pe-model-card';
-                        if (isActive) card.classList.add('is-active');
-
-                        const header = document.createElement('div');
-                        header.className = 'pe-model-header';
-                        header.setAttribute('role', 'button');
-                        header.tabIndex = 0;
-                        header.setAttribute('aria-expanded', String(isActive));
-                        header.setAttribute('aria-label', I18n.t('sm.provider.cardAria', { label: entry.label, provider: group.providerLabel || I18n.t('sm.provider.fieldProvider'), action: isActive ? I18n.t('sm.provider.collapseDetails') : I18n.t('sm.provider.expandDetails') }));
-
-                        const info = document.createElement('div');
-                        info.className = 'pe-model-info';
-                        const name = document.createElement('span');
-                        name.className = 'pe-model-info__name';
-                        name.textContent = entry.label;
-                        const id = document.createElement('span');
-                        id.className = 'pe-model-info__id';
-                        id.textContent = entry.modelId || entry.id;
-                        info.append(name, id);
-
-                        const meta = document.createElement('div');
-                        meta.className = 'pe-model-header__meta';
-                        const badges = document.createElement('div');
-                        badges.className = 'pe-model-badges';
-                        const addBadge = (text, opts = {}) => {
-                            const badge = document.createElement('span');
-                            badge.className = 'pe-model-badge';
-                            if (opts.isPrimary) badge.classList.add('is-primary');
-                            if (opts.isFallback) badge.classList.add('is-fallback');
-                            badge.textContent = text;
-                            badges.appendChild(badge);
-                        };
-                        if (isFreeBadge(entry)) addBadge(I18n.t('sm.provider.free'));
-                        if (entry.capabilities && entry.capabilities.streaming) addBadge(I18n.t('sm.provider.streaming'));
-                        if (pinned && pinned.id === entry.id) addBadge(I18n.t('sm.provider.primaryBadge'), { isPrimary: true });
-                        if (fallback && fallbackMatchesEntry(fallback, entry)) addBadge(I18n.t('sm.provider.fallbackBadge'), { isFallback: true });
-                        const chevron = document.createElement('span');
-                        chevron.className = 'pe-chevron';
-                        chevron.setAttribute('aria-hidden', 'true');
-                        chevron.textContent = '▾';
-                        meta.append(badges, chevron);
-
-                        header.append(info, meta);
-
-                        const expand = document.createElement('div');
-                        expand.className = 'pe-model-expand';
-                        const clip = document.createElement('div');
-                        clip.className = 'pe-model-expand__clip';
-                        if (isActive) clip.appendChild(renderDetails(entry, pinned, fallback));
-                        expand.appendChild(clip);
-
-                        const regionId = Utils.uid('pe-model-region');
-                        header.setAttribute('aria-controls', regionId);
-                        expand.id = regionId;
-
-                        const toggle = () => {
-                            expandedModelId = expandedModelId === entry.id ? null : entry.id;
-                            renderList();
-                        };
-                        header.addEventListener('click', toggle);
-                        header.addEventListener('keydown', (event) => {
-                            if (event.key === 'Enter' || event.key === ' ') {
-                                event.preventDefault();
-                                toggle();
-                            }
-                        });
-
-                        card.append(header, expand);
-                        accordion.appendChild(card);
-                    });
-                });
-            }
-
-            [keyless, streaming].forEach((control) => control.addEventListener('change', () => {
-                expandedModelId = null;
-                renderList();
-            }));
-            search.addEventListener('input', () => {
-                expandedModelId = null;
-                renderList();
-            });
-
-            loading.hidden = false;
-            renderList();
-            ProviderRegistry.hydrate().then(() => {
-                loading.hidden = true;
-                renderList();
-            }).catch((err) => {
-                console.warn('[PE] Falha ao atualizar catálogo na aba Provedor.', err);
-                loading.hidden = false;
-                loading.textContent = I18n.t('sm.provider.updateFail');
-                renderList();
-            });
-
-            const closeBtn = Atoms.button({ icon: 'x', label: I18n.t('sm.footer.close'), ariaLabel: I18n.t('sm.footer.closeWindowAria'), variant: 'primary', onClick: close });
-            footerEl.appendChild(closeBtn);
         }
+    });
+    clearBtn.className = 'pe-routing-clear';
+
+    routingPanel.append(primaryStep, arrow, fallbackStep, clearBtn);
+    form.appendChild(routingPanel);
+
+    // ── Estado de hidratação ─────────────────────────────────────────
+    const loading = document.createElement('div');
+    loading.className = 'pe-catalog-loading';
+    loading.textContent = I18n.t('sm.provider.updating');
+    loading.hidden = true;
+    form.appendChild(loading);
+
+    // ── Filtros (preservados) ────────────────────────────────────────
+    const filters = document.createElement('div');
+    filters.className = 'pe-catalog-filters';
+    const search = document.createElement('input');
+    search.type = 'search';
+    search.className = 'pe-param-input';
+    search.placeholder = I18n.t('sm.provider.searchPlaceholder');
+    search.setAttribute('aria-label', I18n.t('sm.provider.searchAria'));
+
+    const keylessLabel = document.createElement('label');
+    keylessLabel.className = 'pe-catalog-toggle';
+    const keyless = document.createElement('input');
+    keyless.type = 'checkbox';
+    keylessLabel.append(keyless, document.createTextNode(I18n.t('sm.provider.noKey')));
+
+    const streamLabel = document.createElement('label');
+    streamLabel.className = 'pe-catalog-toggle';
+    const streaming = document.createElement('input');
+    streaming.type = 'checkbox';
+    streamLabel.append(streaming, document.createTextNode(I18n.t('sm.provider.streaming')));
+
+    filters.append(search, keylessLabel, streamLabel);
+    form.appendChild(filters);
+
+    // ── Viewport virtualizado ────────────────────────────────────────
+    const scroller = document.createElement('div');
+    scroller.className = 'pe-virtual-list';
+    scroller.setAttribute('role', 'list');
+    scroller.setAttribute('aria-label', I18n.t('sm.provider.modelsAria'));
+    const canvas = document.createElement('div');
+    canvas.className = 'pe-virtual-canvas';
+    scroller.appendChild(canvas);
+    form.appendChild(scroller);
+    bodyEl.appendChild(form);
+
+    // ═══════════════════════════════════════════════════════════════
+    // Estado da virtualização
+    // ═══════════════════════════════════════════════════════════════
+    let expandedModelId = null;
+    const heights = new Map();          // key -> altura medida (px)
+    let flatItems = [];                 // [{ type:'group'|'model', key, ... }]
+    let offsetsCache = [];
+    let cachedTotalHeight = 0;
+    let offsetsDirty = true;
+    let rafScheduled = false;
+    let scrollRAF = null;
+
+    const VIRTUAL_BUFFER = 50;
+    const OVERSCAN_PX = 200;
+    const GROUP_EST = 36;
+    const MODEL_EST = 66;
+    const MODEL_EXPANDED_EST = 360;
+
+    // ── Helpers de labels ────────────────────────────────────────────
+    function limitsLabel(entry) {
+        const parts = [];
+        if (entry.limits && entry.limits.rpm != null) parts.push(I18n.t('sm.provider.limits.rpm', { n: entry.limits.rpm }));
+        if (entry.limits && entry.limits.rpd != null) parts.push(I18n.t('sm.provider.limits.rpd', { n: entry.limits.rpd }));
+        if (entry.limits && entry.limits.note) {
+            parts.push(entry.limits.noteKey ? I18n.t(entry.limits.noteKey) : entry.limits.note);
+        }
+        return parts.join(' · ') || I18n.t('sm.provider.notInformedPl');
+    }
+    function authLabel(entry) {
+        if (!entry.auth || entry.auth.type === 'none') return I18n.t('sm.provider.noAuth');
+        return entry.auth.key === 'anonymous' ? I18n.t('sm.provider.bearerAnon') : I18n.t('sm.provider.bearer');
+    }
+    function isFreeBadge(entry) {
+        return (entry.auth && (entry.auth.type === 'none' || entry.auth.key === 'anonymous'))
+            || /free|gratuit/i.test((entry.limits && entry.limits.note) || '');
+    }
+    function fallbackMatchesEntry(fallback, entry) {
+        if (!fallback || !entry) return false;
+        if (fallback.id === entry.id) return true;
+        if (fallback.url && entry.baseUrl) {
+            const norm = (s) => String(s || '').replace(/\/+$/, '').replace(/\/chat\/completions\/?$/, '');
+            if (norm(fallback.url) === norm(entry.baseUrl) && fallback.model === entry.modelId) return true;
+        }
+        return false;
+    }
+
+    // ── Builder: detalhes de um modelo (conteúdo expandido) ─────────
+    function renderDetails(entry, pinned, fallback) {
+        const details = document.createElement('dl');
+        details.className = 'pe-model-details';
+        const addField = (label, value) => {
+            const dt = document.createElement('dt'); dt.textContent = label;
+            const dd = document.createElement('dd'); dd.textContent = value;
+            details.append(dt, dd);
+        };
+        addField(I18n.t('sm.provider.fieldProvider'), entry.providerLabel || entry.providerId || I18n.t('sm.provider.unknown'));
+        addField(I18n.t('sm.provider.fieldAuth'), authLabel(entry));
+        addField(I18n.t('sm.provider.fieldLimits'), limitsLabel(entry));
+        addField(I18n.t('sm.provider.fieldContext'), entry.modelId || I18n.t('sm.provider.notInformed'));
+
+        const actions = document.createElement('div');
+        actions.className = 'pe-model-details__actions';
+
+        // Copiar JSON
+        const copyButton = Atoms.buttonNode({
+            label: I18n.t('sm.provider.copyJson'),
+            ariaLabel: I18n.t('sm.provider.copyJsonAria', { label: entry.label }),
+            variant: 'ghost'
+        });
+        copyButton.addEventListener('click', async (event) => {
+            event.stopPropagation();
+            if (!navigator.clipboard?.writeText) {
+                Molecules.toast(I18n.t('sm.provider.copyUnavailable'), 'error'); return;
+            }
+            const safeEntry = {
+                ...entry,
+                auth: entry.auth ? { type: entry.auth.type, headerName: entry.auth.headerName } : undefined,
+                headers: entry.headers ? Object.fromEntries(Object.entries(entry.headers).map(([n, v]) => [
+                    n, /authorization|api[-_]?key|token|secret/i.test(n) ? I18n.t('sm.provider.redacted') : v
+                ])) : undefined
+            };
+            try {
+                await navigator.clipboard.writeText(JSON.stringify(safeEntry, null, 2));
+                Molecules.toast(I18n.t('sm.provider.copyOk'), 'success');
+            } catch (err) {
+                console.warn('[PE] Falha ao copiar a configuração do modelo.', err);
+                Molecules.toast(I18n.t('sm.provider.copyFail'), 'error');
+            }
+        });
+
+        // Pin
+        const pinButton = Atoms.buttonNode({
+            label: pinned && pinned.id === entry.id ? I18n.t('sm.provider.routePinned') : I18n.t('sm.provider.pinRoute'),
+            ariaLabel: pinned && pinned.id === entry.id ? I18n.t('sm.provider.pinnedAria') : I18n.t('sm.provider.pinAria', { label: entry.label }),
+            variant: 'primary'
+        });
+        pinButton.disabled = !!(pinned && pinned.id === entry.id);
+        pinButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            if (pinned && pinned.id === entry.id) return;
+            if (entry.auth && entry.auth.type === 'bearer' && entry.auth.key === '') {
+                const apiKey = prompt(I18n.t('sm.provider.apiKeyPrompt', { provider: entry.providerLabel || I18n.t('sm.provider.fieldProvider') }));
+                if (apiKey === null) return;
+                if (!apiKey.trim()) { Molecules.toast(I18n.t('sm.provider.apiKeyEmpty'), 'error'); return; }
+                try { GM_setValue('pe_api_key', apiKey.trim()); }
+                catch (err) { Molecules.toast(I18n.t('sm.provider.apiKeySaveFail'), 'error', { details: err && err.message }); return; }
+            }
+            if (!ProviderManager.pin(entry.id)) { Molecules.toast(I18n.t('sm.provider.pinFail'), 'error'); return; }
+            Molecules.toast(I18n.t('sm.provider.pinOk', { label: entry.label }), 'success');
+            updateRoutingPanel();
+            rebuildVisible();
+        });
+
+        const isFallback = fallbackMatchesEntry(fallback, entry);
+        const isPinned = pinned && pinned.id === entry.id;
+        const fallbackButton = Atoms.buttonNode({
+            label: isFallback ? I18n.t('sm.provider.removeFallback') : I18n.t('sm.provider.setFallback'),
+            ariaLabel: isFallback ? I18n.t('sm.provider.removeFallbackAria', { label: entry.label }) : I18n.t('sm.provider.setFallbackAria', { label: entry.label }),
+            variant: isFallback ? 'ghost' : 'outline'
+        });
+        fallbackButton.disabled = !!isPinned;
+        if (isPinned) fallbackButton.title = I18n.t('sm.provider.fallbackPinnedTitle');
+        fallbackButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            if (isPinned) return;
+            if (isFallback) {
+                try {
+                    ProviderManager.setFallback('');
+                    Molecules.toast(I18n.t('sm.provider.fallbackRemovedOk', { label: entry.label }), 'success');
+                    updateRoutingPanel();
+                    rebuildVisible();
+                } catch (err) {
+                    console.warn('[PE] Falha ao remover fallback:', err);
+                    Molecules.toast(I18n.t('sm.provider.fallbackRemoveFail'), 'error');
+                }
+                return;
+            }
+            if (entry.auth && entry.auth.type === 'bearer' && entry.auth.key === '') {
+                const apiKey = prompt(I18n.t('sm.provider.apiKeyPrompt', { provider: entry.providerLabel || I18n.t('sm.provider.fieldProvider') }));
+                if (apiKey === null) return;
+                if (!apiKey.trim()) { Molecules.toast(I18n.t('sm.provider.apiKeyEmpty'), 'error'); return; }
+                try { GM_setValue('pe_api_key', apiKey.trim()); }
+                catch (err) { Molecules.toast(I18n.t('sm.provider.apiKeySaveFail'), 'error', { details: err && err.message }); return; }
+            }
+            try {
+                const providerPayload = {
+                    name: String(entry.providerLabel || entry.label || 'Fallback').trim().slice(0, 60),
+                    url: String(entry.baseUrl || '').trim(),
+                    model: String(entry.modelId || '').trim(),
+                    apiKey: String(entry.auth?.key || (entry.auth?.type === 'none' ? '' : 'anonymous')).trim(),
+                    headers: { ...(entry.headers || {}) }
+                };
+                if (!providerPayload.url || !providerPayload.model) throw new Error('Empty URL or model');
+                const newProvider = ProviderManager.add(providerPayload);
+                if (newProvider && newProvider.id) {
+                    ProviderManager.setFallback(newProvider.id);
+                    Molecules.toast(I18n.t('sm.provider.fallbackOk', { label: entry.label }), 'success');
+                    updateRoutingPanel();
+                    rebuildVisible();
+                } else {
+                    throw new Error('ProviderManager.add returned no id');
+                }
+            } catch (err) {
+                console.warn('[PE] Falha ao definir fallback:', err);
+                Molecules.toast(I18n.t('sm.provider.fallbackFail'), 'error');
+            }
+        });
+
+        actions.append(copyButton, pinButton, fallbackButton);
+        details.appendChild(actions);
+        return details;
+    }
+
+    // ── Builder: card de modelo (header + conteúdo expansível) ──────
+    function buildModelCard(entry, isActive, pinned, fallback) {
+        const card = document.createElement('div');
+        card.className = 'pe-model-card' + (isActive ? ' is-active' : '');
+        card.dataset.modelId = entry.id;
+
+        const header = document.createElement('div');
+        header.className = 'pe-model-header';
+        header.setAttribute('role', 'button');
+        header.tabIndex = 0;
+        header.setAttribute('aria-expanded', String(isActive));
+        header.setAttribute('aria-label', I18n.t('sm.provider.cardAria', {
+            label: entry.label,
+            provider: entry.providerLabel || I18n.t('sm.provider.fieldProvider'),
+            action: isActive ? I18n.t('sm.provider.collapseDetails') : I18n.t('sm.provider.expandDetails')
+        }));
+
+        const info = document.createElement('div');
+        info.className = 'pe-model-info';
+        const name = document.createElement('span'); name.className = 'pe-model-info__name'; name.textContent = entry.label;
+        const id = document.createElement('span'); id.className = 'pe-model-info__id'; id.textContent = entry.modelId || entry.id;
+        info.append(name, id);
+
+        const meta = document.createElement('div');
+        meta.className = 'pe-model-header__meta';
+        const badges = document.createElement('div');
+        badges.className = 'pe-model-badges';
+        const addBadge = (text, opts = {}) => {
+            const b = document.createElement('span');
+            b.className = 'pe-model-badge';
+            if (opts.isPrimary) b.classList.add('is-primary');
+            if (opts.isFallback) b.classList.add('is-fallback');
+            b.textContent = text;
+            badges.appendChild(b);
+        };
+        if (isFreeBadge(entry)) addBadge(I18n.t('sm.provider.free'));
+        if (entry.capabilities && entry.capabilities.streaming) addBadge(I18n.t('sm.provider.streaming'));
+        if (pinned && pinned.id === entry.id) addBadge(I18n.t('sm.provider.primaryBadge'), { isPrimary: true });
+        if (fallback && fallbackMatchesEntry(fallback, entry)) addBadge(I18n.t('sm.provider.fallbackBadge'), { isFallback: true });
+        const chevron = document.createElement('span');
+        chevron.className = 'pe-chevron';
+        chevron.setAttribute('aria-hidden', 'true');
+        chevron.textContent = '▾';
+        meta.append(badges, chevron);
+        header.append(info, meta);
+
+        const toggle = () => {
+            const prev = expandedModelId;
+            expandedModelId = expandedModelId === entry.id ? null : entry.id;
+            // Invalida medições dos itens afetados; estimativas voltam a valer.
+            if (prev) heights.delete(`m:${prev}`);
+            if (expandedModelId) heights.delete(`m:${expandedModelId}`);
+            offsetsDirty = true;
+            renderWindow();
+            // Reaplica foco no header reconstruído (preserva posição e navegação por teclado).
+            const newHeader = canvas.querySelector(
+                `.pe-virtual-item[data-vkey="m:${CSS.escape(entry.id)}"] .pe-model-header`
+            );
+            if (newHeader) newHeader.focus({ preventScroll: false });
+        };
+
+        header.addEventListener('click', toggle);
+        header.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggle(); }
+        });
+        card.appendChild(header);
+
+        if (isActive) {
+            const expand = document.createElement('div');
+            expand.className = 'pe-model-expand';
+            const clip = document.createElement('div');
+            clip.className = 'pe-model-expand__clip';
+            clip.appendChild(renderDetails(entry, pinned, fallback));
+            expand.appendChild(clip);
+            const regionId = Utils.uid('pe-model-region');
+            header.setAttribute('aria-controls', regionId);
+            expand.id = regionId;
+            card.appendChild(expand);
+        }
+        return card;
+    }
+
+    function buildGroupHeader(group) {
+        const title = document.createElement('h6');
+        title.className = 'pe-provider-group-title';
+        title.textContent = group.providerLabel || group.providerId || I18n.t('sm.provider.fieldProvider');
+        return title;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Núcleo da virtualização
+    // ═══════════════════════════════════════════════════════════════
+    function estimate(item) {
+        if (item.type === 'group') return GROUP_EST;
+        if (item.entry.id === expandedModelId) return MODEL_EXPANDED_EST;
+        return MODEL_EST;
+    }
+    function measureOrEstimate(item) {
+        const m = heights.get(item.key);
+        return m != null ? m : estimate(item);
+    }
+    function recomputeOffsets() {
+        if (!offsetsDirty && offsetsCache.length === flatItems.length) {
+            return { offsets: offsetsCache, totalHeight: cachedTotalHeight };
+        }
+        const offsets = new Array(flatItems.length);
+        let acc = 0;
+        for (let i = 0; i < flatItems.length; i++) {
+            offsets[i] = acc;
+            acc += measureOrEstimate(flatItems[i]);
+        }
+        offsetsCache = offsets;
+        cachedTotalHeight = acc;
+        offsetsDirty = false;
+        return { offsets, totalHeight: acc };
+    }
+    // Busca binária: maior índice com offset <= y
+    function findIndex(offsets, y) {
+        if (!offsets.length) return 0;
+        let lo = 0, hi = offsets.length - 1, res = 0;
+        while (lo <= hi) {
+            const mid = (lo + hi) >>> 1;
+            if (offsets[mid] <= y) { res = mid; lo = mid + 1; }
+            else hi = mid - 1;
+        }
+        return res;
+    }
+    function buildFlatItems(groups) {
+        const items = [];
+        groups.forEach((group) => {
+            items.push({ type: 'group', key: `g:${group.providerId}`, group });
+            (group.entries || []).forEach((entry) => {
+                items.push({ type: 'model', key: `m:${entry.id}`, entry, group });
+            });
+        });
+        return items;
+    }
+    function getFilteredGroups() {
+        return ProviderRegistry.groupByProvider(ProviderRegistry.list({
+            keylessOnly: keyless.checked,
+            streamingOnly: streaming.checked,
+            search: search.value.trim()
+        }));
+    }
+    function updateRoutingPanel() {
+        const pinned = ProviderManager.getPinned ? ProviderManager.getPinned() : null;
+        const fallback = ProviderManager.getFallback ? ProviderManager.getFallback() : null;
+        const activeProvider = ProviderManager.getActive ? ProviderManager.getActive() : null;
+
+        if (pinned) primaryValue.textContent = `${pinned.label} (${pinned.modelId || pinned.id})`;
+        else if (activeProvider) primaryValue.textContent = `${activeProvider.name || 'Kilo'} (${activeProvider.model || I18n.t('sm.provider.default')})`;
+        else primaryValue.textContent = I18n.t('sm.provider.defaultSystem');
+
+        if (fallback) fallbackValue.textContent = `${fallback.name || 'Fallback'} (${fallback.model || ''})`.trim();
+        else fallbackValue.textContent = I18n.t('sm.provider.none');
+    }
+    function renderEmpty() {
+        if (resizeObserver) canvas.querySelectorAll('.pe-virtual-item').forEach((el) => resizeObserver.unobserve(el));
+        canvas.style.height = '';
+        canvas.innerHTML = '';
+        const empty = document.createElement('div');
+        empty.className = 'pe-provider-empty';
+        empty.setAttribute('role', 'status');
+        const message = document.createElement('p');
+        message.textContent = search.value.trim()
+            ? I18n.t('sm.provider.emptySearch', { query: search.value.trim() })
+            : I18n.t('sm.provider.emptyFilters');
+        const clear = Atoms.buttonNode({ label: I18n.t('sm.provider.clearFilters'), variant: 'ghost' });
+        clear.type = 'button';
+        clear.setAttribute('aria-label', I18n.t('sm.provider.clearFiltersAria'));
+        clear.addEventListener('click', () => {
+            search.value = '';
+            keyless.checked = false;
+            streaming.checked = false;
+            expandedModelId = null;
+            heights.clear();
+            offsetsDirty = true;
+            refresh();
+            search.focus({ preventScroll: true });
+        });
+        empty.append(message, clear);
+        canvas.appendChild(empty);
+    }
+
+    function renderWindow() {
+        if (!flatItems.length) return;
+        const scrollTop = scroller.scrollTop;
+        const vh = scroller.clientHeight || 400;
+        const { offsets, totalHeight } = recomputeOffsets();
+        canvas.style.height = totalHeight + 'px';
+
+        const startVisible = findIndex(offsets, Math.max(0, scrollTop - OVERSCAN_PX));
+        const endVisible = findIndex(offsets, scrollTop + vh + OVERSCAN_PX);
+        const start = Math.max(0, startVisible - VIRTUAL_BUFFER);
+        const end = Math.min(flatItems.length - 1, endVisible + VIRTUAL_BUFFER);
+
+        const pinned = ProviderManager.getPinned ? ProviderManager.getPinned() : null;
+        const fallback = ProviderManager.getFallback ? ProviderManager.getFallback() : null;
+
+        const existingByKey = new Map();
+        canvas.querySelectorAll('.pe-virtual-item').forEach((el) => {
+            existingByKey.set(el.getAttribute('data-vkey'), el);
+        });
+
+        const seen = new Set();
+        for (let i = start; i <= end; i++) {
+            const item = flatItems[i];
+            const offset = offsets[i];
+            seen.add(item.key);
+
+            let el = existingByKey.get(item.key);
+            if (!el) {
+                el = document.createElement('div');
+                el.className = 'pe-virtual-item';
+                el.setAttribute('data-vkey', item.key);
+                el.setAttribute('role', 'listitem');
+                if (item.type === 'group') {
+                    el.appendChild(buildGroupHeader(item.group));
+                } else {
+                    el.appendChild(buildModelCard(item.entry, item.entry.id === expandedModelId, pinned, fallback));
+                }
+                if (resizeObserver) resizeObserver.observe(el);
+                canvas.appendChild(el);
+            } else if (item.type === 'model') {
+                const card = el.querySelector('.pe-model-card');
+                const shouldBeActive = item.entry.id === expandedModelId;
+                if (card && card.classList.contains('is-active') !== shouldBeActive) {
+                    if (resizeObserver) resizeObserver.unobserve(el);
+                    el.innerHTML = '';
+                    el.appendChild(buildModelCard(item.entry, shouldBeActive, pinned, fallback));
+                    if (resizeObserver) resizeObserver.observe(el);
+                }
+            }
+            el.style.top = offset + 'px';
+        }
+
+        existingByKey.forEach((el, key) => {
+            if (!seen.has(key)) {
+                if (resizeObserver) resizeObserver.unobserve(el);
+                el.remove();
+            }
+        });
+    }
+
+    // Re-renderiza apenas os cards visíveis (usado em pin/fallback/clear-routing).
+    function rebuildVisible() {
+        const pinned = ProviderManager.getPinned ? ProviderManager.getPinned() : null;
+        const fallback = ProviderManager.getFallback ? ProviderManager.getFallback() : null;
+        canvas.querySelectorAll('.pe-virtual-item[data-vkey^="m:"]').forEach((el) => {
+            const key = el.getAttribute('data-vkey');
+            const item = flatItems.find((it) => it.key === key);
+            if (!item || item.type !== 'model') return;
+            if (resizeObserver) resizeObserver.unobserve(el);
+            el.innerHTML = '';
+            const isActive = item.entry.id === expandedModelId;
+            el.appendChild(buildModelCard(item.entry, isActive, pinned, fallback));
+            if (resizeObserver) resizeObserver.observe(el);
+        });
+    }
+
+    function refresh(opts = {}) {
+        const groups = getFilteredGroups();
+        flatItems = buildFlatItems(groups);
+
+        // Estado expandido inválido após mudança de filtro → colapsa.
+        if (expandedModelId && !flatItems.some((it) => it.type === 'model' && it.entry.id === expandedModelId)) {
+            expandedModelId = null;
+        }
+
+        updateRoutingPanel();
+
+        if (!groups.length) { renderEmpty(); return; }
+
+        offsetsDirty = true;
+        if (opts.forceRebuild) {
+            canvas.querySelectorAll('.pe-virtual-item').forEach((el) => {
+                if (resizeObserver) resizeObserver.unobserve(el);
+                el.remove();
+            });
+        }
+        renderWindow();
+
+        if (opts.focusKey) {
+            const target = canvas.querySelector(
+                `.pe-virtual-item[data-vkey="${CSS.escape(opts.focusKey)}"] .pe-model-header`
+            );
+            if (target) target.focus({ preventScroll: false });
+        }
+    }
+
+    // ── ResizeObserver: corrige estimativas com medições reais ──────
+    let resizeObserver = null;
+    if (typeof ResizeObserver !== 'undefined') {
+        resizeObserver = new ResizeObserver((entries) => {
+            let changed = false;
+            entries.forEach((entry) => {
+                const el = entry.target;
+                const key = el.getAttribute('data-vkey');
+                if (!key) return;
+                const h = entry.contentRect.height;
+                const prev = heights.get(key);
+                if (prev == null || Math.abs(prev - h) > 1) {
+                    heights.set(key, h);
+                    changed = true;
+                }
+            });
+            if (changed) {
+                offsetsDirty = true;
+                const { offsets, totalHeight } = recomputeOffsets();
+                canvas.style.height = totalHeight + 'px';
+                // Reposiciona apenas os itens já montados (O(k) com k = janela).
+                canvas.querySelectorAll('.pe-virtual-item').forEach((el) => {
+                    const key = el.getAttribute('data-vkey');
+                    const idx = flatItems.findIndex((it) => it.key === key);
+                    if (idx >= 0) el.style.top = offsets[idx] + 'px';
+                });
+            }
+        });
+    }
+
+    // ── Scroll com rAF throttle (60 fps) ────────────────────────────
+    scroller.addEventListener('scroll', () => {
+        if (scrollRAF) return;
+        scrollRAF = requestAnimationFrame(() => {
+            scrollRAF = null;
+            renderWindow();
+        });
+    }, { passive: true });
+
+    // ── Filtros ─────────────────────────────────────────────────────
+    [keyless, streaming].forEach((control) => control.addEventListener('change', () => {
+        expandedModelId = null;
+        heights.clear();
+        offsetsDirty = true;
+        refresh();
+    }));
+    search.addEventListener('input', () => {
+        expandedModelId = null;
+        heights.clear();
+        offsetsDirty = true;
+        refresh();
+    });
+
+    // ── Primeira renderização + hidratação ──────────────────────────
+    loading.hidden = false;
+    refresh();
+    ProviderRegistry.hydrate().then(() => {
+        loading.hidden = true;
+        heights.clear();
+        offsetsDirty = true;
+        refresh();
+    }).catch((err) => {
+        console.warn('[PE] Falha ao atualizar catálogo na aba Provedor.', err);
+        loading.hidden = false;
+        loading.textContent = I18n.t('sm.provider.updateFail');
+        refresh();
+    });
+
+    const closeBtn = Atoms.button({ icon: 'x', label: I18n.t('sm.footer.close'), ariaLabel: I18n.t('sm.footer.closeWindowAria'), variant: 'primary', onClick: close });
+    footerEl.appendChild(closeBtn);
+}
         function renderContext() {
             const form = document.createElement('div');
             form.className = 'pe-param-body';

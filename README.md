@@ -24,6 +24,7 @@ Works on **DeepSeek**, **ChatGPT**, **Claude**, and **Gemini** via dedicated sit
 - [Keyboard Shortcuts](#keyboard-shortcuts)
 - [Architecture](#architecture)
 - [Development](#development)
+- [Hot reload durante o desenvolvimento](#hot-reload-durante-o-desenvolvimento)
 - [Troubleshooting](#troubleshooting)
 - [Privacy & Security](#privacy--security)
 - [Accessibility](#accessibility)
@@ -248,6 +249,24 @@ npm run test      # check + node --test src/tests/*-tests.js
 npm run test:api  # PE_API_SMOKE=1 integration smoke tests
 npm run sandbox   # Local sandbox helper (sandbox.cjs)
 ```
+
+### Hot reload durante o desenvolvimento
+
+`npm run dev` sobe dois servidores locais vinculados exclusivamente a `127.0.0.1`:
+
+- HTTP `PE_PORT` (padrão `8787`) — serve `dist/prompt-enhancer.user.js` com `Cache-Control: no-store`; é também o alvo de `@updateURL`/`@downloadURL` do bundle de dev.
+- SSE `PE_WS_PORT` (padrão `8788`) em `/__reload` — notifica `{ type: 'reload' }` toda vez que `dist/prompt-enhancer.user.js` é regravado. (`ws` não é uma dependência do projeto e as regras de dependência impedem adicioná-la; o transporte usado é SSE, o fallback explícito da arquitetura, documentado em `serve-dist.js`.)
+
+Fluxo de trabalho:
+
+1. `npm run dev` — inicia os servidores e o watch de rebuild sobre `src/` e `manifest.json` (debounce ~150 ms).
+2. Instale `dev/hot-reload.user.js` **uma vez** no gerenciador (mesmos `@match` do script principal, `@grant none`, `@noframes`).
+3. Edite módulos em `src/`: o build de dev é refeito automaticamente (< 1 s) e a página recarrega sozinha via WebSocket/SSE.
+
+Variáveis de ambiente: `PE_PORT`, `PE_WS_PORT`.
+
+> **Build de produção não é afetado:** `npm run build` gera `dist/prompt-enhancer.user.js` idêntico ao de antes — versão `1.0.0`, sem `@updateURL`, sem `@downloadURL`, sem sufixo `-dev.` e sem o marcador `// pe-dev-build`. `npm run check` continua aprovando apenas o build de produção.
+> **Auto-update do gerenciador:** o `@updateURL` do bundle de dev depende do intervalo mínimo imposto pelo navegador/gerenciador; para iterações rápidas use o recarregamento automático acima, não a verificação de atualização do gerenciador.
 
 ### Editing workflow
 

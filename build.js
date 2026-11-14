@@ -8,6 +8,8 @@ const sourceDir = path.join(root, 'src');
 const outputDir = path.join(root, 'dist');
 const outputFile = path.join(outputDir, 'prompt-enhancer.user.js');
 
+const dev = process.argv.includes('--dev') || process.env.PE_DEV === '1';
+
 let manifest;
 try {
     manifest = JSON.parse(await readFile(path.join(root, 'manifest.json'), 'utf8'));
@@ -42,9 +44,21 @@ const modules = await Promise.all(manifest.modules.map(async (module) => {
     return `${renderModuleMetadata(module)}\n${source}`;
 }));
 const close = await readSource('close.js');
-const bundle = `${banner}\n\n${open}\n${modules.join('\n\n')}\n${close}\n`;
+let bundle = `${banner}\n\n${open}\n${modules.join('\n\n')}\n${close}\n`;
 
 await mkdir(outputDir, { recursive: true });
+
+if (dev) {
+    const timestamp = Date.now();
+    bundle = bundle.replace(
+        '// @run-at       document-idle',
+        `// @updateURL   http://127.0.0.1:8787/prompt-enhancer.user.js\n// @downloadURL http://127.0.0.1:8787/prompt-enhancer.user.js\n// @run-at       document-idle`
+    );
+    bundle = bundle.replace(/^(\/\/ @version\s+)1\.0\.0(\s*)$/m, `$11.0.0-dev.${timestamp}$2`);
+    bundle = `// pe-dev-build\n${bundle}`;
+    console.log(`[build:dev] updateURL + version bump ${new Date().toISOString()}`);
+}
+
 await writeFile(outputFile, bundle, 'utf8');
 
 const bytes = Buffer.byteLength(bundle, 'utf8');

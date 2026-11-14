@@ -115,7 +115,7 @@
             modelId: 'meta-llama/llama-3.3-70b-instruct:free',
             label: 'Llama 3.3 70B Instruct (free)',
             auth: { type: 'bearer', key: '', headerName: null },
-            headers: { 'HTTP-Referer': 'https://github.com/EdgeTypE/better-deepseek', 'X-Title': 'Prompt-Enhancer' },
+            headers: { 'HTTP-Referer': 'https://github.com/MaiconJh/Prompt-Enhancer', 'X-Title': 'Prompt-Enhancer' },
             limits: { rpm: null, rpd: null, tpm: null, note: 'Modelos :free do OpenRouter', noteKey: 'provider.note.openrouter' },
             capabilities: { streaming: true, tools: false, jsonMode: false },
             contextWindow: 131072,

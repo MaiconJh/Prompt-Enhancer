@@ -53,6 +53,16 @@ try {
     process.exit(1);
 }
 
+const devMode = process.argv.includes('--dev') || process.env.PE_DEV === '1';
+
+const firstLine = source.split(/\r?\n/, 1)[0];
+if (firstLine === '// pe-dev-build') {
+    if (!devMode) {
+        console.error('detectado build de dev; rode `npm run build` (produção) antes de `npm run check`');
+        process.exit(1);
+    }
+}
+
 const bytes = Buffer.byteLength(source, 'utf8');
 if (bytes <= 50 * 1024) failures.push(`Tamanho inválido: ${bytes} bytes (deve ser maior que 51200).`);
 
@@ -63,9 +73,13 @@ for (const module of manifest.modules) {
     }
 }
 
+const versionPattern = devMode
+    ? /^\/\/ @version\s+1\.0\.0-dev\.\d+\s*$/m
+    : /^\/\/ @version\s+1\.0\.0\s*$/m;
+
 const requiredLines = [
     ['@name Prompt-Enhancer', /^\/\/ @name\s+Prompt-Enhancer\s*$/m],
-    ['@version 1.0.0', /^\/\/ @version\s+1\.0\.0\s*$/m],
+    ['@version 1.0.0', versionPattern],
     ['@match *://chat.deepseek.com/*', /^\/\/ @match\s+\*:\/\/chat\.deepseek\.com\/\*\s*$/m],
     ['@grant GM_xmlhttpRequest', /^\/\/ @grant\s+GM_xmlhttpRequest\s*$/m],
     ['@connect *', /^\/\/ @connect\s+\*\s*$/m],
