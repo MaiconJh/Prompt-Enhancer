@@ -704,6 +704,14 @@
       ]
     },
     {
+      "file": "workspace/workspace-editor-view.js",
+      "description": "Owns the Workspace editor surface, controls and editor-specific DOM lifecycle.",
+      "interfaces": { "provides": ["WorkspaceEditorView"], "consumes": ["I18n", "Atoms"] },
+      "interactions": [
+        "The Workspace UI supplies save/delete and panel-toggle callbacks; the editor view does not access Workspace persistence."
+      ]
+    },
+    {
       "file": "workspace/workspace-ui.js",
       "description": "Provides the project and text-file management interface for the Workspace settings view.",
       "interfaces": {
