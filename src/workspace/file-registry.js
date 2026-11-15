@@ -41,7 +41,9 @@ const FileRegistry = (() => {
         const project = await ProjectManager.get(projectId);
         if (!project) return null;
         const file = await WorkspaceStorage.getFile(String(fileId));
-        return file && file.projectId === project.id ? file : null;
+        if (!file || file.projectId !== project.id) return null;
+        const { version: _legacyVersion, ...fileData } = file;
+        return fileData;
     }
 
     async function create(projectId, input = {}) {
