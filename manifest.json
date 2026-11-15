@@ -712,6 +712,14 @@
       ]
     },
     {
+      "file": "workspace/workspace-controller.js",
+      "description": "Coordinates Workspace file creation and import workflows through the public Workspace facade.",
+      "interfaces": { "provides": ["WorkspaceController"], "consumes": ["Workspace"] },
+      "interactions": [
+        "UI delegates batch creation, folder initialization and text-file import; the controller validates inputs and commits through Workspace.files.createMany()."
+      ]
+    },
+    {
       "file": "workspace/workspace-ui.js",
       "description": "Provides the project and text-file management interface for the Workspace settings view.",
       "interfaces": {
