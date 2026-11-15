@@ -82,6 +82,7 @@
             b.setAttribute('role', 'tab');
             b.setAttribute('aria-controls', 'pe-settings-panel-body');
             b.setAttribute('aria-label', t.label);
+            b.title = t.label;
             b.append(Atoms.icon(t.icon), Object.assign(document.createElement('span'), {
                 className: 'pe-modal-tab__label',
                 textContent: t.label
@@ -260,10 +261,12 @@
 
         function render() {
             prevFooterDirty = false;
+            panel.classList.toggle('is-workspace-expanded', activeTab === 'workspace');
             Object.entries(tabButtons).forEach(([k, b]) => {
                 const selected = k === activeTab;
                 b.classList.toggle('is-active', selected);
                 b.setAttribute('aria-selected', String(selected));
+                b.title = getTabDefs().find(tab => tab.key === k)?.label || '';
                 b.tabIndex = selected ? 0 : -1;
             });
             bodyEl.setAttribute('aria-labelledby', `pe-settings-tab-${activeTab}`);
