@@ -3,6 +3,7 @@
     const GEAR_STATES = {
         connecting: { rgb: [124, 156, 255], rgb2: [168,  85, 247], morph: 0.0, speed: 1.0, minDisplayMs: 250 },
         waiting:    { rgb: [148, 154, 177], rgb2: [100, 116, 139], morph: 0.25, speed: 0.6, minDisplayMs: 300 },
+        preparing:  { rgb: [148,   0, 211], rgb2: [168,  85, 247], morph: 0.15, speed: 0.9, minDisplayMs: 300 },
         dispatching:{ rgb: [124, 156, 255], rgb2: [168,  85, 247], morph: 0.1, speed: 1.2, minDisplayMs: 250 },
         awaiting_ttfb: { rgb: [148, 154, 177], rgb2: [100, 116, 139], morph: 0.3, speed: 0.8, minDisplayMs: 350 },
         awaiting_token: { rgb: [148, 154, 177], rgb2: [100, 116, 139], morph: 0.45, speed: 1.0, minDisplayMs: 300 },
@@ -11,7 +12,7 @@
         retrying:   { rgb: [245, 158,  11], rgb2: [239,  68,  68], morph: 0.4, speed: -0.7, minDisplayMs: 400 }
     };
 
-    function createGear(canvas, initialState = 'connecting') {
+    function createGear(canvas, initialState = 'connecting', onColorChange) {
         if (!canvas) return null;
         const size = 48;
         const dpr = window.devicePixelRatio || 1;
@@ -37,6 +38,7 @@
         let last = performance.now();
         let rafId = null;
         let stopped = false;
+        let state = initialState;
 
         function render() {
             ctx.clearRect(0, 0, size, size);
@@ -126,6 +128,29 @@
             ctx.fill();
         }
 
+        function phaseColor(t) {
+            const stops = [
+                { t: 0.00, r: 128, g: 128, b: 128 }, // cinza
+                { t: 0.25, r: 255, g: 255, b: 255 }, // branco
+                { t: 0.40, r: 148, g:   0, b: 211 }, // roxo
+                { t: 0.50, r:   0, g: 255, b: 255 }, // ciano
+                { t: 0.60, r:  16, g: 185, b: 129 }  // verde
+            ];
+            if (t <= stops[0].t) return { r: stops[0].r, g: stops[0].g, b: stops[0].b };
+            if (t >= stops[stops.length - 1].t) return { r: stops[stops.length - 1].r, g: stops[stops.length - 1].g, b: stops[stops.length - 1].b };
+            for (let i = 0; i < stops.length - 1; i++) {
+                if (t >= stops[i].t && t <= stops[i + 1].t) {
+                    const f = (t - stops[i].t) / (stops[i + 1].t - stops[i].t);
+                    return {
+                        r: stops[i].r + (stops[i + 1].r - stops[i].r) * f,
+                        g: stops[i].g + (stops[i + 1].g - stops[i].g) * f,
+                        b: stops[i].b + (stops[i + 1].b - stops[i].b) * f
+                    };
+                }
+            }
+            return { r: stops[stops.length - 1].r, g: stops[stops.length - 1].g, b: stops[stops.length - 1].b };
+        }
+
         function loop(now) {
             if (stopped) return;
             const dt = Math.min((now - last) / 1000, 0.05);
@@ -133,9 +158,34 @@
             const damp = 1 - Math.exp(-5.5 * dt);
             sim.speed += (target.speed - sim.speed) * damp;
             sim.morphProgress += (target.morph - sim.morphProgress) * damp;
-            for (let i = 0; i < 3; i++) {
-                sim.rgb[i]  += (target.rgb[i]  - sim.rgb[i])  * damp;
-                sim.rgb2[i] += (target.rgb2[i] - sim.rgb2[i]) * damp;
+            let currentStateName = state;
+            switch (currentStateName) {
+                case 'connecting':
+                case 'preparing':
+                case 'dispatching':
+                case 'awaiting_ttfb':
+                case 'awaiting_token':
+                case 'waiting': {
+                    const c = phaseColor(sim.morphProgress);
+                    sim.rgb[0]  += (c.r  - sim.rgb[0])  * 0.08;
+                    sim.rgb[1]  += (c.g  - sim.rgb[1])  * 0.08;
+                    sim.rgb[2]  += (c.b  - sim.rgb[2])  * 0.08;
+                    sim.rgb2[0] += (c.r  - sim.rgb2[0]) * 0.08;
+                    sim.rgb2[1] += (c.g  - sim.rgb2[1]) * 0.08;
+                    sim.rgb2[2] += (c.b  - sim.rgb2[2]) * 0.08;
+                    if (typeof onColorChange === 'function') {
+                        onColorChange(Math.round(sim.rgb[0]), Math.round(sim.rgb[1]), Math.round(sim.rgb[2]));
+                    }
+                    break;
+                }
+                case 'streaming':
+                case 'finalizing':
+                case 'retrying':
+                    for (let i = 0; i < 3; i++) {
+                        sim.rgb[i]  += (target.rgb[i]  - sim.rgb[i])  * damp;
+                        sim.rgb2[i] += (target.rgb2[i] - sim.rgb2[i]) * damp;
+                    }
+                    break;
             }
             sim.absTime += dt;
             sim.phase   += dt * sim.speed;
@@ -149,7 +199,7 @@
             if (stateQueue.length === 0) return;
             const next = stateQueue.shift();
             const s = GEAR_STATES[next];
-            if (s) target = s;
+            if (s) { target = s; state = next; }
             const waitMs = reducedMotion ? 0 : (s?.minDisplayMs ?? 0);
             queueTimer = setTimeout(flushQueue, waitMs);
         }

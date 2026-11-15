@@ -82,8 +82,7 @@ const requiredLines = [
     ['@version 1.0.0', versionPattern],
     ['@match *://chat.deepseek.com/*', /^\/\/ @match\s+\*:\/\/chat\.deepseek\.com\/\*\s*$/m],
     ['@grant GM_xmlhttpRequest', /^\/\/ @grant\s+GM_xmlhttpRequest\s*$/m],
-    ['@connect *', /^\/\/ @connect\s+\*\s*$/m],
-    ['@require GSAP', /^\/\/ @require\s+https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/gsap\/3\.12\.5\/gsap\.min\.js\s*$/m]
+    ['@require GSAP', /^\/\/ @require\s+https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/gsap\/3\.12\.5\/gsap\.min\.js#sha256=[A-Za-z0-9+/=]+\s*$/m]
 ];
 
 for (const [label, pattern] of requiredLines) {
@@ -101,6 +100,34 @@ const requiredSymbols = [
 
 for (const symbol of requiredSymbols) {
     if (!source.includes(symbol)) failures.push(`Símbolo ausente: ${symbol}.`);
+}
+
+// Verificação: todo host em BUILTIN_HOSTS deve ter @connect correspondente no banner
+const builtinHostsMatch = source.match(/BUILTIN_HOSTS\s*=\s*\[\s*([^\]]+)\s*\]/);
+if (builtinHostsMatch) {
+    const builtinHosts = builtinHostsMatch[1]
+        .split(',')
+        .map(h => h.replace(/['"]/g, '').trim())
+        .filter(Boolean);
+    const connectLines = source.match(/^\/\/ @connect\s+(\S+)/gm) || [];
+    const connectHosts = connectLines.map(l => l.replace(/^\/\/ @connect\s+/, '').trim());
+    for (const host of builtinHosts) {
+        if (!connectHosts.includes(host)) {
+            failures.push(`BUILTIN_HOST '${host}' não tem @connect correspondente no banner.`);
+        }
+    }
+}
+
+// Verificação: todo @grant GM_* declarado deve ter pelo menos um uso no código
+const grantDeclares = source.match(/^\/\/ @grant\s+(GM_\w+)/gm) || [];
+const declaredGrants = grantDeclares.map(l => l.match(/^\/\/ @grant\s+(GM_\w+)/)[1]);
+const codeWithoutGrants = source.replace(/^\/\/ @grant\s+GM_\w+.*$/gm, '').replace(/^\/\/.*$/gm, '');
+for (const grant of declaredGrants) {
+    const usageRegex = new RegExp(`\\b${grant}\\b`, 'g');
+    const usages = (codeWithoutGrants.match(usageRegex) || []).length;
+    if (usages === 0) {
+        failures.push(`@grant '${grant}' declarado mas não usado no código (superfície de ataque desnecessária).`);
+    }
 }
 
 const markerCount = (source.match(/^\/\/ ===== src\/[^/]+\.js =====$/gm) || []).length;

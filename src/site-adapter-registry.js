@@ -4,20 +4,22 @@
 
 // =========================================================================
 // PATCH: Trusted Types (Gemini CSP)
-// Libera o uso de innerHTML no restante da arquitetura sem alterar os módulos.
+// O `default` policy é recriado como createHTML identidade para que sinks
+// `innerHTML` de string funcionem em hosts que impõem Trusted Types
+// (ex.: gemini.google.com). Isso desabilita a defesa de Trusted Types no
+// escopo da página inteira — trade-off aceito deliberadamente; sinks
+// sensíveis devem ser migrados para Utils.trustedHtml()/createElement
+// quando o risco de XSS for relevante.
 // =========================================================================
 if (typeof window !== 'undefined' && window.trustedTypes && window.trustedTypes.createPolicy) {
   try {
     window.trustedTypes.createPolicy('default', {
-      createHTML: (string) => string,
-      createScript: (string) => string,
-      createScriptURL: (string) => string
+      createHTML: (string) => string
     });
   } catch (e) {
-    // Ignora silenciosamente se a política já foi criada
+    // Política já existente ou indisponível: segue sem trusted types.
   }
 }
-// =========================================================================
 
 const SiteAdapterRegistry = (() => {
   const adapters = [];
@@ -594,9 +596,9 @@ SiteAdapterRegistry.register(SiteAdapter.create({
     }
 
     // 2. Localiza o container do editor
+    // Ordem: semântico (form) → estrutural (rounded-3xl) → genérico (border)
     let editor = input.closest('form') || 
                  input.closest('.rounded-3xl') || 
-                 input.closest('._editor_22sit_47') || 
                  input.closest('[class*="border"]');
     
     // 3. Fallback de segurança

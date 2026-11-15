@@ -75,7 +75,7 @@ function createApiHarness(responses, customPrompt = '', projectContextSuffix = '
     vm.runInContext(configSource, context, { filename: 'src/config.js' });
     vm.runInContext('CONFIG.STREAM = false; CONFIG.RETRY_MAX = 0;', context);
     vm.runInContext(i18nSource, context, { filename: 'src/i18n.js' });
-    context.I18n = context.window.I18n;
+    context.I18n = context.window.__PE_I18n;
     vm.runInContext(managerSource, context, { filename: 'src/provider-manager.js' });
     vm.runInContext(errorsSource, context, { filename: 'src/network-errors.js' });
     vm.runInContext(systemPromptSource, context, { filename: 'src/system-prompt-manager.js' });

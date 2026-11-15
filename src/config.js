@@ -201,6 +201,7 @@
         HISTORY_MAX_BYTES: 32_000,
         HISTORY_RUN_MAX_CHARS: 8_000,
         HISTORY_CALL_MAX_CHARS: 3_000,
+        HISTORY_TTL_MS: 86_400_000,
 
         // Personalidades e Templates de System Prompt
         PERSONA_HINTS: ConfigStore.deepFreeze({

@@ -21,6 +21,15 @@
             fallback: false
         };
 
+        const URL_CUSTOM_CONFIRM_MSG = 'Deseja permitir conexão com este endpoint externo?\n\n{url}\n\nSomente confirme se confiar no destino.\n\nO gerenciador de userscripts também pedirá autorização de rede para este host.';
+        const BUILTIN_HOSTS = [
+            'ai-gateway.kilo.ai',
+            'api.groq.com',
+            'gen.pollinations.ai',
+            'keylessai.thryx.workers.dev',
+            'oai.endpoints.kepler.ai.cloud.ovh.net'
+        ];
+
         const safeGet = (key, fallback) => {
             try { return GM_getValue(key, fallback); } catch (_) { return fallback; }
         };
@@ -173,13 +182,20 @@
             safeSet(KEY_FALLBACK, id);
         }
 
-        function add(input = {}) {
+        function add(input = {}, options = {}) {
             migrate();
             const list = _load() || [];
+            const entryUrl = _chatUrl(input.url || '');
+            if (!_isValidUrl(entryUrl)) throw new Error(`URL inválida: ${entryUrl}. Use https://`);
+            if (!_isCustomUrl(entryUrl) && !options.skipConfirm) {
+                // builtin/known URL: no confirmation needed
+            } else if (_isCustomUrl(entryUrl) && !options.skipConfirm) {
+                if (!_confirmCustomHost(entryUrl)) throw new Error(`Conexão com host customizado negada: ${entryUrl}`);
+            }
             const entry = {
                 id: Utils.uid('prov'),
                 name: String(input.name || 'Provider').trim().slice(0, 60),
-                url: _chatUrl(input.url || ''),
+                url: entryUrl,
                 model: String(input.model || '').trim(),
                 apiKey: String(input.apiKey || ''),
                 headers: input.headers && typeof input.headers === 'object' ? input.headers : {},
@@ -193,15 +209,20 @@
             return entry;
         }
 
-        function update(id, patch = {}) {
+        function update(id, patch = {}, options = {}) {
             const list = _load() || [];
             const idx = list.findIndex(p => p.id === id);
             if (idx === -1) return null;
             const cur = list[idx];
+            const nextUrl = patch.url !== undefined ? _chatUrl(patch.url) : cur.url;
+            if (!_isValidUrl(nextUrl)) throw new Error(`URL inválida: ${nextUrl}. Use https://`);
+            if (_isCustomUrl(nextUrl) && !options.skipConfirm && !_confirmCustomHost(nextUrl)) {
+                throw new Error(`Conexão com host customizado negada: ${nextUrl}`);
+            }
             const next = {
                 ...cur,
                 name: patch.name !== undefined ? String(patch.name).trim().slice(0, 60) : cur.name,
-                url: patch.url !== undefined ? _chatUrl(patch.url) : cur.url,
+                url: nextUrl,
                 model: patch.model !== undefined ? String(patch.model).trim() : cur.model,
                 apiKey: patch.apiKey !== undefined ? String(patch.apiKey) : cur.apiKey,
                 headers: patch.headers && typeof patch.headers === 'object' ? patch.headers : cur.headers,
@@ -242,6 +263,23 @@
         function _chatUrl(baseUrl) {
             const base = String(baseUrl || '').trim().replace(/\/+$/, '');
             return base.endsWith('/chat/completions') ? base : `${base}/chat/completions`;
+        }
+
+        function _isValidUrl(url) {
+            const u = String(url || '').trim();
+            return /^https:\/\/[^\s/?#]+/.test(u);
+        }
+
+        function _isCustomUrl(url) {
+            const u = String(url || '').trim();
+            if (!u || u === DEFAULT_PROVIDER.url || u === LEGACY_DEFAULT_URL) return false;
+            const hostname = u.match(/^https:\/\/([^\s/?#]+)/);
+            return !hostname || !BUILTIN_HOSTS.includes(hostname[1]);
+        }
+
+        function _confirmCustomHost(url) {
+            if (typeof window === 'undefined' || typeof window.confirm !== 'function') return true;
+            return window.confirm(URL_CUSTOM_CONFIRM_MSG.replace('{url}', url));
         }
 
         function pin(entryOrId) {

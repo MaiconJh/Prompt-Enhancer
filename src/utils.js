@@ -43,7 +43,7 @@
                 el.addEventListener(evt, (e) => e.stopPropagation(), false);
             });
             return el;
-        }
+        },
     };
 
     function truncRunText(str, max) {

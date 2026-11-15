@@ -77,6 +77,31 @@
                 if (!EnhancementHistory.listRuns().length) { alert(I18n.t('bs.noEnhancements')); return; }
                 if (confirm(I18n.t('bs.confirmClearEnh'))) { EnhancementHistory.clear(); alert(I18n.t('bs.enhHistoryCleared')); }
             });
+            reg('Resetar todos os dados (pe_*)', () => {
+                if (!confirm(I18n.t('bs.resetAllData.confirm'))) return;
+                let cleared = 0;
+                try {
+                    if (typeof GM_listValues === 'function') {
+                        const keys = GM_listValues();
+                        for (const key of keys) {
+                            if (String(key).startsWith('pe_')) { try { GM_deleteValue(key); cleared++; } catch (_) {} }
+                        }
+                    }
+                } catch (_) {}
+                try {
+                    const lsKeys = [];
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const k = localStorage.key(i);
+                        if (k) lsKeys.push(k);
+                    }
+                    lsKeys.filter(k => String(k).startsWith('pe_')).forEach(k => {
+                        try { localStorage.removeItem(k); cleared++; } catch (_) {}
+                    });
+                } catch (_) {}
+                try { EnhancementHistory.clear(); } catch (_) {}
+                alert(`Dados locais limpos (${cleared} chaves). Recarregando…`);
+                location.reload();
+            });
             reg(I18n.t('bs.menu.lang'), () => {
                 const current = I18n.getLanguage();
                 const next = current === 'en' ? 'pt-BR' : 'en';

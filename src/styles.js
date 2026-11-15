@@ -2220,6 +2220,10 @@ function injectStyles() {
         .pe-debug__log-line.is-ok .pe-debug__log-ev   { color: var(--pe-success); }
 
         .pe-panel-loading[data-state="connecting"] { --pe-loader-accent: #7C9CFF; --pe-loader-glow: rgba(124, 156, 255, .4); }
+        .pe-panel-loading[data-state="preparing"]   { --pe-loader-accent: rgb(148, 0, 211); --pe-loader-glow: rgb(148, 0, 211); }
+        .pe-panel-loading[data-state="dispatching"] { --pe-loader-accent: rgb(128, 128, 128); --pe-loader-glow: rgb(128, 128, 128); }
+        .pe-panel-loading[data-state="awaiting_ttfb"] { --pe-loader-accent: rgb(0, 255, 255); --pe-loader-glow: rgb(0, 255, 255); }
+        .pe-panel-loading[data-state="awaiting_token"] { --pe-loader-accent: rgb(64, 180, 255); --pe-loader-glow: rgb(64, 180, 255); }
         .pe-panel-loading[data-state="waiting"]    { --pe-loader-accent: #9BA1AD; --pe-loader-glow: rgba(155, 161, 173, .3); }
         .pe-panel-loading[data-state="streaming"]  { --pe-loader-accent: #4D8BFF; --pe-loader-glow: rgba(77, 139, 255, .5); }
         .pe-panel-loading[data-state="finalizing"] { --pe-loader-accent: var(--pe-success); --pe-loader-glow: rgba(11, 117, 91, .45); }

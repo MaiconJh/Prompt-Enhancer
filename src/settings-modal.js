@@ -171,9 +171,6 @@
             }
             ParamSchema.save(cleaned);
             State.params = cleaned;
-            persistProviderValue('pe_api_url', providerDraft.baseUrl);
-            persistProviderValue('pe_model', providerDraft.model);
-            persistProviderValue('pe_api_key', providerDraft.apiKey);
             try {
                 if (typeof ProviderManager !== 'undefined' && ProviderManager.getActive) {
                     const active = ProviderManager.getActive();
@@ -196,12 +193,6 @@
             Molecules.toast(I18n.t('sm.saved'), 'success');
             try { onSave?.(cleaned); } catch (_) {}
             close();
-        }
-
-        function persistProviderValue(key, value) {
-            const cleanValue = String(value || '').trim();
-            if (cleanValue) GM_setValue(key, cleanValue);
-            else GM_deleteValue(key);
         }
 
         function showErrors(errors) {

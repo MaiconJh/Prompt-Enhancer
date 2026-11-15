@@ -3,6 +3,17 @@
     const EnhancementHistory = (() => {
         const KEY = 'pe_runs';
         const runs = new Map();
+        const TTL_MS = CONFIG.HISTORY_TTL_MS;
+
+        function _isExpired(run) {
+            if (!run || run.startedAt == null) return true;
+            return Date.now() - Number(run.startedAt) > TTL_MS;
+        }
+
+        function _expire(list) {
+            const filtered = list.filter(r => r && !_isExpired(r));
+            return filtered;
+        }
 
         function _loadPersisted() {
             try {
@@ -14,7 +25,7 @@
 
         function _persist(list) {
             try {
-                let trimmed = list.slice(0, CONFIG.HISTORY_MAX);
+                let trimmed = _expire(list).slice(0, CONFIG.HISTORY_MAX);
                 let serialized = JSON.stringify(trimmed);
                 while (serialized.length > CONFIG.HISTORY_MAX_BYTES && trimmed.length > 1) {
                     trimmed.pop();
@@ -26,10 +37,15 @@
 
         function _getRun(runId) {
             if (!runId) return null;
-            if (runs.has(runId)) return runs.get(runId);
+            if (runs.has(runId)) {
+                const cached = runs.get(runId);
+                if (_isExpired(cached)) { runs.delete(runId); return null; }
+                return cached;
+            }
             const list = _loadPersisted();
             const run = list.find(r => r && r.id === runId);
-            if (run) runs.set(runId, run);
+            if (!run || _isExpired(run)) return null;
+            runs.set(runId, run);
             return run || null;
         }
 
@@ -134,7 +150,7 @@
         }
 
         function listRuns() {
-            return _loadPersisted().slice(0, CONFIG.HISTORY_MAX);
+            return _expire(_loadPersisted()).slice(0, CONFIG.HISTORY_MAX);
         }
 
         function clear() {
@@ -145,6 +161,9 @@
         function reconcilePending() {
             const list = _loadPersisted();
             let changed = false;
+            const beforeLength = list.length;
+            const expired = list.filter(r => r && _isExpired(r));
+            if (expired.length) changed = true;
             for (const run of list) {
                 if (!run) continue;
                 if (run.meta && run.meta.legacy) continue;
@@ -153,6 +172,8 @@
                     changed = true;
                 }
             }
+            const afterLength = _expire(list).length;
+            if (beforeLength !== afterLength) changed = true;
             if (changed) _persist(list);
         }
 

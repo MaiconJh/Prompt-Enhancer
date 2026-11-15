@@ -42,8 +42,9 @@
         if (err?.code === 'ABORTED') return;
         const idx = ErrorIndexer.classify(err);
         ErrorIndexer.record(err);
-        try { console.groupCollapsed(`[PE] ❌ ${idx.code} — ${idx.title}`); console.log('description:', idx.description); console.log('technical:', idx.technical); console.groupEnd(); } catch (_) {}
-        const text = idx.description ? `${idx.title}\n${idx.description}` : idx.title;
+        const description = String(idx.description || '').slice(0, 200);
+        try { console.groupCollapsed(`[PE] ❌ ${idx.code} — ${idx.title}`); console.debug('description:', description); console.groupEnd(); } catch (_) {}
+        const text = description ? `${idx.title}\n${description}` : idx.title;
         const ACTION_MAP = { 'retry': () => retryEnhance(), 'retry-no-context': () => retryEnhanceNoContext(), 'retry-nostream': () => retryEnhanceNoStream(), 'open-params': () => onParams() };
         const labels = { retry: I18n.t('orq.action.retry'), 'retry-no-context': I18n.t('orq.action.retryNoContext'), 'retry-nostream': I18n.t('orq.action.retryNoStream'), 'open-params': I18n.t('orq.action.params') };
         const action = idx.actionKey && ACTION_MAP[idx.actionKey] ? idx.actionKey : null;
@@ -138,6 +139,11 @@ async function _enhanceWithValidation(original, answersOrOpts, opts = {}) {
         } else {
             repaired = true;
         }
+    }
+
+    if (validation && validation.violations && validation.violations.length) {
+        if (!analysis) analysis = {};
+        analysis.validationWarning = validation.violations.map(v => v.message || v.type).join('; ');
     }
 
     return { enhanced, validation, analysis: analysis || null, repaired: repaired || false };

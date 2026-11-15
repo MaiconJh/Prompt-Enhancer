@@ -264,6 +264,10 @@
                 currentState = s;
                 if (s === 'streaming' || s === 'finalizing' || s === 'retrying' || s === 'connecting') warningCode = null;
                 root.dataset.state = s;
+                if (s === 'streaming' || s === 'finalizing' || s === 'retrying') {
+                    root.style.removeProperty('--pe-loader-accent');
+                    root.style.removeProperty('--pe-loader-glow');
+                }
                 if (gear) gear.setState(s);
                 applyStateLabels(s, opts);
                 if (s === 'streaming' && !firstTokenAt) {
@@ -293,7 +297,10 @@
 
             function ensureGear() {
                 if (gear || !gearCanvas) return;
-                gear = createGear(gearCanvas, currentState);
+                gear = createGear(gearCanvas, currentState, (r, g, b) => {
+                    root.style.setProperty('--pe-loader-accent', `rgb(${r}, ${g}, ${b})`);
+                    root.style.setProperty('--pe-loader-glow', `rgb(${r}, ${g}, ${b})`);
+                });
             }
 
             function applyWarningLabels(code) {

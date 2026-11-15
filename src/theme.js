@@ -93,5 +93,3 @@ const Theme = (() => {
 
     return { MODES, get, set, apply, cycle, resolved };
 })();
-
-if (typeof window !== 'undefined') { window.Theme = Theme; }
