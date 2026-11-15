@@ -938,6 +938,7 @@ function injectStyles() {
             min-height: 60px;
             min-width: 0;
         }
+        .pe-panel__footer[hidden] { display: none !important; }
         .pe-panel__footer {
             display: flex;
             justify-content: space-between;
