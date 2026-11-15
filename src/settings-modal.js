@@ -1023,13 +1023,8 @@
             form.appendChild(workspaceSection);
 
             const refreshWorkspaceProjects = async () => {
-                if (!Workspace.isInitialized()) {
-                    projectSelect.innerHTML = '<option value="">' + Utils.escapeHtml(I18n.t('sm.workspace.loading')) + '</option>';
-                    projectSelect.disabled = true;
-                    createButton.disabled = true;
-                    return;
-                }
                 try {
+                    if (!Workspace.isInitialized()) await Workspace.init();
                     const projects = await Workspace.projects.list();
                     const activeId = Workspace.getActiveProjectId();
                     projectSelect.innerHTML = '';
