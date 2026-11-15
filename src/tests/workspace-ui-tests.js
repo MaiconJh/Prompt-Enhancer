@@ -5,6 +5,8 @@ import test from 'node:test';
 
 const uiSource = await readFile(new URL('../workspace/workspace-ui.js', import.meta.url), 'utf8');
 const settingsSource = await readFile(new URL('../settings-modal.js', import.meta.url), 'utf8');
+const explorerSource = await readFile(new URL('../workspace/workspace-explorer-view.js', import.meta.url), 'utf8');
+const controllerSource = await readFile(new URL('../workspace/workspace-controller.js', import.meta.url), 'utf8');
 const manifest = JSON.parse(await readFile(new URL('../../manifest.json', import.meta.url), 'utf8'));
 const i18n = await readFile(new URL('../i18n.js', import.meta.url), 'utf8');
 
@@ -17,15 +19,15 @@ test('Workspace UI possui sintaxe válida e é registrado como módulo de produ�
     assert.ok(module.interfaces.consumes.includes('Atoms'));
 });
 
-test('Workspace UI separa navegação em quatro áreas independentes', () => {
+test('Workspace UI mantém Overview e Files como navegação principal e move detalhes para o inspector', () => {
     for (const [view, variable] of [
         ['overview', 'overviewView'],
-        ['files', 'filesView'],
-        ['access', 'accessView'],
-        ['settings', 'projectSettings']
+        ['files', 'filesView']
     ]) assert.ok(uiSource.includes(variable + ".dataset.viewPanel = '" + view + "'"));
     assert.match(uiSource, /function setActiveView\(key\)/);
     assert.match(uiSource, /aria-selected/);
+    assert.ok(uiSource.includes('WorkspaceInspectorView.create'));
+    assert.ok(uiSource.includes('sections: [accessView, projectSettings]'));
     assert.match(uiSource, /function updateOverview\(\)/);
     assert.doesNotMatch(uiSource, /workspaceLayout\.hidden/);
 });
@@ -64,14 +66,15 @@ test('UI mantém proteção de rascunhos e confirma operações destrutivas', ()
 });
 
 test('importação limita conteúdo a texto UTF-8 e valida caminhos e limites no Workspace', () => {
-    assert.ok(uiSource.includes("new TextDecoder('utf-8', { fatal: true })"));
-    assert.ok(uiSource.includes('Workspace.files.validate({ path: incoming.name, content })'));
-    assert.ok(uiSource.includes('incoming.size > 1024 * 1024'));
-    assert.ok(uiSource.includes('ws.errors.textOnly'));
+    assert.ok(uiSource.includes('WorkspaceController.importFiles('));
+    assert.ok(controllerSource.includes("new TextDecoder('utf-8', { fatal: true })"));
+    assert.ok(controllerSource.includes('Workspace.files.validate({ path, content })'));
+    assert.ok(controllerSource.includes('incoming.size > MAX_FILE_BYTES'));
+    assert.ok(controllerSource.includes('ws.errors.textOnly'));
 });
 
 test('permissão visual reflete o modo efetivo do projeto', () => {
-    assert.ok(uiSource.includes("mode === 'all' || (mode === 'selected' && file.aiAccess === 'allowed')"));
+    assert.ok(explorerSource.includes("mode === 'all' || (mode === 'selected' && row.file.aiAccess === 'allowed')"));
     assert.ok(uiSource.includes('ws.access.overriddenNone'));
     assert.ok(uiSource.includes('ws.access.overriddenAll'));
     assert.ok(uiSource.includes("effectiveMode !== 'selected'"));
