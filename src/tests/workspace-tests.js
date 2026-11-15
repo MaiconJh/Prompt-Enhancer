@@ -103,7 +103,6 @@ test('cria arquivos isolados por projeto e nega acesso da IA por padrão', async
     assert.equal(created.size, 5);
     assert.equal(files.get(created.id).content, 'hello');
     assert.equal((await registry.list('project_b')).length, 0);
-    await assert.rejects(registry.get('project_b', created.id), { name: 'TypeError' }).catch(() => {});
     assert.equal(await registry.get('project_b', created.id), null);
     await assert.rejects(registry.create('missing', { path: 'a.txt', content: 'x' }), { code: 'project-not-found' });
 });
