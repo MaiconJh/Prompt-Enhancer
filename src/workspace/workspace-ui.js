@@ -422,6 +422,7 @@ const WorkspaceUI = (() => {
                 selectedFile = file;
                 filePath.value = file.path;
                 fileContent.value = file.content;
+                fileAccess.value = file.aiAccess || 'denied';
                 updateEditorState();
                 buildTree();
             } catch (error) {
@@ -575,7 +576,16 @@ const WorkspaceUI = (() => {
         }
 
         async function deleteFile() {
-            if (!selectedFile || !await confirmLeave()) return;
+            if (!selectedFile) return;
+            const targetFileId = selectedFile.id;
+            if (!await confirmLeave()) return;
+            if (!selectedFile) {
+                selectedFile = await Workspace.files.get(currentProject.id, targetFileId);
+                if (!selectedFile) return;
+                filePath.value = selectedFile.path;
+                fileContent.value = selectedFile.content;
+                fileAccess.value = selectedFile.aiAccess || 'denied';
+            }
             const confirmed = await askChoice(
                 I18n.t('ws.files.deleteTitle'),
                 I18n.t('ws.files.deleteMessage', { path: selectedFile.path }),
