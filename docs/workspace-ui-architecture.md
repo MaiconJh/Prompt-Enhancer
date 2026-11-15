@@ -10,7 +10,7 @@
 The implementation is being delivered in reviewable stages:
 
 - **PR #18, merged:** atomic `Workspace.files.createMany()` backed by one IndexedDB transaction.
-- **PR #19, draft:** editor-first Files surface, modular tree model and explorer, row virtualization, batch/folder/directory-import workflows, editor toolbar, contextual inspector and a focused batch/import controller.
+- **PR #19, draft:** editor-first Files surface, modular tree model and explorer, row virtualization, keyboard navigation, resizable explorer split, batch/folder/directory-import workflows, editor toolbar, contextual inspector and a focused batch/import controller.
 - **Still pending:** full project/file state-transition controller, Monaco ESM runtime and local workers, resizable panel boundaries, bulk selection/actions, and manual verification in the userscript manager.
 
 The current editor view still uses the existing textarea. It is intentionally not described as Monaco until the local build and worker integration are implemented and verified. The controller currently coordinates batch creation and import validation; the broader UI state transitions remain in the composition root for now.
@@ -291,6 +291,7 @@ Use pragmatic separation by responsibility:
 - workspace/workspace-explorer-view.js: tree rendering, search, threshold-based virtualization, selection and keyboard navigation.
 - workspace/workspace-editor-view.js: editor surface, save/delete controls, explorer/inspector toggles and focus mode. The current input is a textarea; Monaco lifecycle and model synchronization are future work.
 - workspace/workspace-inspector-view.js: composes AI-access and project-settings sections into an optional contextual panel. File metadata can be added here when the editor integration is completed.
+- workspace/workspace-panel-layout.js: owns the bounded, keyboard-accessible explorer/editor splitter; the composition root owns panel placement.
 - workspace/workspace-dialogs.js: batch creation/import preflight and destructive confirmations, only if shared dialog behavior warrants a separate module.
 
 Do not split every button, dialog or helper into a module. Overview, project settings and AI access do not need permanent full-page views if they fit naturally into the inspector or project menu.
