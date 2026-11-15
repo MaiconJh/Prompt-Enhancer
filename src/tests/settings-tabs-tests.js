@@ -78,3 +78,31 @@ test('expande o modal no Workspace e preserva dimensões compactas nas demais se
     assert.ok(styles.includes('width: 100%;\n                height: calc(100dvh - 20px);'));
     assert.ok(styles.includes('transition: width 300ms'));
 });
+
+test('mantém a transição de largura e altura entre Configurações e Workspace', () => {
+    const modalStart = styles.indexOf('.pe-scope .pe-modal {');
+    const workspaceStart = styles.indexOf('.pe-scope .pe-modal.is-workspace-expanded {', modalStart);
+    const modalCss = styles.slice(modalStart, workspaceStart);
+    assert.match(modalCss, /width:\s*min\(920px,\s*100%\)/);
+    assert.match(modalCss, /height:\s*min\(760px,/);
+    assert.match(modalCss, /transition:[^;]*width\s+300ms/);
+    assert.match(modalCss, /transition:[^;]*height\s+300ms/);
+    assert.match(modalCss, /transition:[^;]*max-height\s+300ms/);
+
+    const workspaceEnd = styles.indexOf('.pe-scope .pe-modal.is-workspace-expanded .pe-panel__body', workspaceStart);
+    const workspaceCss = styles.slice(workspaceStart, workspaceEnd);
+    assert.match(workspaceCss, /width:\s*min\(1280px,/);
+    assert.match(workspaceCss, /height:\s*min\(900px,/);
+});
+
+test('mantém a expansão limitada ao viewport em telas menores e respeita movimento reduzido', () => {
+    const mobileStart = styles.indexOf('@media (max-width: 768px)');
+    const mobileEnd = styles.indexOf('@media (max-width: 520px)', mobileStart);
+    const mobileCss = styles.slice(mobileStart, mobileEnd);
+    assert.match(mobileCss, /\.pe-scope \.pe-modal\.is-workspace-expanded\s*\{[^}]*width:\s*100%/s);
+    assert.match(mobileCss, /height:\s*calc\(100dvh\s*-\s*20px\)/);
+
+    const reducedMotion = styles.slice(styles.indexOf('@media (prefers-reduced-motion: reduce)'));
+    assert.match(reducedMotion, /transition-duration:\s*0\.01ms\s*!important/);
+    assert.match(reducedMotion, /animation-duration:\s*0\.01ms\s*!important/);
+});
