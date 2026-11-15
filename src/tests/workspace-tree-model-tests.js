@@ -45,6 +45,17 @@ test('pesquisa inclui caminhos correspondentes e expande ancestrais sem alterar 
     assert.equal(rows[2].id, 'f2');
 });
 
+test('pesquisar pelo nome de uma pasta revela seus descendentes', () => {
+    const rows = model.flattenVisible(model.buildIndex(files), { searchQuery: 'src' });
+    assert.ok(rows.some(row => row.path === 'src/index.js'));
+    assert.ok(rows.some(row => row.path === 'src/core/parser.js'));
+});
+
+test('pesquisa sem correspondência retorna uma lista vazia', () => {
+    const rows = model.flattenVisible(model.buildIndex(files), { searchQuery: 'not-found' });
+    assert.equal(rows.length, 0);
+});
+
 test('suporta árvores profundas e largas com linhas achatadas', () => {
     const deep = Array.from({ length: 350 }, (_, i) => ({
         id: 'deep-' + i,
