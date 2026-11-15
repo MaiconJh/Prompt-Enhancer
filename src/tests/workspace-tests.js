@@ -7,6 +7,7 @@ import vm from 'node:vm';
 const sourceDir = new URL('../workspace/', import.meta.url);
 const modelSource = await readFile(new URL('workspace-model.js', sourceDir), 'utf8');
 const registrySource = await readFile(new URL('file-registry.js', sourceDir), 'utf8');
+const facadeSource = await readFile(new URL('workspace.js', sourceDir), 'utf8');
 
 function createHarness() {
     const projects = new Map([
@@ -19,6 +20,8 @@ function createHarness() {
         TextEncoder,
         crypto: { randomUUID: () => `test-id-${++idCounter}` },
         WorkspaceStorage: {
+            async open() {},
+            close() {},
             async getProject(id) { return projects.get(id) || null; },
             async listFiles(projectId) { return [...files.values()].filter(file => file.projectId === projectId); },
             async getFile(id) { return files.get(id) || null; },
@@ -47,13 +50,16 @@ function createHarness() {
         },
         ProjectManager: {
             async get(id) { return projects.get(String(id)) || null; }
-        }
+        },
+        GM_setValue() {}
     });
     vm.runInContext(modelSource, context, { filename: 'workspace-model.js' });
     vm.runInContext(registrySource, context, { filename: 'file-registry.js' });
+    vm.runInContext(facadeSource, context, { filename: 'workspace.js' });
     return {
         model: vm.runInContext('WorkspaceModel', context),
         registry: vm.runInContext('FileRegistry', context),
+        workspace: vm.runInContext('Workspace', context),
         files
     };
 }
@@ -117,4 +123,33 @@ test('exclui arquivo apenas no projeto proprietário', async () => {
     assert.equal(files.has(file.id), true);
     assert.equal(await registry.remove('project_a', file.id), true);
     assert.equal(files.has(file.id), false);
+});
+
+test('altera acesso individual da IA e persiste allowed/denied', async () => {
+    const { registry, files } = createHarness();
+    const file = await registry.create('project_a', { path: 'src/private.js', content: 'secret' });
+    const allowed = await registry.setAccess('project_a', file.id, 'allowed');
+    assert.equal(allowed.aiAccess, 'allowed');
+    assert.equal(files.get(file.id).aiAccess, 'allowed');
+    const denied = await registry.setAccess('project_a', file.id, 'denied');
+    assert.equal(denied.aiAccess, 'denied');
+    assert.equal(files.get(file.id).aiAccess, 'denied');
+});
+
+test('rejeita valores de acesso inválidos e arquivos ausentes ou de outro projeto', async () => {
+    const { registry } = createHarness();
+    const file = await registry.create('project_a', { path: 'src/private.js', content: 'secret' });
+    await assert.rejects(registry.setAccess('project_a', file.id, 'all'), { code: 'invalid-ai-access' });
+    await assert.rejects(registry.setAccess('project_a', file.id, true), { code: 'invalid-ai-access' });
+    await assert.rejects(registry.setAccess('project_a', 'missing-file', 'allowed'), { code: 'file-not-found' });
+    await assert.rejects(registry.setAccess('project_b', file.id, 'allowed'), { code: 'file-not-found' });
+    await assert.rejects(registry.setAccess('missing-project', file.id, 'allowed'), { code: 'file-not-found' });
+});
+
+test('expõe a alteração de acesso somente pela fachada pública após init', async () => {
+    const { workspace } = createHarness();
+    await workspace.init();
+    const file = await workspace.files.create('project_a', { path: 'readme.md', content: 'docs' });
+    const updated = await workspace.files.setAccess('project_a', file.id, 'allowed');
+    assert.equal(updated.aiAccess, 'allowed');
 });
