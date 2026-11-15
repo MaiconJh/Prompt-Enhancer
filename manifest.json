@@ -690,6 +690,19 @@
       ]
     },
     {
+      "file": "workspace/context-composer.js",
+      "description": "Formats authorized Workspace resolution results into bounded, deterministic prompt context.",
+      "interfaces": {
+        "provides": [
+          "ContextComposer"
+        ],
+        "consumes": []
+      },
+      "interactions": [
+        "Prompt assembly consumes project instructions and ranked file excerpts; the composer only formats data and never accesses or mutates Workspace."
+      ]
+    },
+    {
       "file": "bootstrap.js",
       "description": "Starts the application, restores state, registers host observers, and wires menu commands.",
       "interfaces": {
