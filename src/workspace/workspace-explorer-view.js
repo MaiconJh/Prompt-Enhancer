@@ -101,45 +101,63 @@ const WorkspaceExplorerView = (() => {
                 if (!row || !container.contains(row)) return;
                 if (row.dataset.rowKind === 'folder') {
                     const path = row.dataset.rowPath;
+                    const rowIndex = Number(row.dataset.rowIndex);
                     if (state.expandedPaths.has(path)) state.expandedPaths.delete(path);
                     else state.expandedPaths.add(path);
                     updateRows(state);
                     renderRows(container, state);
+                    container.querySelector('[data-row-index="' + rowIndex + '"]')?.focus();
                 } else state.options.onSelect?.(row.dataset.fileId);
             };
             state.onKeyDown = event => {
                 const current = event.target.closest('[data-row-index]');
                 if (!current) return;
                 const index = Number(current.dataset.rowIndex);
+                const row = state.rows[index];
                 let next = null;
+
                 if (event.key === 'ArrowDown') next = Math.min(state.rows.length - 1, index + 1);
                 else if (event.key === 'ArrowUp') next = Math.max(0, index - 1);
                 else if (event.key === 'Home') next = 0;
                 else if (event.key === 'End') next = state.rows.length - 1;
-                else if (event.key === 'ArrowRight' && state.rows[index]?.kind === 'folder' && !state.rows[index].expanded) {
-                    state.expandedPaths.add(state.rows[index].path);
-                    updateRows(state);
-                    renderRows(container, state);
+                else if (event.key === 'ArrowRight' && row?.kind === 'folder') {
+                    if (!row.expanded) {
+                        state.expandedPaths.add(row.path);
+                        updateRows(state);
+                        renderRows(container, state);
+                        container.querySelector('[data-row-index="' + index + '"]')?.focus();
+                    } else if (state.rows[index + 1]?.depth > row.depth) next = index + 1;
                     event.preventDefault();
-                    return;
-                } else if (event.key === 'ArrowLeft' && state.rows[index]?.kind === 'folder' && state.rows[index].expanded) {
-                    state.expandedPaths.delete(state.rows[index].path);
-                    updateRows(state);
-                    renderRows(container, state);
+                    if (next === null) return;
+                } else if (event.key === 'ArrowLeft') {
+                    if (row?.kind === 'folder' && row.expanded) {
+                        state.expandedPaths.delete(row.path);
+                        updateRows(state);
+                        renderRows(container, state);
+                        container.querySelector('[data-row-index="' + index + '"]')?.focus();
+                    } else {
+                        const parentPath = row?.path.split('/').slice(0, -1).join('/');
+                        const parentIndex = state.rows.findIndex(item => item.kind === 'folder' && item.path === parentPath);
+                        if (parentIndex >= 0) next = parentIndex;
+                    }
                     event.preventDefault();
-                    return;
+                    if (next === null) return;
                 } else if (event.key === 'Enter' || event.key === ' ') {
                     current.click();
                     event.preventDefault();
                     return;
                 }
+
                 if (next !== null) {
                     event.preventDefault();
-                    if (next < state.start || next >= state.end) {
-                        container.scrollTop = Math.max(0, next * ROW_HEIGHT - Math.floor((container.clientHeight || 360) / 2));
-                        renderRows(container, state);
+                    const target = state.rows[next];
+                    if (target) {
+                        if (next < state.start || next >= state.end) {
+                            container.scrollTop = Math.max(0, next * ROW_HEIGHT - Math.floor((container.clientHeight || 360) / 2));
+                            renderRows(container, state);
+                        }
+                        container.querySelector('[data-row-index="' + next + '"]')?.focus();
                     }
-                    container.querySelector('[data-row-index="' + next + '"]')?.focus();
                 }
             };
             container.addEventListener('scroll', state.onScroll, { passive: true });
