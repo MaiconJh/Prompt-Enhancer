@@ -14,7 +14,7 @@ const WorkspaceController = (() => {
 
     function createFiles(projectId, paths) {
         const entries = Array.isArray(paths) ? paths : parsePaths(paths);
-        if (!entries.length) throw new Error('At least one file path is required.');
+        if (!entries.length) throw new Error(I18n.t('ws.errors.createFileFailed'));
         return Workspace.files.createMany(projectId, entries.map(path => ({
             path,
             content: ''
@@ -23,9 +23,9 @@ const WorkspaceController = (() => {
 
     function createFolder(projectId, folderPath, relativePaths) {
         const folder = String(folderPath || '').trim().replace(/\/+$/, '');
-        if (!folder) throw new Error('A folder path is required.');
+        if (!folder) throw new Error(I18n.t('ws.errors.createFileFailed'));
         const names = Array.isArray(relativePaths) ? relativePaths : parsePaths(relativePaths);
-        if (!names.length) throw new Error('At least one initial file is required for a folder.');
+        if (!names.length) throw new Error(I18n.t('ws.errors.createFileFailed'));
         return createFiles(projectId, names.map(name => folder + '/' + name));
     }
 
@@ -36,22 +36,22 @@ const WorkspaceController = (() => {
         const batch = [];
         for (const incoming of incomingFiles) {
             if (incoming.size > MAX_FILE_BYTES) {
-                throw new Error(incoming.name + ': file-too-large');
+                throw new Error(incoming.name + ': ' + I18n.t('ws.errors.fileTooLarge'));
             }
             const mime = String(incoming.type || '').toLowerCase();
             const textMime = !mime || mime.startsWith('text/') || TEXT_MIME_TYPES.has(mime);
-            if (!textMime) throw new Error(incoming.name + ': text-files-only');
+            if (!textMime) throw new Error(incoming.name + ': ' + I18n.t('ws.errors.textOnly'));
 
             let content;
             try {
                 content = new TextDecoder('utf-8', { fatal: true }).decode(await incoming.arrayBuffer());
             } catch {
-                throw new Error(incoming.name + ': invalid-utf8-or-binary-content');
+                throw new Error(incoming.name + ': ' + I18n.t('ws.errors.textOnly'));
             }
 
             const path = incoming.webkitRelativePath || incoming.name;
             const validation = Workspace.files.validate({ path, content });
-            if (!validation.valid) throw new Error(incoming.name + ': ' + (validation.message || validation.reason));
+            if (!validation.valid) throw new Error(incoming.name + ': ' + (validation.message || I18n.t('ws.errors.importFailed')));
             batch.push({
                 path: validation.path,
                 content,
