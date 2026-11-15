@@ -21,7 +21,7 @@ const FileRegistry = (() => {
     }
 
     function metadata(file) {
-        const { content, ...publicData } = file;
+        const { content, version: _legacyVersion, ...publicData } = file;
         return publicData;
     }
 
@@ -41,7 +41,9 @@ const FileRegistry = (() => {
         const project = await ProjectManager.get(projectId);
         if (!project) return null;
         const file = await WorkspaceStorage.getFile(String(fileId));
-        return file && file.projectId === project.id ? file : null;
+        if (!file || file.projectId !== project.id) return null;
+        const { version: _legacyVersion, ...fileData } = file;
+        return fileData;
     }
 
     async function create(projectId, input = {}) {
@@ -64,12 +66,12 @@ const FileRegistry = (() => {
             content: input.content,
             createdAt: now,
             updatedAt: now,
-            version: 1,
             aiAccess: 'denied'
         };
         await WorkspaceStorage.saveFile(file, {
             maxFiles: MAX_PROJECT_FILES,
-            maxBytes: MAX_PROJECT_BYTES
+            maxBytes: MAX_PROJECT_BYTES,
+            mode: 'create'
         });
         return metadata(file);
     }
@@ -90,8 +92,9 @@ const FileRegistry = (() => {
 
         const name = validation.path.split('/').pop();
         const dot = name.lastIndexOf('.');
+        const { version: _legacyVersion, ...currentData } = current;
         const updated = {
-            ...current,
+            ...currentData,
             path: validation.path,
             name,
             extension: dot > 0 ? name.slice(dot + 1).toLowerCase() : '',
@@ -100,14 +103,13 @@ const FileRegistry = (() => {
                 : current.mimeType,
             size: validation.size,
             content,
-            updatedAt: Date.now(),
-            version: current.version + 1
+            updatedAt: Date.now()
         };
 
         await WorkspaceStorage.saveFile(updated, {
             maxFiles: MAX_PROJECT_FILES,
             maxBytes: MAX_PROJECT_BYTES,
-            expectedVersion: current.version
+            mode: 'update'
         });
         return metadata(updated);
     }
@@ -117,7 +119,7 @@ const FileRegistry = (() => {
         if (!project) return false;
         const current = await WorkspaceStorage.getFile(String(fileId));
         if (!current || current.projectId !== project.id) return false;
-        return WorkspaceStorage.deleteProjectFile(project.id, current.id, current.version);
+        return WorkspaceStorage.deleteProjectFile(project.id, current.id);
     }
 
     return {

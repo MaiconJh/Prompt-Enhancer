@@ -24,12 +24,9 @@ function createHarness() {
             async getFile(id) { return files.get(id) || null; },
             async saveFile(file, options = {}) {
                 const siblings = [...files.values()].filter(item => item.projectId === file.projectId);
-                const current = options.expectedVersion === undefined ? null : siblings.find(item => item.id === file.id);
-                if (options.expectedVersion !== undefined && (!current || current.version !== options.expectedVersion)) {
-                    const error = new Error('version conflict');
-                    error.code = 'file-conflict';
-                    throw error;
-                }
+                const current = siblings.find(item => item.id === file.id) || null;
+                if (options.mode === 'create' && current) throw Object.assign(new Error('duplicate id'), { code: 'file-exists' });
+                if (options.mode === 'update' && !current) throw Object.assign(new Error('file missing'), { code: 'file-not-found' });
                 if (siblings.some(item => item.id !== file.id && item.path === file.path)) {
                     const error = new Error('duplicate path');
                     error.code = 'file-exists';
@@ -41,14 +38,9 @@ function createHarness() {
                 files.set(file.id, file);
                 projects.set(file.projectId, { ...projects.get(file.projectId), updatedAt: Date.now() });
             },
-            async deleteProjectFile(projectId, fileId, expectedVersion) {
+            async deleteProjectFile(projectId, fileId) {
                 const file = files.get(fileId);
                 if (!file || file.projectId !== projectId) return false;
-                if (file.version !== expectedVersion) {
-                    const error = new Error('version conflict');
-                    error.code = 'file-conflict';
-                    throw error;
-                }
                 files.delete(fileId);
                 return true;
             }
@@ -70,12 +62,12 @@ test('normaliza projetos e restringe configurações aos valores suportados', ()
     const { model } = createHarness();
     const project = model.normalizeProject({
         name: '  Projeto de teste  ',
-        settings: { aiAccessMode: 'root', allowAiEdits: 'yes', requireEditApproval: false, instructions: 'x'.repeat(25_000) }
+        settings: { aiAccessMode: 'root', instructions: 'x'.repeat(25_000) }
     });
     assert.equal(project.name, 'Projeto de teste');
     assert.equal(project.settings.aiAccessMode, 'selected');
-    assert.equal(project.settings.allowAiEdits, false);
-    assert.equal(project.settings.requireEditApproval, false);
+    assert.equal('allowAiEdits' in project.settings, false);
+    assert.equal('requireEditApproval' in project.settings, false);
     assert.equal(project.settings.instructions.length, 20_000);
     assert.throws(() => model.normalizeProject({ name: '   ' }));
     assert.throws(() => model.normalizeProject({ id: '../bad', name: 'Invalid id' }));
@@ -108,12 +100,12 @@ test('cria arquivos isolados por projeto e nega acesso da IA por padrão', async
     await assert.rejects(registry.create('missing', { path: 'a.txt', content: 'x' }), { code: 'project-not-found' });
 });
 
-test('atualiza versão e conteúdo e rejeita caminhos duplicados', async () => {
+test('atualiza conteúdo diretamente e rejeita caminhos duplicados', async () => {
     const { registry } = createHarness();
     const first = await registry.create('project_a', { path: 'src/a.js', content: 'one' });
     await registry.create('project_a', { path: 'src/b.js', content: 'two' });
     const updated = await registry.update('project_a', first.id, { content: 'changed' });
-    assert.equal(updated.version, 2);
+    assert.equal('version' in updated, false);
     assert.equal((await registry.get('project_a', first.id)).content, 'changed');
     await assert.rejects(registry.update('project_a', first.id, { path: 'src/b.js' }), { code: 'file-exists' });
 });
