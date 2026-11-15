@@ -11,6 +11,20 @@ const Workspace = (() => {
     }
     return {
         init, close() { WorkspaceStorage.close(); initialized = false; }, isInitialized: () => initialized,
+        getActiveProjectId() {
+            try { return typeof GM_getValue === 'function' ? GM_getValue('pe_workspace_active_project', null) : null; }
+            catch (_) { return null; }
+        },
+        async setActiveProjectId(projectId) {
+            assertInitialized();
+            const normalizedId = projectId == null || projectId === '' ? null : String(projectId);
+            if (normalizedId && !(await ProjectManager.get(normalizedId))) {
+                throw new Error('O projeto selecionado não existe mais.');
+            }
+            if (typeof GM_setValue !== 'function') throw new Error('O armazenamento de preferências não está disponível.');
+            GM_setValue('pe_workspace_active_project', normalizedId);
+            return normalizedId;
+        },
         projects: {
             list: (...args) => { assertInitialized(); return ProjectManager.list(...args); },
             get: (...args) => { assertInitialized(); return ProjectManager.get(...args); },
