@@ -10,6 +10,7 @@ function createHarness() {
     const calls = [];
     const context = vm.createContext({
         TextDecoder,
+        I18n: { t: key => key },
         Workspace: {
             files: {
                 createMany: async (projectId, files) => {
@@ -68,9 +69,9 @@ test('importa caminhos relativos e delega o lote inteiro a createMany', async ()
 test('rejeita MIME binário, UTF-8 inválido e caminho inválido antes de persistir', async () => {
     const { controller, calls } = createHarness();
     const binary = { name: 'image.png', type: 'image/png', size: 3, arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer };
-    await assert.rejects(controller.importFiles('project-a', [binary]), /text-files-only/);
+    await assert.rejects(controller.importFiles('project-a', [binary]), /ws.errors.textOnly/);
     const invalidUtf8 = { name: 'bad.txt', type: 'text/plain', size: 2, arrayBuffer: async () => new Uint8Array([0xc3, 0x28]).buffer };
-    await assert.rejects(controller.importFiles('project-a', [invalidUtf8]), /invalid-utf8-or-binary-content/);
+    await assert.rejects(controller.importFiles('project-a', [invalidUtf8]), /ws.errors.textOnly/);
     const invalidPath = { name: 'bad.txt', type: 'text/plain', size: 1, arrayBuffer: async () => new TextEncoder().encode('x').buffer };
     invalidPath.webkitRelativePath = '../bad.txt';
     await assert.rejects(controller.importFiles('project-a', [invalidPath]), /invalid-file/);
@@ -80,6 +81,6 @@ test('rejeita MIME binário, UTF-8 inválido e caminho inválido antes de persis
 test('rejeita arquivos maiores que o limite antes da leitura', async () => {
     const { controller, calls } = createHarness();
     const oversized = { name: 'large.txt', type: 'text/plain', size: 1024 * 1024 + 1, arrayBuffer: async () => { throw new Error('should-not-read'); } };
-    await assert.rejects(controller.importFiles('project-a', [oversized]), /file-too-large/);
+    await assert.rejects(controller.importFiles('project-a', [oversized]), /ws.errors.fileTooLarge/);
     assert.equal(calls.length, 0);
 });
