@@ -46,9 +46,7 @@ const WorkspaceUI = (() => {
         const viewButtons = {};
         const viewDefinitions = [
             ['overview', 'ws.nav.overview'],
-            ['files', 'ws.nav.files'],
-            ['access', 'ws.nav.access'],
-            ['settings', 'ws.nav.settings']
+            ['files', 'ws.nav.files']
         ];
         let activeView = 'files';
         for (const [key, labelKey] of viewDefinitions) {
