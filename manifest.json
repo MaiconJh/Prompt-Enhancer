@@ -515,9 +515,7 @@
           "RateLimiter",
           "StreamParser",
           "NetError",
-          "EnhancementHistory",
-          "ContextResolver",
-          "ContextComposer"
+          "EnhancementHistory"
         ]
       },
       "interactions": [
