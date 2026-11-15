@@ -93,7 +93,7 @@ const ContextResolver = (() => {
             const start = Math.max(0, lineIndex - 3);
             const end = Math.min(lines.length - 1, start + options.maxExcerptLines - 1);
             const previous = ranges[ranges.length - 1];
-            if (previous && start <= previous.end + 2) previous.end = Math.max(previous.end, end);
+            if (previous && start <= previous.end + 2) previous.end = Math.min(previous.start + options.maxExcerptLines - 1, Math.max(previous.end, end));
             else ranges.push({ start, end });
         }
 
@@ -136,7 +136,7 @@ const ContextResolver = (() => {
         };
 
         if (project.settings?.aiAccessMode === 'none') {
-            return { status: 'project-no-access', project: projectSummary(project), context: emptyContext(), diagnostics };
+            return { status: 'project-no-access', project: projectSummary(project), context: emptyContext(project), diagnostics };
         }
         if (!accessible.length) {
             return { status: 'no-readable-files', project: projectSummary(project), context: emptyContext(), diagnostics };
