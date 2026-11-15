@@ -4,7 +4,7 @@
 // @name:pt-BR   Aprimorador de Prompt
 // @name:en      Prompt-Enhancer
 // @namespace    https://github.com/MaiconJh/Prompt-Enhancer
-// @version      1.0.0
+// @version      1.0.1
 // @description  Modular prompt enhancement for LLM chat UIs. Free anonymous default API.
 // @description:pt-BR  Aprimoramento modular de prompts em chats com LLM. API padrão gratuita e anônima.
 // @description:en     Modular prompt enhancement for LLM chat UIs. Free anonymous default API.

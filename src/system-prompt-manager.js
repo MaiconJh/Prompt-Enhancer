@@ -43,19 +43,6 @@
             return { version: 1, prompt, presets: cleanPresets };
         }
 
-        const MIGRATION_FLAG = 'pe_system_prompt_migrated';
-
-        function readLegacyPrompt() {
-            try {
-                const raw = GM_getValue('pe_params', null);
-                const params = typeof raw === 'string' ? JSON.parse(raw) : raw;
-                if (params && typeof params.system_prompt === 'string' && params.system_prompt.trim()) return params.system_prompt;
-            } catch (error) {
-                console.warn(I18n.t('spm.legacyMigrateFail'), error);
-            }
-            return null;
-        }
-
         function load() {
             try {
                 const gmRaw = typeof GM_getValue === 'function' ? GM_getValue(STORAGE_KEY, null) : null;
@@ -70,41 +57,37 @@
             }
 
             try {
-                const alreadyMigrated = typeof GM_getValue === 'function' && GM_getValue(MIGRATION_FLAG, false);
-                if (alreadyMigrated) {
-                    const initial = defaultConfig();
-                    const legacyPrompt = readLegacyPrompt();
-                    if (legacyPrompt) initial.prompt = legacyPrompt;
-                    save(initial);
-                    return initial;
-                }
-
                 const lsRaw = localStorage.getItem(STORAGE_KEY);
                 if (lsRaw !== null) {
                     let parsed;
                     try { parsed = JSON.parse(lsRaw); }
                     catch (error) { throw new Error(I18n.t('spm.readFail',{msg:error.message})); }
-                    const clean = normalize(parsed);
-                    try { save(clean); } catch (_) {}
-                    try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
-                    try { typeof GM_setValue === 'function' && GM_setValue(MIGRATION_FLAG, true); } catch (_) {}
-                    return clean;
+                const clean = normalize(parsed);
+                try {
+                    save(clean);
+                    localStorage.removeItem(STORAGE_KEY);
+                    console.info('[PE] System prompt migrado do localStorage para o armazenamento do userscript.');
+                } catch (e) {
+                    console.warn('[PE] Falha ao migrar system prompt (mantendo no localStorage):', e);
+                }
+                return clean;
                 }
             } catch (error) {
                 console.warn('[PE] Falha ao ler system prompt do localStorage:', error);
             }
 
             const initial = defaultConfig();
-            const legacyPrompt = readLegacyPrompt();
-            if (legacyPrompt) initial.prompt = legacyPrompt;
             save(initial);
             return initial;
         }
 
         function save(config) {
             const clean = normalize(config);
-            try { typeof GM_setValue === 'function' && GM_setValue(STORAGE_KEY, JSON.stringify(clean)); } catch (error) { throw new Error(`[PE] Falha ao gravar system prompt: ${error.message}`); }
-            try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+            try {
+                GM_setValue(STORAGE_KEY, JSON.stringify(clean));
+            } catch (error) {
+                throw new Error(`[PE] Falha ao gravar system prompt: ${error.message}`);
+            }
             return clean;
         }
 

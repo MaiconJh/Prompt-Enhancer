@@ -41,7 +41,7 @@
                 const codes = Object.keys(ErrorIndexer.CATALOG).length;
                 const n = ErrorIndexer.history().length;
                 alert(
-                    'Prompt-Enhancer v1.0.0\n\n' +
+                    'Prompt-Enhancer v1.0.1\n\n' +
                     I18n.t('bs.about.contextLabel') + ctx + '\n' +
                     I18n.t('bs.about.detectedProvider') + Providers.detect() + '\n' +
                     I18n.t('bs.about.streaming') + (CONFIG.STREAM ? I18n.t('bs.about.streamActive') : I18n.t('bs.about.streamInactive')) + '\n' +

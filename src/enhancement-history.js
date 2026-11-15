@@ -3,18 +3,6 @@
     const EnhancementHistory = (() => {
         const KEY = 'pe_runs';
         const runs = new Map();
-        const TTL_MS = CONFIG.HISTORY_TTL_MS;
-
-        function _isExpired(run) {
-            if (!run || run.startedAt == null) return true;
-            return Date.now() - Number(run.startedAt) > TTL_MS;
-        }
-
-        function _expire(list) {
-            const filtered = list.filter(r => r && !_isExpired(r));
-            return filtered;
-        }
-
         function _loadPersisted() {
             try {
                 const raw = GM_getValue(KEY, '[]');
@@ -25,7 +13,12 @@
 
         function _persist(list) {
             try {
-                let trimmed = _expire(list).slice(0, CONFIG.HISTORY_MAX);
+                const now = Date.now();
+                let trimmed = list.filter(run => {
+                    if (!run || !run.startedAt) return false;
+                    return (now - run.startedAt) < CONFIG.HISTORY_MAX_AGE_MS;
+                });
+                trimmed = trimmed.slice(0, CONFIG.HISTORY_MAX_RUNS);
                 let serialized = JSON.stringify(trimmed);
                 while (serialized.length > CONFIG.HISTORY_MAX_BYTES && trimmed.length > 1) {
                     trimmed.pop();
@@ -37,14 +30,15 @@
 
         function _getRun(runId) {
             if (!runId) return null;
+            const now = Date.now();
             if (runs.has(runId)) {
                 const cached = runs.get(runId);
-                if (_isExpired(cached)) { runs.delete(runId); return null; }
+                if (cached && (now - Number(cached.startedAt)) > CONFIG.HISTORY_MAX_AGE_MS) { runs.delete(runId); return null; }
                 return cached;
             }
             const list = _loadPersisted();
             const run = list.find(r => r && r.id === runId);
-            if (!run || _isExpired(run)) return null;
+            if (!run || (now - Number(run.startedAt)) > CONFIG.HISTORY_MAX_AGE_MS) return null;
             runs.set(runId, run);
             return run || null;
         }
@@ -150,7 +144,12 @@
         }
 
         function listRuns() {
-            return _expire(_loadPersisted()).slice(0, CONFIG.HISTORY_MAX);
+            const now = Date.now();
+            const trimmed = _loadPersisted().filter(run => {
+                if (!run || !run.startedAt) return false;
+                return (now - run.startedAt) < CONFIG.HISTORY_MAX_AGE_MS;
+            });
+            return trimmed.slice(0, CONFIG.HISTORY_MAX_RUNS);
         }
 
         function clear() {
@@ -160,9 +159,10 @@
 
         function reconcilePending() {
             const list = _loadPersisted();
+            const now = Date.now();
             let changed = false;
             const beforeLength = list.length;
-            const expired = list.filter(r => r && _isExpired(r));
+            const expired = list.filter(r => r && (now - Number(r.startedAt)) > CONFIG.HISTORY_MAX_AGE_MS);
             if (expired.length) changed = true;
             for (const run of list) {
                 if (!run) continue;
@@ -172,7 +172,7 @@
                     changed = true;
                 }
             }
-            const afterLength = _expire(list).length;
+            const afterLength = list.filter(r => r && (now - Number(r.startedAt)) < CONFIG.HISTORY_MAX_AGE_MS).length;
             if (beforeLength !== afterLength) changed = true;
             if (changed) _persist(list);
         }

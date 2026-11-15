@@ -124,7 +124,7 @@ test('prompt personalizado não substitui a instrução-base nem muda o entregá
     const systemPrompt = JSON.parse(requests[0].data).messages[0].content;
     const customIndex = systemPrompt.indexOf(customPrompt);
     const fundamentalIndex = systemPrompt.indexOf('Instruções fundamentais da operação atual');
-    const baseIndex = systemPrompt.indexOf('Você é um especialista em engenharia de prompts.');
+    const baseIndex = systemPrompt.indexOf('Você é um especialista em engenharia e reescrita de prompts.');
 
     assert.ok(customIndex >= 0);
     assert.ok(fundamentalIndex > customIndex);
@@ -145,8 +145,8 @@ test('modo Guiado mantém a tarefa original acima das respostas e instruções p
     const systemPrompt = request.messages[0].content;
     const userContent = request.messages[1].content;
     assert.ok(systemPrompt.indexOf(customPrompt) < systemPrompt.indexOf('Instruções fundamentais da operação atual'));
-    assert.match(systemPrompt, /desenvolva o pedido original sem perder o resultado que o usuário quer alcançar/);
-    assert.match(systemPrompt, /Para pedidos de implementação, correção ou alteração, mantenha a tarefa como objetivo/);
+    assert.match(systemPrompt, /Retorne texto contínuo \(1 a 3 parágrafos fluidos\)/);
+    assert.match(systemPrompt, /começando obrigatoriamente por um verbo de ação no imperativo/);
     assert.match(userContent, /PEDIDO ORIGINAL — fonte autoritativa da ação e do escopo:\n"""\nImplemente a nova interface de providers\./);
     assert.match(userContent, /Resposta 1 \(esclarece somente esta pergunta\):\n"""\nA área de fallback\./);
 });
@@ -171,8 +171,8 @@ test('modo Guiado usa código fornecido para esclarecer a implementação sem co
     const systemPrompt = request.messages[0].content;
     const userContent = request.messages[1].content;
 
-    assert.match(systemPrompt, /Use as respostas e os arquivos ou trechos fornecidos para esclarecer as perguntas correspondentes/);
-    assert.match(systemPrompt, /Diferencie o estado atual mostrado pelo código do comportamento desejado/);
+    assert.match(systemPrompt, /Integre as respostas e os detalhes relevantes dos anexos/);
+    assert.match(systemPrompt, /Não é análise, não é relatório, não é lista de módulos/);
     assert.match(userContent, /PEDIDO ORIGINAL — fonte autoritativa da ação e do escopo/);
     assert.match(userContent, /RESPOSTAS DE ESCLARECIMENTO/);
     assert.ok(userContent.includes(sourceExcerpt));
@@ -205,8 +205,8 @@ test('perguntas Guiadas podem pedir referências de código quando forem úteis'
     const questions = await api.generateQuestions('Reorganize a interface de Provider para selecionar fallback e modelo padrão.');
 
     const systemPrompt = JSON.parse(requests[0].data).messages[0].content;
-    assert.match(systemPrompt, /pergunte sobre o estado atual, arquivos relevantes ou um trecho específico/);
-    assert.match(systemPrompt, /Peça apenas o material necessário/);
+    assert.match(systemPrompt, /pergunte sobre o estado atual, assinaturas, dependências, arquivos relevantes ou um trecho específico/);
+    assert.match(systemPrompt, /Peça apenas o material estritamente necessário/);
     assert.match(systemPrompt, /nem evite pedi-lo quando for útil/);
     assert.equal(questions.length, 2);
     assert.equal(questions[1].allowCode, true);
