@@ -117,3 +117,34 @@ test('novas mensagens do Workspace existem em PT-BR e EN', () => {
         assert.equal(i18n.split('"' + key + '":').length - 1, 2, key + ' deve existir nos dois idiomas');
     }
 });
+
+
+test('configurações do projeto indicam alterações pendentes e oferecem descarte explícito', () => {
+    assert.ok(uiSource.includes('ws.project.unsavedChanges'));
+    assert.ok(uiSource.includes('ws.project.cancelSettings'));
+    assert.ok(uiSource.includes('projectDirtyIndicator.hidden = !hasUnsavedProjectChanges'));
+    assert.ok(uiSource.includes('projectCancel.disabled = !hasProject || !hasUnsavedProjectChanges || loading'));
+    assert.ok(uiSource.includes('function resetProjectSettings()'));
+    assert.ok(uiSource.includes("variant: 'primary'"));
+    for (const key of ['ws.project.unsavedChanges', 'ws.project.cancelSettings']) {
+        assert.equal(i18n.split('"' + key + '":').length - 1, 2, key + ' deve existir em PT-BR e EN');
+    }
+});
+
+test('corrige referências de tokens CSS do Workspace e mantém largura inicial do explorer definida', () => {
+    assert.ok(styles.includes('--pe-workspace-explorer-width: 240px;'));
+    for (const missingToken of ['--pe-radius-md', '--pe-surface-1', '--pe-font-mono', '--pe-transition-fast']) {
+        assert.equal(styles.includes('var(' + missingToken), false, missingToken + ' não deve ser referenciado');
+    }
+    assert.ok(styles.includes('border-radius: var(--pe-radius);'));
+    assert.ok(styles.includes('background: var(--pe-surface-2);'));
+    assert.ok(styles.includes('font-family: var(--pe-mono);'));
+    assert.ok(styles.includes('transition: background var(--pe-dur-fast) var(--pe-ease-standard);'));
+});
+
+test('altura do Workspace pode encolher dentro do modal e adapta o editor em telas compactas', () => {
+    assert.match(styles, /\.pe-workspace__shell\s*\{[^}]*min-height:\s*0/s);
+    assert.match(styles, /\.pe-workspace__layout\s*\{[^}]*min-height:\s*min\(46vh, 440px\)/s);
+    assert.match(styles, /\.pe-workspace__code\s*\{[^}]*min-height:\s*min\(36vh, 340px\)/s);
+    assert.match(styles, /@media \(max-width: 768px\)[\s\S]*?\.pe-workspace__layout\s*\{\s*min-height:\s*0/s);
+});
