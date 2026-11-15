@@ -1066,6 +1066,25 @@
                 } catch (error) {
                     Molecules.toast(I18n.t('sm.workspace.selectError'), 'error', { details: error.message });
                     refreshWorkspaceProjects();
+                }
+            });
+            createButton.addEventListener('click', async () => {
+                const name = createInput.value.trim();
+                if (!name) { createInput.focus(); return; }
+                createButton.disabled = true;
+                try {
+                    const project = await Workspace.projects.create({ name });
+                    await Workspace.setActiveProjectId(project.id);
+                    createInput.value = '';
+                    await refreshWorkspaceProjects();
+                    Molecules.toast(I18n.t('sm.workspace.created'), 'success');
+                } catch (error) {
+                    Molecules.toast(I18n.t('sm.workspace.selectError'), 'error', { details: error.message });
+                } finally {
+                    createButton.disabled = false;
+                }
+            });
+            refreshWorkspaceProjects();
             bodyEl.appendChild(form);
         }
 
