@@ -4419,7 +4419,7 @@ function injectStyles() {
             border: 1px solid var(--pe-border);
             border-radius: var(--pe-radius);
             background: var(--pe-surface);
-            box-shadow: var(--pe-shadow-lg);
+            box-shadow: var(--pe-shadow-panel);
         }
         .pe-workspace__inspector[hidden] { display: none; }
         @media (max-width: 768px) { .pe-workspace__inspector { width: min(340px, calc(100% - 12px)); min-width: 0; } }
