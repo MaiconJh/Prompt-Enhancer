@@ -18,10 +18,12 @@ test('Workspace UI possui sintaxe válida e é registrado como módulo de produ�
 });
 
 test('Workspace UI separa navegação em quatro áreas independentes', () => {
-    assert.match(uiSource, /data-view-panel="overview"/);
-    assert.match(uiSource, /data-view-panel="files"/);
-    assert.match(uiSource, /data-view-panel="access"/);
-    assert.match(uiSource, /data-view-panel="settings"/);
+    for (const [view, variable] of [
+        ['overview', 'overviewView'],
+        ['files', 'filesView'],
+        ['access', 'accessView'],
+        ['settings', 'projectSettings']
+    ]) assert.match(uiSource, new RegExp(variable + "\\\\.dataset\\\\.viewPanel = '" + view + "'"));
     assert.match(uiSource, /function setActiveView\(key\)/);
     assert.match(uiSource, /aria-selected/);
     assert.match(uiSource, /function updateOverview\(\)/);
