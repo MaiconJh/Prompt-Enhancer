@@ -714,7 +714,7 @@
     {
       "file": "workspace/workspace-controller.js",
       "description": "Coordinates Workspace file creation and import workflows through the public Workspace facade.",
-      "interfaces": { "provides": ["WorkspaceController"], "consumes": ["Workspace"] },
+      "interfaces": { "provides": ["WorkspaceController"], "consumes": ["Workspace", "I18n"] },
       "interactions": [
         "UI delegates batch creation, folder initialization and text-file import; the controller validates inputs and commits through Workspace.files.createMany()."
       ]
