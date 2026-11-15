@@ -10,7 +10,7 @@ const outputDir = path.join(root, '../mocks');
 const lean = process.argv.includes('--lean');
 const tabArg = process.argv.find(arg => arg.startsWith('--tab='));
 const allInOne = process.argv.includes('--all-in-one');
-const tabsToGenerate = tabArg ? [tabArg.split('=')[1]] : ['params', 'context', 'systemPrompt', 'history', 'provider'];
+const tabsToGenerate = tabArg ? [tabArg.split('=')[1]] : ['params', 'workspace', 'manualContext', 'response', 'interface', 'systemPrompt', 'history', 'provider'];
 
 const cssOverrides = `
 /* MOCK OVERRIDES — apenas desativa motion; o layout vem do próprio CSS do sistema */
