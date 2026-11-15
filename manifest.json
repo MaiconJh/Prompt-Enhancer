@@ -675,6 +675,21 @@
       ]
     },
     {
+      "file": "workspace/context-resolver.js",
+      "description": "Finds relevant project files and excerpts for a prompt using local lexical search and read-only AI access permissions.",
+      "interfaces": {
+        "provides": [
+          "ContextResolver"
+        ],
+        "consumes": [
+          "Workspace"
+        ]
+      },
+      "interactions": [
+        "Prompt context composition consumes ranked excerpts and diagnostics; the resolver only reads authorized project files and never mutates Workspace data."
+      ]
+    },
+    {
       "file": "bootstrap.js",
       "description": "Starts the application, restores state, registers host observers, and wires menu commands.",
       "interfaces": {
