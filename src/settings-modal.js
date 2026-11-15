@@ -245,9 +245,8 @@
             footerEl.innerHTML = '';
             footerEl.setAttribute('aria-live', 'polite');
             const editing = tab === 'params' || tab === 'response' || tab === 'systemPrompt';
-            if (!editing || !dirty) {
-                footerEl.appendChild(Atoms.button({ icon: 'x', label: I18n.t('sm.footer.close'), ariaLabel: I18n.t('sm.footer.closeWindowAria'), variant: 'outline', onClick: close }));
-            } else {
+            footerEl.hidden = !editing || !dirty;
+            if (editing && dirty) {
                 const cancelBtn = Atoms.button({ icon: 'x', label: I18n.t('sm.footer.cancel'), ariaLabel: I18n.t('sm.footer.cancelAria'), variant: 'outline', onClick: () => { close(); }, disabled: saving });
                 const saveBtn = Atoms.button({ icon: 'check', label: saving ? I18n.t('sm.footer.saving') : I18n.t('sm.footer.save'), ariaLabel: I18n.t('sm.footer.saveAria'), variant: 'primary', onClick: () => { renderFooter(tab, true, true); applyAndClose(); }, disabled: saving });
                 if (saving) saveBtn.classList.add('is-loading');

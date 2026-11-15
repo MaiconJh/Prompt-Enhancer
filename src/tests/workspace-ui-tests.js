@@ -9,6 +9,8 @@ const explorerSource = await readFile(new URL('../workspace/workspace-explorer-v
 const controllerSource = await readFile(new URL('../workspace/workspace-controller.js', import.meta.url), 'utf8');
 const manifest = JSON.parse(await readFile(new URL('../../manifest.json', import.meta.url), 'utf8'));
 const i18n = await readFile(new URL('../i18n.js', import.meta.url), 'utf8');
+const styles = await readFile(new URL('../styles.js', import.meta.url), 'utf8');
+const editorViewSource = await readFile(new URL('../workspace/workspace-editor-view.js', import.meta.url), 'utf8');
 
 test('Workspace UI possui sintaxe válida e é registrado como módulo de produção', () => {
     assert.doesNotThrow(() => new Function(uiSource));
@@ -37,6 +39,18 @@ test('Workspace UI organiza quatro áreas na Activity Bar e mantém o Inspector 
     assert.match(uiSource, /function updateOverview\(\)/);
     assert.match(uiSource, /inspectorFilePermission\.textContent/);
     assert.doesNotMatch(uiSource, /workspaceLayout\.hidden/);
+});
+
+test('ações do Workspace têm agrupamento acessível, ícones e semântica destrutiva', () => {
+    assert.ok(uiSource.includes('ws.files.actions'));
+    assert.ok(uiSource.includes('ws.files.importActions'));
+    assert.ok(uiSource.includes("variant: 'danger'"));
+    assert.ok(uiSource.includes("projectDeleteButton.prepend(Atoms.icon('trash'))"));
+    assert.ok(editorViewSource.includes("Atoms.icon('panelLeft')"));
+    assert.ok(editorViewSource.includes("Atoms.icon('panelRight')"));
+    assert.ok(styles.includes('.pe-workspace__file-access.is-denied { color: var(--pe-error); }'));
+    assert.ok(styles.includes('.pe-scope .pe-modal .pe-workspace .pe-param-input::placeholder { color: var(--pe-text-muted); opacity: 1; }'));
+    assert.ok(styles.includes('overflow-x: auto;'));
 });
 
 test('aba Workspace monta o gerenciador dedicado', () => {

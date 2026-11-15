@@ -33,9 +33,10 @@ const WorkspaceUI = (() => {
         const projectDeleteButton = Atoms.buttonNode({
             label: I18n.t('ws.project.delete'),
             ariaLabel: I18n.t('ws.project.delete'),
-            variant: 'outline',
+            variant: 'danger',
             onClick: deleteProject
         });
+        projectDeleteButton.prepend(Atoms.icon('trash'));
         const createProjectRow = element('div', 'pe-workspace__create-project');
         createProjectRow.append(createName, createProjectButton);
         header.append(projectSelect, createProjectRow, projectDeleteButton);
@@ -164,7 +165,21 @@ const WorkspaceUI = (() => {
         batchActions.append(batchCancel, batchSubmit);
         batchComposer.append(batchTitle, batchFolderPath, batchPaths, batchActions);
         const fileActions = element('div', 'pe-workspace__file-actions');
-        fileActions.append(newPath, createFileButton, folderButton, batchButton, importButton, importDirectoryButton, importInput, importDirectoryInput, batchComposer);
+        const fileCreateRow = element('div', 'pe-workspace__file-create-row');
+        fileCreateRow.append(newPath, createFileButton);
+        const fileManageActions = element('div', 'pe-workspace__file-action-group');
+        fileManageActions.setAttribute('role', 'group');
+        fileManageActions.setAttribute('aria-label', I18n.t('ws.files.actions'));
+        fileManageActions.append(folderButton, batchButton);
+        const fileImportActions = element('div', 'pe-workspace__file-action-group pe-workspace__file-import-actions');
+        fileImportActions.setAttribute('role', 'group');
+        fileImportActions.setAttribute('aria-label', I18n.t('ws.files.importActions'));
+        fileImportActions.append(importButton, importDirectoryButton);
+        for (const [button, iconName] of [[createFileButton, 'doc'], [folderButton, 'folder'], [batchButton, 'copy'], [importButton, 'upload'], [importDirectoryButton, 'folder']]) {
+            button.classList.add('pe-workspace__icon-action');
+            button.prepend(Atoms.icon(iconName));
+        }
+        fileActions.append(fileCreateRow, fileManageActions, fileImportActions, importInput, importDirectoryInput, batchComposer);
         const treeSearch = element('input', 'pe-param-input pe-workspace__tree-search');
         treeSearch.type = 'search';
         treeSearch.placeholder = I18n.t('ws.files.search');
