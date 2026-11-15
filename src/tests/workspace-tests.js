@@ -208,10 +208,11 @@ test('createMany valida conflitos e limites do projeto antes de persistir', asyn
         { path: 'new.txt', content: 'new' },
         { path: 'existing.txt', content: 'collision' }
     ]), { code: 'file-exists' });
-    await assert.rejects(registry.createMany('project_a', [
-        { path: 'a.txt', content: 'a'.repeat(1024 * 1024) },
-        { path: 'b.txt', content: 'b'.repeat(1024 * 1024) }
-    ]), { code: 'project-size-limit' });
+    const oversizedProjectBatch = Array.from({ length: 20 }, (_, index) => ({
+        path: 'bulk/file-' + index + '.txt',
+        content: 'x'.repeat(1024 * 1024)
+    }));
+    await assert.rejects(registry.createMany('project_a', oversizedProjectBatch), { code: 'project-size-limit' });
     assert.equal([...files.values()].filter(file => file.projectId === 'project_a').length, 1);
 });
 

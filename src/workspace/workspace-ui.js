@@ -46,11 +46,9 @@ const WorkspaceUI = (() => {
         const viewButtons = {};
         const viewDefinitions = [
             ['overview', 'ws.nav.overview'],
-            ['files', 'ws.nav.files'],
-            ['access', 'ws.nav.access'],
-            ['settings', 'ws.nav.settings']
+            ['files', 'ws.nav.files']
         ];
-        let activeView = 'overview';
+        let activeView = 'files';
         for (const [key, labelKey] of viewDefinitions) {
             const button = element('button', 'pe-workspace__nav-button', I18n.t(labelKey));
             button.type = 'button';
@@ -88,6 +86,7 @@ const WorkspaceUI = (() => {
         const filesView = element('section', 'pe-workspace__view');
         filesView.dataset.viewPanel = 'files';
         const workspaceLayout = element('div', 'pe-workspace__layout');
+        const panelLayout = WorkspacePanelLayout.create({ root });
         const explorer = element('section', 'pe-workspace__explorer');
         const explorerHeader = element('div', 'pe-workspace__section-heading', I18n.t('ws.files.title'));
         const newPath = element('input', 'pe-param-input');
@@ -104,51 +103,92 @@ const WorkspaceUI = (() => {
         importInput.multiple = true;
         importInput.accept = 'text/*,.txt,.md,.json,.js,.mjs,.cjs,.ts,.tsx,.jsx,.html,.css,.scss,.xml,.yml,.yaml,.toml,.ini,.py,.java,.c,.cpp,.h,.sh,.sql,.csv,.properties';
         importInput.setAttribute('aria-label', I18n.t('ws.files.import'));
+        const importDirectoryInput = element('input', 'pe-workspace__file-input');
+        importDirectoryInput.type = 'file';
+        importDirectoryInput.multiple = true;
+        importDirectoryInput.setAttribute('webkitdirectory', '');
+        importDirectoryInput.setAttribute('directory', '');
+        importDirectoryInput.accept = importInput.accept;
+        importDirectoryInput.setAttribute('aria-label', I18n.t('ws.files.importDirectory'));
         const importButton = Atoms.buttonNode({
             label: I18n.t('ws.files.import'),
             ariaLabel: I18n.t('ws.files.import'),
             variant: 'ghost',
             onClick: () => importInput.click()
         });
+        const importDirectoryButton = Atoms.buttonNode({
+            label: I18n.t('ws.files.importDirectory'),
+            ariaLabel: I18n.t('ws.files.importDirectory'),
+            variant: 'ghost',
+            onClick: () => importDirectoryInput.click()
+        });
+        const batchButton = Atoms.buttonNode({
+            label: I18n.t('ws.files.createMultiple'),
+            ariaLabel: I18n.t('ws.files.createMultiple'),
+            variant: 'outline',
+            onClick: () => openBatchComposer('files')
+        });
+        const folderButton = Atoms.buttonNode({
+            label: I18n.t('ws.files.createFolder'),
+            ariaLabel: I18n.t('ws.files.createFolder'),
+            variant: 'outline',
+            onClick: () => openBatchComposer('folder')
+        });
+        const batchComposer = element('section', 'pe-workspace__batch-composer');
+        batchComposer.hidden = true;
+        const batchTitle = element('strong', 'pe-workspace__batch-title');
+        const batchFolderPath = element('input', 'pe-param-input');
+        batchFolderPath.type = 'text';
+        batchFolderPath.placeholder = I18n.t('ws.files.folderPath');
+        const batchPaths = element('textarea', 'pe-param-input pe-workspace__batch-paths');
+        batchPaths.rows = 6;
+        batchPaths.spellcheck = false;
+        batchPaths.placeholder = I18n.t('ws.files.multiplePathsPlaceholder');
+        const batchActions = element('div', 'pe-workspace__batch-actions');
+        const batchCancel = Atoms.buttonNode({
+            label: I18n.t('ws.project.cancel'),
+            ariaLabel: I18n.t('ws.project.cancel'),
+            variant: 'ghost',
+            onClick: closeBatchComposer
+        });
+        const batchSubmit = Atoms.buttonNode({
+            label: I18n.t('ws.files.create'),
+            ariaLabel: I18n.t('ws.files.create'),
+            variant: 'primary',
+            onClick: createBatchFiles
+        });
+        batchActions.append(batchCancel, batchSubmit);
+        batchComposer.append(batchTitle, batchFolderPath, batchPaths, batchActions);
         const fileActions = element('div', 'pe-workspace__file-actions');
-        fileActions.append(newPath, createFileButton, importButton, importInput);
+        fileActions.append(newPath, createFileButton, folderButton, batchButton, importButton, importDirectoryButton, importInput, importDirectoryInput, batchComposer);
+        const treeSearch = element('input', 'pe-param-input pe-workspace__tree-search');
+        treeSearch.type = 'search';
+        treeSearch.placeholder = I18n.t('ws.files.search');
+        treeSearch.setAttribute('aria-label', I18n.t('ws.files.search'));
         const tree = element('div', 'pe-workspace__tree');
         tree.setAttribute('role', 'tree');
         tree.setAttribute('aria-label', I18n.t('ws.files.title'));
-        explorer.append(explorerHeader, fileActions, tree);
-        workspaceLayout.appendChild(explorer);
+        explorer.append(explorerHeader, fileActions, treeSearch, tree);
+        workspaceLayout.append(explorer, panelLayout.splitter);
 
-        const editorPanel = element('section', 'pe-workspace__editor');
-        const editorHeading = element('div', 'pe-workspace__section-heading', I18n.t('ws.editor.title'));
-        const editorEmpty = element('div', 'pe-workspace__empty', I18n.t('ws.editor.empty'));
-        const editor = element('div', 'pe-workspace__editor-content');
-        const filePath = element('input', 'pe-param-input');
-        filePath.type = 'text';
-        const fileContent = element('textarea', 'pe-workspace__code');
-        fileContent.spellcheck = false;
-        fileContent.setAttribute('aria-label', I18n.t('ws.editor.content'));
-        const fileMeta = element('div', 'pe-workspace__meta');
-        const editorActions = element('div', 'pe-workspace__editor-actions');
-        const fileDeleteButton = Atoms.buttonNode({
-            label: I18n.t('ws.files.delete'),
-            ariaLabel: I18n.t('ws.files.delete'),
-            variant: 'outline',
-            onClick: deleteFile
+        const editorView = WorkspaceEditorView.create({
+            labeledField,
+            onSave: saveFile,
+            onDelete: deleteFile,
+            onToggleExplorer: toggleExplorer,
+            onToggleFocus: toggleFocusMode,
+            onToggleInspector: toggleInspector
         });
-        const fileSaveButton = Atoms.buttonNode({
-            label: I18n.t('ws.editor.save'),
-            ariaLabel: I18n.t('ws.editor.save'),
-            variant: 'primary',
-            onClick: saveFile
-        });
-        editorActions.append(fileDeleteButton, fileSaveButton);
-        editor.append(
-            labeledField('ws.editor.path', filePath),
-            fileContent,
-            fileMeta,
-            editorActions
-        );
-        editorPanel.append(editorHeading, editorEmpty, editor);
+        const {
+            panel: editorPanel,
+            empty: editorEmpty,
+            content: editor,
+            path: filePath,
+            contentInput: fileContent,
+            meta: fileMeta,
+            saveButton: fileSaveButton,
+            deleteButton: fileDeleteButton
+        } = editorView;
         workspaceLayout.appendChild(editorPanel);
         filesView.appendChild(workspaceLayout);
 
@@ -203,12 +243,44 @@ const WorkspaceUI = (() => {
             projectSave
         );
 
-        root.append(header, navigation, overviewView, filesView, accessView, projectSettings);
+        const inspectorView = WorkspaceInspectorView.create({
+            sections: [accessView, projectSettings],
+            onClose: toggleInspector
+        });
+        workspaceLayout.appendChild(inspectorView.panel);
+                root.append(header, navigation, overviewView, filesView);
         let projects = [];
         let currentProject = null;
         let files = [];
         let selectedFile = null;
         let loading = false;
+
+        let explorerCollapsed = false;
+        let focusMode = false;
+        let inspectorOpen = false;
+
+        function toggleExplorer() {
+            explorerCollapsed = !explorerCollapsed;
+            root.classList.toggle('is-explorer-collapsed', explorerCollapsed);
+            editorView.setExplorerCollapsed(explorerCollapsed);
+        }
+
+        function toggleFocusMode() {
+            focusMode = !focusMode;
+            if (focusMode && inspectorOpen) {
+                inspectorOpen = false;
+                inspectorView.setOpen(false);
+                editorView.setInspectorOpen(false);
+            }
+            root.classList.toggle('is-focus-mode', focusMode);
+            editorView.setFocusMode(focusMode);
+        }
+
+        function toggleInspector() {
+            inspectorOpen = !inspectorOpen;
+            inspectorView.setOpen(inspectorOpen);
+            editorView.setInspectorOpen(inspectorOpen);
+        }
 
         function setActiveView(key) {
             const next = viewDefinitions.some(([view]) => view === key) ? key : 'overview';
@@ -285,9 +357,9 @@ const WorkspaceUI = (() => {
 
         function updateProjectControls() {
             const hasProject = !!currentProject;
-            projectSettings.hidden = !hasProject || activeView !== 'settings';
+            projectSettings.hidden = !hasProject;
             filesView.hidden = !hasProject || activeView !== 'files';
-            accessView.hidden = !hasProject || activeView !== 'access';
+            accessView.hidden = !hasProject;
             for (const [view] of viewDefinitions) viewButtons[view].disabled = view !== 'overview' && !hasProject;
             if (!hasProject && activeView !== 'overview') setActiveView('overview');
             updateOverview();
@@ -298,62 +370,28 @@ const WorkspaceUI = (() => {
             accessMode.disabled = loading;
             instructions.disabled = loading;
             newPath.disabled = loading;
+            batchFolderPath.disabled = loading;
+            batchPaths.disabled = loading;
+            batchSubmit.disabled = loading;
+            batchCancel.disabled = loading;
             projectDeleteButton.disabled = !hasProject || loading;
             createFileButton.disabled = !hasProject || loading;
             importButton.disabled = !hasProject || loading;
+            importDirectoryButton.disabled = !hasProject || loading;
+            batchButton.disabled = !hasProject || loading;
+            folderButton.disabled = !hasProject || loading;
             projectSave.disabled = !hasProject || !projectDirty() || loading;
             updateEditorState();
         }
 
         function buildTree() {
-            tree.replaceChildren();
-            if (!currentProject) return;
-            if (!files.length) {
-                tree.appendChild(element('div', 'pe-workspace__empty', I18n.t('ws.files.empty')));
-                return;
-            }
-            const rootNode = { folders: new Map(), files: [] };
-            for (const file of files) {
-                const parts = file.path.split('/');
-                let node = rootNode;
-                for (const part of parts.slice(0, -1)) {
-                    if (!node.folders.has(part)) node.folders.set(part, { folders: new Map(), files: [] });
-                    node = node.folders.get(part);
-                }
-                node.files.push(file);
-            }
-            const renderNode = (node, depth) => {
-                const fragment = document.createDocumentFragment();
-                const folders = [...node.folders.entries()].sort(([a], [b]) => a.localeCompare(b));
-                for (const [name, child] of folders) {
-                    const details = element('details', 'pe-workspace__folder');
-                    details.open = true;
-                    const summary = element('summary', 'pe-workspace__folder-name', name);
-                    summary.style.paddingInlineStart = (depth * 14 + 8) + 'px';
-                    details.appendChild(summary);
-                    details.appendChild(renderNode(child, depth + 1));
-                    fragment.appendChild(details);
-                }
-                const sortedFiles = node.files.slice().sort((a, b) => a.name.localeCompare(b.name));
-                for (const file of sortedFiles) {
-                    const row = element('button', 'pe-workspace__file', file.name);
-                    row.type = 'button';
-                    row.setAttribute('role', 'treeitem');
-                    row.setAttribute('aria-level', String(depth + 1));
-                    row.setAttribute('aria-selected', String(selectedFile?.id === file.id));
-                    row.title = file.path;
-                    row.style.paddingInlineStart = (depth * 14 + 8) + 'px';
-                    const mode = currentProject?.settings?.aiAccessMode || 'selected';
-                    const effectiveAllowed = mode === 'all' || (mode === 'selected' && file.aiAccess === 'allowed');
-                    const access = element('span', 'pe-workspace__file-access ' + (effectiveAllowed ? 'is-allowed' : 'is-denied'),
-                        effectiveAllowed ? I18n.t('ws.access.allowedShort') : I18n.t('ws.access.deniedShort'));
-                    row.appendChild(access);
-                    row.addEventListener('click', () => selectFile(file.id));
-                    fragment.appendChild(row);
-                }
-                return fragment;
-            };
-            tree.appendChild(renderNode(rootNode, 0));
+            WorkspaceExplorerView.render(tree, {
+                files,
+                project: currentProject,
+                selectedFileId: selectedFile?.id || null,
+                searchQuery: treeSearch.value,
+                onSelect: selectFile
+            });
         }
 
         function fillProject(project) {
@@ -422,6 +460,7 @@ const WorkspaceUI = (() => {
                 const project = await Workspace.projects.get(projectId);
                 if (!project) throw new Error(I18n.t('ws.errors.projectMissing'));
                 fillProject(project);
+                setActiveView('files');
                 selectedFile = null;
                 filePath.value = '';
                 fileContent.value = '';
@@ -637,6 +676,26 @@ const WorkspaceUI = (() => {
             notify(I18n.t('ws.project.deleted'), 'success');
         }
 
+        function openBatchComposer(mode) {
+            batchComposer.hidden = false;
+            batchComposer.dataset.mode = mode;
+            batchTitle.textContent = mode === 'folder' ? I18n.t('ws.files.createFolder') : I18n.t('ws.files.createMultiple');
+            batchFolderPath.hidden = mode !== 'folder';
+            batchPaths.placeholder = mode === 'folder'
+                ? I18n.t('ws.files.folderFilesPlaceholder')
+                : I18n.t('ws.files.multiplePathsPlaceholder');
+            batchFolderPath.value = '';
+            batchPaths.value = '';
+            (mode === 'folder' ? batchFolderPath : batchPaths).focus();
+        }
+
+        function closeBatchComposer() {
+            batchComposer.hidden = true;
+            batchComposer.dataset.mode = '';
+            batchFolderPath.value = '';
+            batchPaths.value = '';
+        }
+
         async function createFile() {
             if (!currentProject || !await confirmLeave()) return;
             const path = newPath.value.trim();
@@ -652,39 +711,42 @@ const WorkspaceUI = (() => {
             }
         }
 
+        async function createBatchFiles() {
+            if (!currentProject || !await confirmLeave()) return;
+            const mode = batchComposer.dataset.mode;
+            const names = WorkspaceController.parsePaths(batchPaths.value);
+            if (!names.length) { batchPaths.focus(); return; }
+            if (mode === 'folder' && !batchFolderPath.value.trim()) { batchFolderPath.focus(); return; }
+            loading = true;
+            updateProjectControls();
+            try {
+                const created = mode === 'folder'
+                    ? await WorkspaceController.createFolder(currentProject.id, batchFolderPath.value, names)
+                    : await WorkspaceController.createFiles(currentProject.id, names);
+                closeBatchComposer();
+                await refreshFiles();
+                if (created[0]) await selectFile(created[0].id);
+                notify(I18n.t('ws.files.createdSummary', { count: created.length }), 'success');
+            } catch (error) {
+                notify(error.message || I18n.t('ws.errors.createFileFailed'), 'error');
+            } finally {
+                loading = false;
+                updateProjectControls();
+            }
+        }
+
         async function importFiles(fileList) {
             if (!currentProject || !fileList?.length || !await confirmLeave()) return;
             const targetProjectId = currentProject.id;
             loading = true;
             updateProjectControls();
-            let imported = 0;
-            const existing = new Set(files.map(file => file.path));
             try {
-                for (const incoming of Array.from(fileList)) {
-                    try {
-                        if (incoming.size > 1024 * 1024) throw new Error(I18n.t('ws.errors.fileTooLarge'));
-                        const mime = (incoming.type || '').toLowerCase();
-                        const textMime = !mime || mime.startsWith('text/')
-                            || ['application/json', 'application/xml', 'application/javascript', 'application/x-yaml'].includes(mime);
-                        if (!textMime) throw new Error(I18n.t('ws.errors.textOnly'));
-                        const content = new TextDecoder('utf-8', { fatal: true }).decode(await incoming.arrayBuffer());
-                        const validation = Workspace.files.validate({ path: incoming.name, content });
-                        if (!validation.valid) throw new Error(validation.message);
-                        if (existing.has(validation.path)) throw new Error(I18n.t('ws.errors.duplicatePath', { path: validation.path }));
-                        await Workspace.files.create(targetProjectId, {
-                            path: validation.path,
-                            content,
-                            mimeType: incoming.type || 'text/plain'
-                        });
-                        existing.add(validation.path);
-                        imported++;
-                    } catch (error) {
-                        notify(incoming.name + ': ' + (error.message || I18n.t('ws.errors.importFailed')), 'error');
-                    }
-                }
+                const created = await WorkspaceController.importFiles(targetProjectId, fileList);
                 await refreshFiles();
-                showStatus(I18n.t('ws.files.importSummary', { count: imported }));
-                if (imported) notify(I18n.t('ws.files.importSummary', { count: imported }), 'success');
+                showStatus(I18n.t('ws.files.importSummary', { count: created.length }));
+                notify(I18n.t('ws.files.importSummary', { count: created.length }), 'success');
+            } catch (error) {
+                notify(error.message || I18n.t('ws.errors.importFailed'), 'error');
             } finally {
                 loading = false;
                 updateProjectControls();
@@ -766,10 +828,17 @@ const WorkspaceUI = (() => {
         filePath.addEventListener('input', updateEditorState);
         fileContent.addEventListener('input', updateEditorState);
         fileAccess.addEventListener('change', changeFileAccess);
+        treeSearch.addEventListener('input', buildTree);
         importInput.addEventListener('change', async () => {
             await importFiles(importInput.files);
             importInput.value = '';
         });
+        importDirectoryInput.addEventListener('change', async () => {
+            await importFiles(importDirectoryInput.files);
+            importDirectoryInput.value = '';
+        });
+        newPath.addEventListener('keydown', event => { if (event.key === 'Enter') createFile(); });
+        batchPaths.addEventListener('keydown', event => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') createBatchFiles(); });
 
         async function initialize() {
             try {
@@ -789,7 +858,7 @@ const WorkspaceUI = (() => {
             }
         }
 
-        setActiveView('overview');
+        setActiveView(currentProject ? 'files' : 'overview');
         updateProjectControls();
         initialize();
         return { refresh: initialize };
