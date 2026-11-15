@@ -76,6 +76,67 @@ const FileRegistry = (() => {
         return metadata(file);
     }
 
+
+    async function createMany(projectId, inputs = []) {
+        const project = await ProjectManager.get(projectId);
+        if (!project) throw createError('Projeto não encontrado.', 'project-not-found');
+        if (!Array.isArray(inputs) || inputs.length === 0) {
+            throw createError('Informe ao menos um arquivo para criação.', 'invalid-input');
+        }
+        if (inputs.length > MAX_PROJECT_FILES) {
+            throw createError(`O lote excede o limite de ${MAX_PROJECT_FILES} arquivos.`, 'project-file-limit');
+        }
+
+        const paths = new Set();
+        let totalBytes = 0;
+        const now = Date.now();
+        const files = inputs.map(input => {
+            const validation = validateTextFile(input);
+            if (!validation.valid) throw createError(validation.message, validation.reason);
+            if (paths.has(validation.path)) {
+                throw createError(`O lote contém caminhos duplicados: ${validation.path}`, 'file-exists');
+            }
+            paths.add(validation.path);
+            totalBytes += validation.size;
+            if (totalBytes > MAX_PROJECT_BYTES) {
+                throw createError('O lote excede o limite total de armazenamento do projeto.', 'project-size-limit');
+            }
+            const name = validation.path.split('/').pop();
+            const dot = name.lastIndexOf('.');
+            return {
+                id: WorkspaceModel.createId('file'),
+                projectId: project.id,
+                path: validation.path,
+                name,
+                extension: dot > 0 ? name.slice(dot + 1).toLowerCase() : '',
+                mimeType: typeof input.mimeType === 'string' && input.mimeType.trim() ? input.mimeType.trim().slice(0, 128) : 'text/plain',
+                size: validation.size,
+                content: input.content,
+                createdAt: now,
+                updatedAt: now,
+                aiAccess: 'denied'
+            };
+        });
+
+        const existing = await WorkspaceStorage.listFiles(project.id);
+        const existingPaths = new Set(existing.map(file => file.path));
+        const conflict = files.find(file => existingPaths.has(file.path));
+        if (conflict) throw createError(`Já existe um arquivo com o caminho ${conflict.path}.`, 'file-exists');
+        if (existing.length + files.length > MAX_PROJECT_FILES) {
+            throw createError(`O projeto excede o limite de ${MAX_PROJECT_FILES} arquivos.`, 'project-file-limit');
+        }
+        const existingBytes = existing.reduce((sum, file) => sum + (Number(file.size) || 0), 0);
+        if (existingBytes + totalBytes > MAX_PROJECT_BYTES) {
+            throw createError('O projeto excede o limite total de armazenamento.', 'project-size-limit');
+        }
+
+        const saved = await WorkspaceStorage.saveFiles(files, {
+            maxFiles: MAX_PROJECT_FILES,
+            maxBytes: MAX_PROJECT_BYTES
+        });
+        return saved.map(metadata);
+    }
+
     async function update(projectId, fileId, changes = {}) {
         if (!changes || typeof changes !== 'object' || Array.isArray(changes)) {
             throw createError('As alterações do arquivo são inválidas.', 'invalid-input');
@@ -145,6 +206,7 @@ const FileRegistry = (() => {
         list,
         get,
         create,
+        createMany,
         update,
         setAccess,
         remove,
