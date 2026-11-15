@@ -41,6 +41,7 @@ const Workspace = (() => {
             list: (...args) => { assertInitialized(); return FileRegistry.list(...args); },
             get: (...args) => { assertInitialized(); return FileRegistry.get(...args); },
             create: (...args) => { assertInitialized(); return FileRegistry.create(...args); },
+            createMany: (...args) => { assertInitialized(); return FileRegistry.createMany(...args); }
             update: (...args) => { assertInitialized(); return FileRegistry.update(...args); },
             setAccess: (...args) => { assertInitialized(); return FileRegistry.setAccess(...args); },
             remove: (...args) => { assertInitialized(); return FileRegistry.remove(...args); },
