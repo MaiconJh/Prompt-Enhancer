@@ -614,7 +614,7 @@ const WorkspaceUI = (() => {
         }
 
         async function changeFileAccess() {
-            if (!selectedFile || accessMode.value !== 'selected') return;
+            if (!selectedFile || (currentProject?.settings?.aiAccessMode || 'selected') !== 'selected') return;
             const previous = selectedFile.aiAccess || 'denied';
             try {
                 const updated = await Workspace.files.setAccess(currentProject.id, selectedFile.id, fileAccess.value);
