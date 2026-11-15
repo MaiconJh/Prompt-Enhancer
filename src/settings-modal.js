@@ -18,7 +18,7 @@
             console.error('[PE] Falha ao carregar o system prompt:', error);
             Molecules.toast(I18n.t('sm.sp.toast.loadFail'), 'error', { details: error.message });
         }
-        let activeTab = initialTab;
+        let activeTab = initialTab === 'context' ? 'manualContext' : initialTab;
         let selectedSystemPreset = '';
         let closed = false;
         let openFrame;
@@ -63,7 +63,10 @@
         tabsBar.setAttribute('aria-label', I18n.t('sm.tabs.aria'));
         const getTabDefs = () => [
             { key: 'params', label: I18n.t('sm.tab.params.label'), icon: 'sliders', title: I18n.t('sm.tab.params.title'), description: I18n.t('sm.tab.params.desc') },
-            { key: 'context', label: I18n.t('sm.tab.context.label'), icon: 'folder', title: I18n.t('sm.tab.context.title'), description: I18n.t('sm.tab.context.desc') },
+            { key: 'workspace', label: I18n.t('sm.tab.workspace.label'), icon: 'folder', title: I18n.t('sm.tab.workspace.title'), description: I18n.t('sm.tab.workspace.desc') },
+            { key: 'manualContext', label: I18n.t('sm.tab.manualContext.label'), icon: 'doc', title: I18n.t('sm.tab.manualContext.title'), description: I18n.t('sm.tab.manualContext.desc') },
+            { key: 'response', label: I18n.t('sm.tab.response.label'), icon: 'sparkles', title: I18n.t('sm.tab.response.title'), description: I18n.t('sm.tab.response.desc') },
+            { key: 'interface', label: I18n.t('sm.tab.interface.label'), icon: 'gear', title: I18n.t('sm.tab.interface.title'), description: I18n.t('sm.tab.interface.desc') },
             { key: 'systemPrompt', label: I18n.t('sm.tab.systemPrompt.label'), icon: 'doc', title: I18n.t('sm.tab.systemPrompt.title'), description: I18n.t('sm.tab.systemPrompt.desc') },
             { key: 'history', label: I18n.t('sm.tab.history.label'), icon: 'guide', title: I18n.t('sm.tab.history.title'), description: I18n.t('sm.tab.history.desc') },
             { key: 'provider', label: I18n.t('sm.tab.provider.label'), icon: 'gear', title: I18n.t('sm.tab.provider.title'), description: I18n.t('sm.tab.provider.desc') }
@@ -220,7 +223,7 @@
         function computeDirty(tab) {
             if (tab === 'params') return JSON.stringify(ParamSchema.clean(draft)) !== JSON.stringify(ParamSchema.clean(ParamSchema.load()));
             if (tab === 'systemPrompt') return JSON.stringify(systemPromptDraft) !== JSON.stringify(SystemPromptManager.load());
-            if (tab === 'context') {
+            if (tab === 'response') {
                 const cleaned = ParamSchema.clean(draft);
                 const saved = ParamSchema.clean(ParamSchema.load());
                 return ['response_language', 'response_persona', 'response_persona_custom']
@@ -240,7 +243,7 @@
             prevFooterDirty = dirty;
             footerEl.innerHTML = '';
             footerEl.setAttribute('aria-live', 'polite');
-            const editing = tab === 'params' || tab === 'context' || tab === 'systemPrompt';
+            const editing = tab === 'params' || tab === 'response' || tab === 'systemPrompt';
             if (!editing || !dirty) {
                 footerEl.appendChild(Atoms.button({ icon: 'x', label: I18n.t('sm.footer.close'), ariaLabel: I18n.t('sm.footer.closeWindowAria'), variant: 'outline', onClick: close }));
             } else {
@@ -284,7 +287,10 @@
             intro.append(icon, text);
             bodyEl.appendChild(intro);
             if (activeTab === 'params') renderParams();
-            else if (activeTab === 'context') renderContext();
+            else if (activeTab === 'workspace') renderWorkspace();
+            else if (activeTab === 'manualContext') renderManualContext();
+            else if (activeTab === 'response') renderResponse();
+            else if (activeTab === 'interface') renderInterface();
             else if (activeTab === 'systemPrompt') renderSystemPrompt();
             else if (activeTab === 'provider') renderProvider();
             else renderHistory();
@@ -991,10 +997,9 @@
     const closeBtn = Atoms.button({ icon: 'x', label: I18n.t('sm.footer.close'), ariaLabel: I18n.t('sm.footer.closeWindowAria'), variant: 'primary', onClick: close });
     footerEl.appendChild(closeBtn);
 }
-        function renderContext() {
+        function renderWorkspace() {
             const form = document.createElement('div');
             form.className = 'pe-param-body';
-
             const workspaceSection = document.createElement('div');
             workspaceSection.className = 'pe-context-info';
             const workspaceTitle = document.createElement('div');
@@ -1080,7 +1085,12 @@
                 }
             });
             refreshWorkspaceProjects();
+            bodyEl.appendChild(form);
+        }
 
+        function renderManualContext() {
+            const form = document.createElement('div');
+            form.className = 'pe-param-body';
             const infoBox = document.createElement('div');
             infoBox.className = 'pe-context-info';
             const activeFiles = ProjectContext.list().filter(f => f.enabled);
@@ -1092,7 +1102,12 @@
             manageBtn.addEventListener('click', () => { close(); setTimeout(() => State.activeComposer?.actionbar?.contextBtn?.click(), 250); });
             infoBox.appendChild(manageBtn);
             form.appendChild(infoBox);
+            bodyEl.appendChild(form);
+        }
 
+        function renderInterface() {
+            const form = document.createElement('div');
+            form.className = 'pe-param-body';
             // ── Seção 2: idioma da interface (script) ──────────────────────
             const uiLangLabel = document.createElement('div');
             uiLangLabel.className = 'pe-section-label';
@@ -1106,7 +1121,6 @@
             langSelect.value = I18n.getStoredLanguage() || 'auto';
             langSelect.addEventListener('change', (e) => { I18n.setLanguage(e.target.value); Molecules.toast(I18n.t('bs.langChanged'), 'info'); });
             form.appendChild(langRow);
-
             // ── Seção: aparência (tema) ──────────────────────────────────
             const appearanceLabel = document.createElement('div');
             appearanceLabel.className = 'pe-section-label';
@@ -1121,7 +1135,12 @@
             themeSelect.value = Theme.get();
             themeSelect.addEventListener('change', (e) => Theme.set(e.target.value));
             form.appendChild(themeRow);
+            bodyEl.appendChild(form);
+        }
 
+        function renderResponse() {
+            const form = document.createElement('div');
+            form.className = 'pe-param-body';
             // ── Seção 3: idioma e estilo da resposta ───────────────────────
             const responseStyleLabel = document.createElement('div');
             responseStyleLabel.className = 'pe-section-label';
@@ -1138,7 +1157,7 @@
                 row.querySelector('select').addEventListener('change', (e) => {
                     draft[key] = e.target.value;
                     if (key === 'response_persona') updateCustomToneVisibility();
-                    syncFooter('context');
+                    syncFooter('response');
                 });
             });
 
@@ -1147,14 +1166,13 @@
             customToneRow.className = 'pe-param-row';
             customToneRow.innerHTML = `<label class="pe-param-label" for="pe-param-${customTone.key}">${Utils.escapeHtml(customTone.label)}</label><div class="pe-param-control"><input type="text" id="pe-param-${customTone.key}" class="pe-param-input" maxlength="${customTone.maxLength}" value="${Utils.escapeHtml(draft[customTone.key] || '')}" placeholder="${I18n.t('param.response_persona_custom.placeholder')}"><div class="pe-param-hint">${Utils.escapeHtml(customTone.hint)}</div></div>`;
             form.appendChild(customToneRow);
-            customToneRow.querySelector('input').addEventListener('input', (e) => { draft[customTone.key] = e.target.value; syncFooter('context'); });
+            customToneRow.querySelector('input').addEventListener('input', (e) => { draft[customTone.key] = e.target.value; syncFooter('response'); });
             function updateCustomToneVisibility() {
                 customToneRow.style.display = draft.response_persona === 'auto' ? 'none' : '';
             }
             updateCustomToneVisibility();
-
             bodyEl.appendChild(form);
-            renderFooter('context', computeDirty('context'), false);
+            renderFooter('response', computeDirty('response'), false);
         }
 
         function renderSystemPrompt() {
