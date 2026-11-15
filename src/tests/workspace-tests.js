@@ -41,6 +41,27 @@ function createHarness() {
                 files.set(file.id, file);
                 projects.set(file.projectId, { ...projects.get(file.projectId), updatedAt: Date.now() });
             },
+            async saveFiles(batch, options = {}) {
+                const projectId = batch[0]?.projectId;
+                const siblings = [...files.values()].filter(item => item.projectId === projectId);
+                const paths = new Set(siblings.map(item => item.path));
+                const ids = new Set(siblings.map(item => item.id));
+                const incomingPaths = new Set();
+                const incomingIds = new Set();
+                for (const file of batch) {
+                    if (ids.has(file.id) || incomingIds.has(file.id) || paths.has(file.path) || incomingPaths.has(file.path)) {
+                        throw Object.assign(new Error('duplicate file'), { code: 'file-exists' });
+                    }
+                    incomingIds.add(file.id);
+                    incomingPaths.add(file.path);
+                }
+                if (siblings.length + batch.length > options.maxFiles) throw Object.assign(new Error('file limit'), { code: 'project-file-limit' });
+                const total = [...siblings, ...batch].reduce((sum, item) => sum + item.size, 0);
+                if (total > options.maxBytes) throw Object.assign(new Error('size limit'), { code: 'project-size-limit' });
+                batch.forEach(file => files.set(file.id, file));
+                projects.set(projectId, { ...projects.get(projectId), updatedAt: Date.now() });
+                return batch;
+            },
             async deleteProjectFile(projectId, fileId) {
                 const file = files.get(fileId);
                 if (!file || file.projectId !== projectId) return false;
@@ -152,4 +173,53 @@ test('expõe a alteração de acesso somente pela fachada pública após init', 
     const file = await workspace.files.create('project_a', { path: 'readme.md', content: 'docs' });
     const updated = await workspace.files.setAccess('project_a', file.id, 'allowed');
     assert.equal(updated.aiAccess, 'allowed');
+});
+
+test('cria vários arquivos por uma operação e nega acesso da IA por padrão', async () => {
+    const { registry, files } = createHarness();
+    const created = await registry.createMany('project_a', [
+        { path: 'src/index.js', content: 'export {};' },
+        { path: 'docs/README.md', content: '# Docs' }
+    ]);
+    assert.equal(created.length, 2);
+    assert.deepEqual(created.map(file => file.path), ['src/index.js', 'docs/README.md']);
+    assert.ok(created.every(file => file.aiAccess === 'denied'));
+    assert.equal([...files.values()].filter(file => file.projectId === 'project_a').length, 2);
+});
+
+test('createMany rejeita lote inválido sem persistir qualquer arquivo', async () => {
+    const { registry, files } = createHarness();
+    await assert.rejects(registry.createMany('project_a', [
+        { path: 'src/valid.js', content: 'valid' },
+        { path: 'src/../escape.js', content: 'invalid' }
+    ]), { code: 'invalid-path' });
+    await assert.rejects(registry.createMany('project_a', [
+        { path: 'src/duplicate.js', content: 'one' },
+        { path: 'src/duplicate.js', content: 'two' }
+    ]), { code: 'file-exists' });
+    assert.equal(files.size, 0);
+});
+
+test('createMany valida conflitos e limites do projeto antes de persistir', async () => {
+    const { registry, files } = createHarness();
+    await registry.create('project_a', { path: 'existing.txt', content: 'existing' });
+    await assert.rejects(registry.createMany('project_a', [
+        { path: 'new.txt', content: 'new' },
+        { path: 'existing.txt', content: 'collision' }
+    ]), { code: 'file-exists' });
+    await assert.rejects(registry.createMany('project_a', [
+        { path: 'a.txt', content: 'a'.repeat(1024 * 1024) },
+        { path: 'b.txt', content: 'b'.repeat(1024 * 1024) }
+    ]), { code: 'project-size-limit' });
+    assert.equal([...files.values()].filter(file => file.projectId === 'project_a').length, 1);
+});
+
+test('expõe createMany somente pela fachada pública após init', async () => {
+    const { workspace } = createHarness();
+    await workspace.init();
+    const files = await workspace.files.createMany('project_a', [
+        { path: 'src/a.js', content: 'a' },
+        { path: 'src/b.js', content: 'b' }
+    ]);
+    assert.equal(files.length, 2);
 });
