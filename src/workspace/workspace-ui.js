@@ -64,7 +64,7 @@ const WorkspaceUI = (() => {
             label: I18n.t('ws.project.saveSettings'),
             ariaLabel: I18n.t('ws.project.saveSettings'),
             variant: 'outline',
-            onClick: saveProjectSettings
+            onClick: async () => { try { await saveProjectSettings(); } catch (error) { notify(error.message || I18n.t('ws.errors.operationFailed'), 'error'); } }
         });
         projectSettings.append(
             labeledField('ws.project.name', projectName),
@@ -188,12 +188,13 @@ const WorkspaceUI = (() => {
             editor.hidden = !hasFile;
             fileSaveButton.disabled = !hasFile || !fileDirty() || loading;
             fileDeleteButton.disabled = !hasFile || loading;
-            fileAccess.disabled = !hasFile || loading || accessMode.value !== 'selected';
+            const effectiveMode = currentProject?.settings?.aiAccessMode || 'selected';
+            fileAccess.disabled = !hasFile || loading || effectiveMode !== 'selected';
             fileMeta.textContent = hasFile
                 ? (selectedFile.extension || I18n.t('ws.editor.noExtension')) + ' · ' + Utils.formatBytes(new TextEncoder().encode(fileContent.value).byteLength)
                 : '';
-            if (accessMode.value === 'none') accessHint.textContent = I18n.t('ws.access.overriddenNone');
-            else if (accessMode.value === 'all') accessHint.textContent = I18n.t('ws.access.overriddenAll');
+            if (effectiveMode === 'none') accessHint.textContent = I18n.t('ws.access.overriddenNone');
+            else if (effectiveMode === 'all') accessHint.textContent = I18n.t('ws.access.overriddenAll');
             else accessHint.textContent = I18n.t('ws.access.selectedHint');
         }
 
@@ -246,8 +247,10 @@ const WorkspaceUI = (() => {
                     row.setAttribute('aria-selected', String(selectedFile?.id === file.id));
                     row.title = file.path;
                     row.style.paddingInlineStart = (depth * 14 + 8) + 'px';
-                    const access = element('span', 'pe-workspace__file-access ' + (file.aiAccess === 'allowed' ? 'is-allowed' : 'is-denied'),
-                        file.aiAccess === 'allowed' ? I18n.t('ws.access.allowedShort') : I18n.t('ws.access.deniedShort'));
+                    const mode = currentProject?.settings?.aiAccessMode || 'selected';
+                    const effectiveAllowed = mode === 'all' || (mode === 'selected' && file.aiAccess === 'allowed');
+                    const access = element('span', 'pe-workspace__file-access ' + (effectiveAllowed ? 'is-allowed' : 'is-denied'),
+                        effectiveAllowed ? I18n.t('ws.access.allowedShort') : I18n.t('ws.access.deniedShort'));
                     row.appendChild(access);
                     row.addEventListener('click', () => selectFile(file.id));
                     fragment.appendChild(row);
@@ -308,6 +311,12 @@ const WorkspaceUI = (() => {
                     showStatus(I18n.t('ws.status.noProject'));
                     return;
                 }
+                fillProject(null);
+                files = [];
+                selectedFile = null;
+                filePath.value = '';
+                fileContent.value = '';
+                buildTree();
                 const project = await Workspace.projects.get(projectId);
                 if (!project) throw new Error(I18n.t('ws.errors.projectMissing'));
                 fillProject(project);
@@ -404,7 +413,7 @@ const WorkspaceUI = (() => {
         }
 
         async function selectFile(fileId) {
-            if (!await confirmLeaveFile()) return;
+            if (!await confirmLeave()) return;
             loading = true;
             updateEditorState();
             try {
@@ -470,6 +479,7 @@ const WorkspaceUI = (() => {
         }
 
         async function createProject() {
+            if (!await confirmLeave()) return;
             const name = createName.value.trim();
             if (!name) { createName.focus(); return; }
             loading = true;
@@ -524,7 +534,7 @@ const WorkspaceUI = (() => {
         }
 
         async function createFile() {
-            if (!currentProject) return;
+            if (!currentProject || !await confirmLeave()) return;
             const path = newPath.value.trim();
             if (!path) { newPath.focus(); return; }
             try {
@@ -539,7 +549,7 @@ const WorkspaceUI = (() => {
         }
 
         async function importFiles(fileList) {
-            if (!currentProject || !fileList?.length) return;
+            if (!currentProject || !fileList?.length || !await confirmLeave()) return;
             let imported = 0;
             const existing = new Set(files.map(file => file.path));
             for (const incoming of Array.from(fileList)) {
@@ -565,7 +575,7 @@ const WorkspaceUI = (() => {
         }
 
         async function deleteFile() {
-            if (!selectedFile) return;
+            if (!selectedFile || !await confirmLeave()) return;
             const confirmed = await askChoice(
                 I18n.t('ws.files.deleteTitle'),
                 I18n.t('ws.files.deleteMessage', { path: selectedFile.path }),
