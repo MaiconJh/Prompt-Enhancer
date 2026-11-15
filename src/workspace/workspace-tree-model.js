@@ -24,29 +24,57 @@ const WorkspaceTreeModel = (() => {
     }
 
     function flattenVisible(index, options = {}) {
-        const expanded = options.expandedPaths && typeof options.expandedPaths.has === 'function' ? options.expandedPaths : new Set();
+        const expanded = options.expandedPaths && typeof options.expandedPaths.has === 'function'
+            ? options.expandedPaths
+            : new Set();
         const query = String(options.searchQuery || '').trim().toLocaleLowerCase();
         const rows = [];
-        const hasMatchingDescendant = (node, value) => {
-            if ((node.sortedFiles || []).some(file => file.path.toLocaleLowerCase().includes(value))) return true;
-            return (node.sortedFolders || []).some(folder =>
-                folder.path.toLocaleLowerCase().includes(value) || hasMatchingDescendant(folder, value)
-            );
-        };
-        const visit = (node, depth) => {
+        const matches = new Map();
+
+        if (query) {
+            const indexMatches = node => {
+                let matched = (node.sortedFiles || []).some(file => file.path.toLocaleLowerCase().includes(query));
+                for (const folder of node.sortedFolders || []) {
+                    const descendantsMatch = indexMatches(folder);
+                    const folderMatch = folder.path.toLocaleLowerCase().includes(query);
+                    matches.set(folder, folderMatch || descendantsMatch);
+                    matched = matched || folderMatch || descendantsMatch;
+                }
+                return matched;
+            };
+            indexMatches(index);
+        }
+
+        const visit = (node, depth, revealAll = false) => {
             for (const folder of node.sortedFolders || []) {
-                const matchingFiles = query ? hasMatchingDescendant(folder, query) : true;
                 const folderMatches = query && folder.path.toLocaleLowerCase().includes(query);
-                if (query && !matchingFiles && !folderMatches) continue;
+                if (query && !revealAll && !matches.get(folder)) continue;
                 const isExpanded = query ? true : expanded.has(folder.path);
-                rows.push({ kind: 'folder', key: 'folder:' + folder.path, path: folder.path, name: folder.name, depth, expanded: isExpanded });
-                if (isExpanded) visit(folder, depth + 1);
+                rows.push({
+                    kind: 'folder',
+                    key: 'folder:' + folder.path,
+                    path: folder.path,
+                    name: folder.name,
+                    depth,
+                    expanded: isExpanded
+                });
+                if (isExpanded) visit(folder, depth + 1, revealAll || !!folderMatches);
             }
+
             for (const file of node.sortedFiles || []) {
-                if (query && !file.path.toLocaleLowerCase().includes(query)) continue;
-                rows.push({ kind: 'file', key: 'file:' + file.id, id: file.id, path: file.path, name: file.name, depth, file });
+                if (query && !revealAll && !file.path.toLocaleLowerCase().includes(query)) continue;
+                rows.push({
+                    kind: 'file',
+                    key: 'file:' + file.id,
+                    id: file.id,
+                    path: file.path,
+                    name: file.name,
+                    depth,
+                    file
+                });
             }
         };
+
         visit(index, 0);
         return rows;
     }
