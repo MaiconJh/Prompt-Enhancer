@@ -720,6 +720,14 @@
       ]
     },
     {
+      "file": "workspace/workspace-inspector-view.js",
+      "description": "Composes contextual Workspace permissions and project settings into a collapsible inspector panel.",
+      "interfaces": { "provides": ["WorkspaceInspectorView"], "consumes": ["I18n", "Atoms"] },
+      "interactions": [
+        "The UI supplies existing settings sections and close behavior; the inspector owns only panel presentation and visibility."
+      ]
+    },
+    {
       "file": "workspace/workspace-ui.js",
       "description": "Provides the project and text-file management interface for the Workspace settings view.",
       "interfaces": {
