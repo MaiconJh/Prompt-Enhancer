@@ -4414,7 +4414,7 @@ function injectStyles() {
         .pe-workspace__tree {
             display: flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 0;
             min-height: 120px;
             flex: 1 1 auto;
             max-height: none;
@@ -4436,7 +4436,7 @@ function injectStyles() {
         .pe-workspace__file-actions > .pe-param-input { flex: 1 1 100%; min-width: 0; }
         .pe-workspace__folder { min-width: 0; }
         .pe-workspace__folder-row {
-            display: flex; align-items: center; gap: 7px; width: 100%; min-width: 0;
+            display: flex; flex: 0 0 30px; align-items: center; gap: 7px; width: 100%; min-width: 0;
             height: 30px; padding-block: 0; padding-inline-end: 8px;
             border: 1px solid transparent; border-radius: var(--pe-radius-sm);
             background: transparent; color: var(--pe-text-muted); cursor: pointer;
