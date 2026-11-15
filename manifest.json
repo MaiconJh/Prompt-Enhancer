@@ -767,7 +767,14 @@
     {
       "file": "workspace/workspace-panel-layout.js",
       "description": "Provides an accessible, bounded resizable explorer/editor split.",
-      "interfaces": { "provides": ["WorkspacePanelLayout"], "consumes": ["I18n"] },
+      "interfaces": {
+        "provides": [
+          "WorkspacePanelLayout"
+        ],
+        "consumes": [
+          "I18n"
+        ]
+      },
       "interactions": [
         "Workspace UI owns the layout composition and inserts the separator; this module handles pointer and keyboard resizing."
       ]
@@ -788,7 +795,8 @@
           "WorkspaceController",
           "WorkspaceExplorerView",
           "WorkspaceEditorView",
-          "WorkspaceInspectorView"
+          "WorkspaceInspectorView",
+          "WorkspacePanelLayout"
         ]
       },
       "interactions": [
