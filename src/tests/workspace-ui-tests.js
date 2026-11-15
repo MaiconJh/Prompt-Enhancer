@@ -23,7 +23,7 @@ test('Workspace UI separa navegação em quatro áreas independentes', () => {
         ['files', 'filesView'],
         ['access', 'accessView'],
         ['settings', 'projectSettings']
-    ]) assert.match(uiSource, new RegExp(variable + "\\\\.dataset\\\\.viewPanel = '" + view + "'"));
+    ]) assert.ok(uiSource.includes(variable + ".dataset.viewPanel = '" + view + "'"));
     assert.match(uiSource, /function setActiveView\(key\)/);
     assert.match(uiSource, /aria-selected/);
     assert.match(uiSource, /function updateOverview\(\)/);
