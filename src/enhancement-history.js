@@ -20,9 +20,40 @@
                 });
                 trimmed = trimmed.slice(0, CONFIG.HISTORY_MAX_RUNS);
                 let serialized = JSON.stringify(trimmed);
-                while (serialized.length > CONFIG.HISTORY_MAX_BYTES && trimmed.length > 1) {
+                while (serialized.length > CONFIG.HISTORY_MAX_CHARS && trimmed.length > 1) {
                     trimmed.pop();
                     serialized = JSON.stringify(trimmed);
+                }
+
+                // 2. Se UM ÚNICO registro ainda ultrapassar o limite total, trunca os campos pesados
+                if (serialized.length > CONFIG.HISTORY_MAX_CHARS && trimmed.length === 1) {
+                    const singleRun = trimmed[0];
+
+                    // Remove payloads (system prompts/mensagens) das chamadas, pois são os maiores ofensores
+                    if (Array.isArray(singleRun.calls)) {
+                        singleRun.calls.forEach(call => {
+                            if (call.payload) delete call.payload;
+                            if (call.output && call.output.length > 2000) {
+                                call.output = call.output.slice(0, 2000) + '… [truncado]';
+                            }
+                        });
+                    }
+
+                    // Trunca o input e output gerais da execução
+                    if (singleRun.input && singleRun.input.length > 1000) {
+                        singleRun.input = singleRun.input.slice(0, 1000) + '… [truncado]';
+                    }
+                    if (singleRun.output && singleRun.output.length > 2000) {
+                        singleRun.output = singleRun.output.slice(0, 2000) + '… [truncado]';
+                    }
+
+                    serialized = JSON.stringify(trimmed);
+
+                    // Fallback extremo (segurança): se ainda for maior, descarta o registro para não estourar a cota
+                    if (serialized.length > CONFIG.HISTORY_MAX_CHARS) {
+                        trimmed = [];
+                        serialized = '[]';
+                    }
                 }
                 GM_setValue(KEY, serialized);
             } catch (_) {}
