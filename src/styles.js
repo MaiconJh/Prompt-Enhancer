@@ -4673,7 +4673,7 @@ function injectStyles() {
         @media (max-width: 768px) {
             .pe-workspace__shell { flex-direction: column; min-height: 0; }
             .pe-workspace__activity-bar { flex: 0 0 auto; flex-direction: row; justify-content: space-around; padding: 4px; }
-            .pe-workspace__nav-button { flex: 1 1 0; justify-content: center; min-width: 0; min-height: 42px; }
+            .pe-workspace__nav-button { flex: 1 1 0; justify-content: center; min-width: 0; min-height: 44px; }
             .pe-workspace__nav-button[aria-current="page"] { justify-content: center; }
             .pe-workspace__nav-button[aria-current="page"] .pe-workspace__nav-label { display: none; }
             .pe-workspace__header { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
@@ -4687,6 +4687,8 @@ function injectStyles() {
             .pe-workspace__header { grid-template-columns: minmax(0, 1fr); }
             .pe-workspace__create-project { flex-wrap: wrap; }
             .pe-workspace__create-project > * { flex: 1 1 100%; }
+            .pe-workspace__file-create-row { grid-template-columns: minmax(0, 1fr) 44px; }
+            .pe-workspace__icon-action { flex-basis: 44px; width: 44px; min-width: 44px; height: 44px; }
             .pe-workspace__file-actions { align-items: stretch; }
             .pe-workspace__file-actions > * { flex: 1 1 100%; }
             .pe-workspace__editor-actions { align-items: stretch; }
