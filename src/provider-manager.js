@@ -309,7 +309,7 @@
 
         function _chatUrl(baseUrl) {
             const parsed = _parseAndValidateUrl(baseUrl);
-            const path = parsed.pathname.replace(/\\/+$/, '');
+            const path = parsed.pathname.replace(/\/+$/, '');
             if (!path.endsWith('/chat/completions')) {
                 parsed.pathname = `${path}/chat/completions`;
             } else {
