@@ -23,11 +23,22 @@ try {
     throw new Error(`Não foi possível ler manifest.json válido: ${error.message}`);
 }
 
+async function collectSourceFiles(prefix = '') {
+    const directory = prefix ? path.join(sourceDir, ...prefix.split('/')) : sourceDir;
+    const entries = await readdir(directory, { withFileTypes: true });
+    const files = [];
+    for (const entry of entries) {
+        const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
+        if (entry.isDirectory()) {
+            if (relative === 'tests') continue;
+            files.push(...await collectSourceFiles(relative));
+        } else if (entry.isFile()) files.push(relative);
+    }
+    return files;
+}
+
 const expectedFiles = [...STRUCTURAL_FILES, ...manifest.modules.map(({ file }) => file)].sort();
-const actualFiles = (await readdir(sourceDir, { withFileTypes: true }))
-    .filter((entry) => entry.isFile())
-    .map((entry) => entry.name)
-    .sort();
+const actualFiles = (await collectSourceFiles()).sort();
 const missingFiles = expectedFiles.filter((name) => !actualFiles.includes(name));
 const extraFiles = actualFiles.filter((name) => !expectedFiles.includes(name));
 if (missingFiles.length || extraFiles.length) {
@@ -39,7 +50,7 @@ if (missingFiles.length || extraFiles.length) {
 }
 
 async function readSource(name) {
-    return readFile(path.join(sourceDir, name), 'utf8');
+    return readFile(path.join(sourceDir, ...name.split('/')), 'utf8');
 }
 
 const banner = await readSource('banner.js');
