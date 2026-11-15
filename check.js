@@ -142,7 +142,7 @@ for (const grant of declaredGrants) {
     }
 }
 
-const markerCount = (source.match(/^\/\/ ===== src\/[^/]+\.js =====$/gm) || []).length;
+const markerCount = (source.match(/^\/\/ ===== src\/.+\.js =====$/gm) || []).length;
 if (markerCount !== manifest.modules.length + STRUCTURAL_FILES.length) {
     failures.push(`Quantidade de marcadores inválida no bundle: ${markerCount} (esperado ${manifest.modules.length + STRUCTURAL_FILES.length}).`);
 }
