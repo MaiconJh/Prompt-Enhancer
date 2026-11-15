@@ -697,20 +697,15 @@ const WorkspaceUI = (() => {
         async function createBatchFiles() {
             if (!currentProject || !await confirmLeave()) return;
             const mode = batchComposer.dataset.mode;
-            const names = batchPaths.value.split(/\r?\n/).map(value => value.trim()).filter(Boolean);
+            const names = WorkspaceController.parsePaths(batchPaths.value);
             if (!names.length) { batchPaths.focus(); return; }
-            const folder = batchFolderPath.value.trim().replace(/\/+$/, '');
-            if (mode === 'folder' && !folder) { batchFolderPath.focus(); return; }
-            const paths = names.map(name => mode === 'folder' ? folder + '/' + name : name);
-            const unique = new Set(paths);
-            if (unique.size !== paths.length) {
-                notify(I18n.t('ws.errors.batchDuplicate'), 'error');
-                return;
-            }
+            if (mode === 'folder' && !batchFolderPath.value.trim()) { batchFolderPath.focus(); return; }
             loading = true;
             updateProjectControls();
             try {
-                const created = await Workspace.files.createMany(currentProject.id, paths.map(path => ({ path, content: '' })));
+                const created = mode === 'folder'
+                    ? await WorkspaceController.createFolder(currentProject.id, batchFolderPath.value, names)
+                    : await WorkspaceController.createFiles(currentProject.id, names);
                 closeBatchComposer();
                 await refreshFiles();
                 if (created[0]) await selectFile(created[0].id);
@@ -729,23 +724,7 @@ const WorkspaceUI = (() => {
             loading = true;
             updateProjectControls();
             try {
-                const batch = [];
-                const paths = new Set();
-                for (const incoming of Array.from(fileList)) {
-                    if (incoming.size > 1024 * 1024) throw new Error(incoming.name + ': ' + I18n.t('ws.errors.fileTooLarge'));
-                    const mime = (incoming.type || '').toLowerCase();
-                    const textMime = !mime || mime.startsWith('text/')
-                        || ['application/json', 'application/xml', 'application/javascript', 'application/x-yaml'].includes(mime);
-                    if (!textMime) throw new Error(incoming.name + ': ' + I18n.t('ws.errors.textOnly'));
-                    const content = new TextDecoder('utf-8', { fatal: true }).decode(await incoming.arrayBuffer());
-                    const relativePath = incoming.webkitRelativePath || incoming.name;
-                    const validation = Workspace.files.validate({ path: relativePath, content });
-                    if (!validation.valid) throw new Error(incoming.name + ': ' + validation.message);
-                    if (paths.has(validation.path)) throw new Error(I18n.t('ws.errors.duplicatePath', { path: validation.path }));
-                    paths.add(validation.path);
-                    batch.push({ path: validation.path, content, mimeType: incoming.type || 'text/plain' });
-                }
-                const created = await Workspace.files.createMany(targetProjectId, batch);
+                const created = await WorkspaceController.importFiles(targetProjectId, fileList);
                 await refreshFiles();
                 showStatus(I18n.t('ws.files.importSummary', { count: created.length }));
                 notify(I18n.t('ws.files.importSummary', { count: created.length }), 'success');
