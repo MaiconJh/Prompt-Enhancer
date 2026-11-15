@@ -690,7 +690,12 @@
     {
       "file": "workspace/workspace-tree-model.js",
       "description": "Builds a normalized in-memory directory index and flattened visible rows for Workspace files.",
-      "interfaces": { "provides": ["WorkspaceTreeModel"], "consumes": [] },
+      "interfaces": {
+        "provides": [
+          "WorkspaceTreeModel"
+        ],
+        "consumes": []
+      },
       "interactions": [
         "Explorer view consumes sorted directory nodes and flattened visible rows; directories remain derived from file paths."
       ]
@@ -698,7 +703,15 @@
     {
       "file": "workspace/workspace-explorer-view.js",
       "description": "Renders the Workspace file explorer with persistent folder expansion, path search, keyboard navigation and threshold-based row virtualization.",
-      "interfaces": { "provides": ["WorkspaceExplorerView"], "consumes": ["WorkspaceTreeModel", "I18n"] },
+      "interfaces": {
+        "provides": [
+          "WorkspaceExplorerView"
+        ],
+        "consumes": [
+          "WorkspaceTreeModel",
+          "I18n"
+        ]
+      },
       "interactions": [
         "Workspace UI passes file metadata, selected file ID and selection callbacks; the view never accesses persistence or mutates Workspace data."
       ]
@@ -706,7 +719,15 @@
     {
       "file": "workspace/workspace-editor-view.js",
       "description": "Owns the Workspace editor surface, controls and editor-specific DOM lifecycle.",
-      "interfaces": { "provides": ["WorkspaceEditorView"], "consumes": ["I18n", "Atoms"] },
+      "interfaces": {
+        "provides": [
+          "WorkspaceEditorView"
+        ],
+        "consumes": [
+          "I18n",
+          "Atoms"
+        ]
+      },
       "interactions": [
         "The Workspace UI supplies save/delete and panel-toggle callbacks; the editor view does not access Workspace persistence."
       ]
@@ -714,7 +735,15 @@
     {
       "file": "workspace/workspace-controller.js",
       "description": "Coordinates Workspace file creation and import workflows through the public Workspace facade.",
-      "interfaces": { "provides": ["WorkspaceController"], "consumes": ["Workspace", "I18n"] },
+      "interfaces": {
+        "provides": [
+          "WorkspaceController"
+        ],
+        "consumes": [
+          "Workspace",
+          "I18n"
+        ]
+      },
       "interactions": [
         "UI delegates batch creation, folder initialization and text-file import; the controller validates inputs and commits through Workspace.files.createMany()."
       ]
@@ -722,7 +751,15 @@
     {
       "file": "workspace/workspace-inspector-view.js",
       "description": "Composes contextual Workspace permissions and project settings into a collapsible inspector panel.",
-      "interfaces": { "provides": ["WorkspaceInspectorView"], "consumes": ["I18n", "Atoms"] },
+      "interfaces": {
+        "provides": [
+          "WorkspaceInspectorView"
+        ],
+        "consumes": [
+          "I18n",
+          "Atoms"
+        ]
+      },
       "interactions": [
         "The UI supplies existing settings sections and close behavior; the inspector owns only panel presentation and visibility."
       ]
@@ -739,7 +776,11 @@
           "I18n",
           "Utils",
           "Atoms",
-          "Molecules"
+          "Molecules",
+          "WorkspaceController",
+          "WorkspaceExplorerView",
+          "WorkspaceEditorView",
+          "WorkspaceInspectorView"
         ]
       },
       "interactions": [
