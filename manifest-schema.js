@@ -40,6 +40,6 @@ export function validateManifest(manifest) {
 export function renderModuleMetadata(module) {
     const provides = module.interfaces.provides.join(', ') || 'none';
     const consumes = module.interfaces.consumes.join(', ') || 'none';
-    const interactions = module.interactions.map(interaction => `//   - ${interaction}`).join('\\n');
-    return [`// ===== Module: ${module.file} =====`, `// Description: ${module.description}`, '// Interfaces:', `//   Provides: ${provides}`, `//   Consumes: ${consumes}`, '// Interactions:', interactions].join('\\n');
+    const interactions = module.interactions.map(interaction => `//   - ${interaction}`).join('\n');
+    return [`// ===== Module: ${module.file} =====`, `// Description: ${module.description}`, '// Interfaces:', `//   Provides: ${provides}`, `//   Consumes: ${consumes}`, '// Interactions:', interactions].join('\n');
 }
