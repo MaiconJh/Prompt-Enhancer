@@ -319,7 +319,8 @@
         }
 
         function _confirmCustomHost(url) {
-            if (typeof window === 'undefined' || typeof window.confirm !== 'function') return true;
+            // Fail closed: endpoints personalizados nunca são liberados sem confirmação explícita.
+            if (typeof window === 'undefined' || typeof window.confirm !== 'function') return false;
             return window.confirm(URL_CUSTOM_CONFIRM_MSG.replace('{url}', url));
         }
 
