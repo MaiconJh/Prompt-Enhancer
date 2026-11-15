@@ -93,7 +93,7 @@ const WorkspaceExplorerView = (() => {
     function render(container, options = {}) {
         let state = states.get(container);
         if (!state) {
-            state = { expandedPaths: new Set(), files: null, index: null, rows: [], options: {}, start: 0, end: 0 };
+            state = { expandedPaths: new Set(), files: null, index: null, rows: [], options: {}, start: 0, end: 0, lastSelectedFileId: null };
             states.set(container, state);
             state.onScroll = () => { if (container.dataset.virtualized === 'true') renderRows(container, state); };
             state.onClick = event => {
@@ -147,6 +147,14 @@ const WorkspaceExplorerView = (() => {
             container.addEventListener('keydown', state.onKeyDown);
         }
         state.options = { ...options, files: Array.isArray(options.files) ? options.files : [] };
+        if (state.options.selectedFileId && state.options.selectedFileId !== state.lastSelectedFileId) {
+            const selected = state.options.files.find(file => file.id === state.options.selectedFileId);
+            if (selected) {
+                const parts = selected.path.split('/');
+                for (let index = 1; index < parts.length; index++) state.expandedPaths.add(parts.slice(0, index).join('/'));
+            }
+        }
+        state.lastSelectedFileId = state.options.selectedFileId || null;
         if (state.files !== state.options.files) {
             state.files = state.options.files;
             state.index = WorkspaceTreeModel.buildIndex(state.files);
