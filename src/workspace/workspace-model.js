@@ -3,8 +3,6 @@ const WorkspaceModel = (() => {
     const DEFAULT_PROJECT_SETTINGS = Object.freeze({
         instructions: '',
         aiAccessMode: 'selected',
-        allowAiEdits: false,
-        requireEditApproval: true
     });
 
     function createId(prefix = 'ws') {
@@ -28,8 +26,6 @@ const WorkspaceModel = (() => {
             instructions: typeof sourceSettings.instructions === 'string' ? sourceSettings.instructions.slice(0, 20_000) : DEFAULT_PROJECT_SETTINGS.instructions,
             aiAccessMode: ['all', 'selected', 'none'].includes(sourceSettings.aiAccessMode)
                 ? sourceSettings.aiAccessMode : DEFAULT_PROJECT_SETTINGS.aiAccessMode,
-            allowAiEdits: sourceSettings.allowAiEdits === true,
-            requireEditApproval: sourceSettings.requireEditApproval !== false
         };
         const now = Date.now();
         const id = input.id === undefined ? createId('project') : String(input.id);
