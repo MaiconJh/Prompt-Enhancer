@@ -225,6 +225,7 @@ const WorkspaceStorage = (() => {
         putProject: value => write('projects', value),
         addProject: value => add('projects', value),
         updateProject,
+        deleteProject,
         getFile: id => read('files', id),
         listFiles: projectId => readAll('files', 'byProject', projectId),
         putFile: value => write('files', value),
