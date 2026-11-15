@@ -25,7 +25,11 @@
             return { text: '', status: 'workspace-unavailable', project: null, includedFiles: [] };
         }
         if (!Workspace.isInitialized()) {
-            return { text: '', status: 'workspace-not-initialized', project: null, includedFiles: [] };
+            try { await Workspace.init(); }
+            catch (error) {
+                console.warn('[PE Workspace] Falha ao inicializar Workspace:', error);
+                return { text: '', status: 'workspace-not-initialized', project: null, includedFiles: [] };
+            }
         }
         const projectId = Workspace.getActiveProjectId();
         if (!projectId) return { text: '', status: 'project-not-configured', project: null, includedFiles: [] };
