@@ -50,11 +50,10 @@ The UI must use this public facade. It must not access IndexedDB, `WorkspaceStor
 
 The UI should display useful limits and validate early, but the Workspace layer remains authoritative.
 
-### Known API gap to resolve before access controls ship
+### Existing per-file permission API
 
-The current `FileRegistry.update()` updates path, content and MIME type, but does not persist `aiAccess`. The current public facade therefore cannot safely support per-file permission editing yet.
+`Workspace.files.setAccess(projectId, fileId, access)` is already implemented. It accepts only `allowed` or `denied`, verifies that the file belongs to the specified project and persists the change through the Workspace storage layer. Keep permission changes behind this public facade.
 
-Before implementing the permission control, extend the Workspace API with a narrowly validated operation, preferably `Workspace.files.setAccess(projectId, fileId, access)`, accepting only `allowed` or `denied`. Add tests for invalid values, wrong-project file IDs and successful updates. Do not silently treat a UI-only toggle as persisted permission.
 
 ## 3. Information architecture
 
