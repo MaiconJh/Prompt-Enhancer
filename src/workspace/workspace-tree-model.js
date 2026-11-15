@@ -24,7 +24,7 @@ const WorkspaceTreeModel = (() => {
     }
 
     function flattenVisible(index, options = {}) {
-        const expanded = options.expandedPaths instanceof Set ? options.expandedPaths : new Set();
+        const expanded = options.expandedPaths && typeof options.expandedPaths.has === 'function' ? options.expandedPaths : new Set();
         const query = String(options.searchQuery || '').trim().toLocaleLowerCase();
         const rows = [];
         const hasMatchingDescendant = (node, value) => {
