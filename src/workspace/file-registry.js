@@ -39,7 +39,7 @@ const FileRegistry = (() => {
             id: WorkspaceModel.createId('file'), projectId: project.id, path: validation.path, name,
             extension: dot > 0 ? name.slice(dot + 1).toLowerCase() : '',
             mimeType: String(input.mimeType || 'text/plain'), size: validation.size, content: input.content,
-            createdAt: now, updatedAt: now, version: 1, aiAccess: 'allowed'
+            createdAt: now, updatedAt: now, version: 1, aiAccess: 'denied'
         };
         await WorkspaceStorage.putFile(file);
         await ProjectManager.update(project.id, {});
