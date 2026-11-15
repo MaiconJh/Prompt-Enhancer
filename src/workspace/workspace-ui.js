@@ -200,6 +200,21 @@ const WorkspaceUI = (() => {
         let selectedFile = null;
         let loading = false;
 
+        let explorerCollapsed = false;
+        let focusMode = false;
+
+        function toggleExplorer() {
+            explorerCollapsed = !explorerCollapsed;
+            root.classList.toggle('is-explorer-collapsed', explorerCollapsed);
+            editorView.setExplorerCollapsed(explorerCollapsed);
+        }
+
+        function toggleFocusMode() {
+            focusMode = !focusMode;
+            root.classList.toggle('is-focus-mode', focusMode);
+            editorView.setFocusMode(focusMode);
+        }
+
         function setActiveView(key) {
             const next = viewDefinitions.some(([view]) => view === key) ? key : 'overview';
             if (next !== 'overview' && !currentProject) return;
