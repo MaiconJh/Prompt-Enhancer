@@ -697,11 +697,11 @@ const WorkspaceUI = (() => {
         async function createBatchFiles() {
             if (!currentProject || !await confirmLeave()) return;
             const mode = batchComposer.dataset.mode;
-            const names = batchPaths.value.split(/\\r?\\n/).map(value => value.trim()).filter(Boolean);
+            const names = batchPaths.value.split(/\r?\n/).map(value => value.trim()).filter(Boolean);
             if (!names.length) { batchPaths.focus(); return; }
-            const folder = batchFolderPath.value.trim().replace(/\\/+$/, '');
+            const folder = batchFolderPath.value.trim().replace(/\/+$/, '');
             if (mode === 'folder' && !folder) { batchFolderPath.focus(); return; }
-            const paths = names.map(name => mode === 'folder' ? folder + '/' + name.replace(/^\\/+/, '') : name);
+            const paths = names.map(name => mode === 'folder' ? folder + '/' + name : name);
             const unique = new Set(paths);
             if (unique.size !== paths.length) {
                 notify(I18n.t('ws.errors.batchDuplicate'), 'error');
