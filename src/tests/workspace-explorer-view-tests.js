@@ -69,7 +69,11 @@ test('recolher pasta remove descendentes sem descartar os arquivos do índice', 
         { id: 'b', name: 'b.js', path: 'src/lib/b.js', aiAccess: 'denied' }
     ];
     view.render(container, { files });
-    const folder = container.querySelector('[data-row-kind="folder"]');
+    let folder = container.querySelector('[data-row-path="src"]');
+    folder.click();
+    assert.equal(container.querySelectorAll('[data-row-kind="folder"]').length, 2);
+    assert.equal(container.querySelectorAll('[data-row-kind="file"]').length, 1);
+    folder = container.querySelector('[data-row-path="src"]');
     folder.click();
     assert.equal(container.querySelectorAll('[data-row-kind="folder"]').length, 1);
     assert.equal(container.querySelectorAll('[data-row-kind="file"]').length, 0);
