@@ -42,6 +42,7 @@ const Workspace = (() => {
             get: (...args) => { assertInitialized(); return FileRegistry.get(...args); },
             create: (...args) => { assertInitialized(); return FileRegistry.create(...args); },
             update: (...args) => { assertInitialized(); return FileRegistry.update(...args); },
+            setAccess: (...args) => { assertInitialized(); return FileRegistry.setAccess(...args); },
             remove: (...args) => { assertInitialized(); return FileRegistry.remove(...args); },
             validate: (...args) => FileRegistry.validateTextFile(...args)
         }

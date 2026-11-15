@@ -114,6 +114,25 @@ const FileRegistry = (() => {
         return metadata(updated);
     }
 
+    async function setAccess(projectId, fileId, access) {
+        if (access !== 'allowed' && access !== 'denied') {
+            throw createError('A permissão da IA deve ser allowed ou denied.', 'invalid-ai-access');
+        }
+        const current = await get(projectId, fileId);
+        if (!current) throw createError('Arquivo não encontrado neste projeto.', 'file-not-found');
+        const updated = {
+            ...current,
+            aiAccess: access,
+            updatedAt: Date.now()
+        };
+        await WorkspaceStorage.saveFile(updated, {
+            maxFiles: MAX_PROJECT_FILES,
+            maxBytes: MAX_PROJECT_BYTES,
+            mode: 'update'
+        });
+        return metadata(updated);
+    }
+
     async function remove(projectId, fileId) {
         const project = await ProjectManager.get(projectId);
         if (!project) return false;
@@ -127,6 +146,7 @@ const FileRegistry = (() => {
         get,
         create,
         update,
+        setAccess,
         remove,
         validateTextFile,
         limits: Object.freeze({
