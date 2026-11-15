@@ -104,14 +104,64 @@ const WorkspaceUI = (() => {
         importInput.multiple = true;
         importInput.accept = 'text/*,.txt,.md,.json,.js,.mjs,.cjs,.ts,.tsx,.jsx,.html,.css,.scss,.xml,.yml,.yaml,.toml,.ini,.py,.java,.c,.cpp,.h,.sh,.sql,.csv,.properties';
         importInput.setAttribute('aria-label', I18n.t('ws.files.import'));
+        const importDirectoryInput = element('input', 'pe-workspace__file-input');
+        importDirectoryInput.type = 'file';
+        importDirectoryInput.multiple = true;
+        importDirectoryInput.setAttribute('webkitdirectory', '');
+        importDirectoryInput.setAttribute('directory', '');
+        importDirectoryInput.accept = importInput.accept;
+        importDirectoryInput.setAttribute('aria-label', I18n.t('ws.files.importDirectory'));
         const importButton = Atoms.buttonNode({
             label: I18n.t('ws.files.import'),
             ariaLabel: I18n.t('ws.files.import'),
             variant: 'ghost',
             onClick: () => importInput.click()
         });
+        const importDirectoryButton = Atoms.buttonNode({
+            label: I18n.t('ws.files.importDirectory'),
+            ariaLabel: I18n.t('ws.files.importDirectory'),
+            variant: 'ghost',
+            onClick: () => importDirectoryInput.click()
+        });
+        const batchButton = Atoms.buttonNode({
+            label: I18n.t('ws.files.createMultiple'),
+            ariaLabel: I18n.t('ws.files.createMultiple'),
+            variant: 'outline',
+            onClick: () => openBatchComposer('files')
+        });
+        const folderButton = Atoms.buttonNode({
+            label: I18n.t('ws.files.createFolder'),
+            ariaLabel: I18n.t('ws.files.createFolder'),
+            variant: 'outline',
+            onClick: () => openBatchComposer('folder')
+        });
+        const batchComposer = element('section', 'pe-workspace__batch-composer');
+        batchComposer.hidden = true;
+        const batchTitle = element('strong', 'pe-workspace__batch-title');
+        const batchFolderPath = element('input', 'pe-param-input');
+        batchFolderPath.type = 'text';
+        batchFolderPath.placeholder = I18n.t('ws.files.folderPath');
+        const batchPaths = element('textarea', 'pe-param-input pe-workspace__batch-paths');
+        batchPaths.rows = 6;
+        batchPaths.spellcheck = false;
+        batchPaths.placeholder = I18n.t('ws.files.multiplePathsPlaceholder');
+        const batchActions = element('div', 'pe-workspace__batch-actions');
+        const batchCancel = Atoms.buttonNode({
+            label: I18n.t('ws.project.cancel'),
+            ariaLabel: I18n.t('ws.project.cancel'),
+            variant: 'ghost',
+            onClick: closeBatchComposer
+        });
+        const batchSubmit = Atoms.buttonNode({
+            label: I18n.t('ws.files.create'),
+            ariaLabel: I18n.t('ws.files.create'),
+            variant: 'primary',
+            onClick: createBatchFiles
+        });
+        batchActions.append(batchCancel, batchSubmit);
+        batchComposer.append(batchTitle, batchFolderPath, batchPaths, batchActions);
         const fileActions = element('div', 'pe-workspace__file-actions');
-        fileActions.append(newPath, createFileButton, importButton, importInput);
+        fileActions.append(newPath, createFileButton, folderButton, batchButton, importButton, importDirectoryButton, importInput, importDirectoryInput, batchComposer);
         const treeSearch = element('input', 'pe-param-input pe-workspace__tree-search');
         treeSearch.type = 'search';
         treeSearch.placeholder = I18n.t('ws.files.search');
@@ -303,9 +353,16 @@ const WorkspaceUI = (() => {
             accessMode.disabled = loading;
             instructions.disabled = loading;
             newPath.disabled = loading;
+            batchFolderPath.disabled = loading;
+            batchPaths.disabled = loading;
+            batchSubmit.disabled = loading;
+            batchCancel.disabled = loading;
             projectDeleteButton.disabled = !hasProject || loading;
             createFileButton.disabled = !hasProject || loading;
             importButton.disabled = !hasProject || loading;
+            importDirectoryButton.disabled = !hasProject || loading;
+            batchButton.disabled = !hasProject || loading;
+            folderButton.disabled = !hasProject || loading;
             projectSave.disabled = !hasProject || !projectDirty() || loading;
             updateEditorState();
         }
@@ -602,6 +659,26 @@ const WorkspaceUI = (() => {
             notify(I18n.t('ws.project.deleted'), 'success');
         }
 
+        function openBatchComposer(mode) {
+            batchComposer.hidden = false;
+            batchComposer.dataset.mode = mode;
+            batchTitle.textContent = mode === 'folder' ? I18n.t('ws.files.createFolder') : I18n.t('ws.files.createMultiple');
+            batchFolderPath.hidden = mode !== 'folder';
+            batchPaths.placeholder = mode === 'folder'
+                ? I18n.t('ws.files.folderFilesPlaceholder')
+                : I18n.t('ws.files.multiplePathsPlaceholder');
+            batchFolderPath.value = '';
+            batchPaths.value = '';
+            (mode === 'folder' ? batchFolderPath : batchPaths).focus();
+        }
+
+        function closeBatchComposer() {
+            batchComposer.hidden = true;
+            batchComposer.dataset.mode = '';
+            batchFolderPath.value = '';
+            batchPaths.value = '';
+        }
+
         async function createFile() {
             if (!currentProject || !await confirmLeave()) return;
             const path = newPath.value.trim();
@@ -617,39 +694,63 @@ const WorkspaceUI = (() => {
             }
         }
 
+        async function createBatchFiles() {
+            if (!currentProject || !await confirmLeave()) return;
+            const mode = batchComposer.dataset.mode;
+            const names = batchPaths.value.split(/\\r?\\n/).map(value => value.trim()).filter(Boolean);
+            if (!names.length) { batchPaths.focus(); return; }
+            const folder = batchFolderPath.value.trim().replace(/\\/+$/, '');
+            if (mode === 'folder' && !folder) { batchFolderPath.focus(); return; }
+            const paths = names.map(name => mode === 'folder' ? folder + '/' + name.replace(/^\\/+/, '') : name);
+            const unique = new Set(paths);
+            if (unique.size !== paths.length) {
+                notify(I18n.t('ws.errors.batchDuplicate'), 'error');
+                return;
+            }
+            loading = true;
+            updateProjectControls();
+            try {
+                const created = await Workspace.files.createMany(currentProject.id, paths.map(path => ({ path, content: '' })));
+                closeBatchComposer();
+                await refreshFiles();
+                if (created[0]) await selectFile(created[0].id);
+                notify(I18n.t('ws.files.createdSummary', { count: created.length }), 'success');
+            } catch (error) {
+                notify(error.message || I18n.t('ws.errors.createFileFailed'), 'error');
+            } finally {
+                loading = false;
+                updateProjectControls();
+            }
+        }
+
         async function importFiles(fileList) {
             if (!currentProject || !fileList?.length || !await confirmLeave()) return;
             const targetProjectId = currentProject.id;
             loading = true;
             updateProjectControls();
-            let imported = 0;
-            const existing = new Set(files.map(file => file.path));
             try {
+                const batch = [];
+                const paths = new Set();
                 for (const incoming of Array.from(fileList)) {
-                    try {
-                        if (incoming.size > 1024 * 1024) throw new Error(I18n.t('ws.errors.fileTooLarge'));
-                        const mime = (incoming.type || '').toLowerCase();
-                        const textMime = !mime || mime.startsWith('text/')
-                            || ['application/json', 'application/xml', 'application/javascript', 'application/x-yaml'].includes(mime);
-                        if (!textMime) throw new Error(I18n.t('ws.errors.textOnly'));
-                        const content = new TextDecoder('utf-8', { fatal: true }).decode(await incoming.arrayBuffer());
-                        const validation = Workspace.files.validate({ path: incoming.name, content });
-                        if (!validation.valid) throw new Error(validation.message);
-                        if (existing.has(validation.path)) throw new Error(I18n.t('ws.errors.duplicatePath', { path: validation.path }));
-                        await Workspace.files.create(targetProjectId, {
-                            path: validation.path,
-                            content,
-                            mimeType: incoming.type || 'text/plain'
-                        });
-                        existing.add(validation.path);
-                        imported++;
-                    } catch (error) {
-                        notify(incoming.name + ': ' + (error.message || I18n.t('ws.errors.importFailed')), 'error');
-                    }
+                    if (incoming.size > 1024 * 1024) throw new Error(incoming.name + ': ' + I18n.t('ws.errors.fileTooLarge'));
+                    const mime = (incoming.type || '').toLowerCase();
+                    const textMime = !mime || mime.startsWith('text/')
+                        || ['application/json', 'application/xml', 'application/javascript', 'application/x-yaml'].includes(mime);
+                    if (!textMime) throw new Error(incoming.name + ': ' + I18n.t('ws.errors.textOnly'));
+                    const content = new TextDecoder('utf-8', { fatal: true }).decode(await incoming.arrayBuffer());
+                    const relativePath = incoming.webkitRelativePath || incoming.name;
+                    const validation = Workspace.files.validate({ path: relativePath, content });
+                    if (!validation.valid) throw new Error(incoming.name + ': ' + validation.message);
+                    if (paths.has(validation.path)) throw new Error(I18n.t('ws.errors.duplicatePath', { path: validation.path }));
+                    paths.add(validation.path);
+                    batch.push({ path: validation.path, content, mimeType: incoming.type || 'text/plain' });
                 }
+                const created = await Workspace.files.createMany(targetProjectId, batch);
                 await refreshFiles();
-                showStatus(I18n.t('ws.files.importSummary', { count: imported }));
-                if (imported) notify(I18n.t('ws.files.importSummary', { count: imported }), 'success');
+                showStatus(I18n.t('ws.files.importSummary', { count: created.length }));
+                notify(I18n.t('ws.files.importSummary', { count: created.length }), 'success');
+            } catch (error) {
+                notify(error.message || I18n.t('ws.errors.importFailed'), 'error');
             } finally {
                 loading = false;
                 updateProjectControls();
@@ -736,6 +837,12 @@ const WorkspaceUI = (() => {
             await importFiles(importInput.files);
             importInput.value = '';
         });
+        importDirectoryInput.addEventListener('change', async () => {
+            await importFiles(importDirectoryInput.files);
+            importDirectoryInput.value = '';
+        });
+        newPath.addEventListener('keydown', event => { if (event.key === 'Enter') createFile(); });
+        batchPaths.addEventListener('keydown', event => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') createBatchFiles(); });
 
         async function initialize() {
             try {
