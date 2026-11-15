@@ -15,12 +15,19 @@ function createProviderHarness(initialValues = {}) {
     const merged = { pe_ui_language: 'pt-BR', ...initialValues };
     const values = new Map(Object.entries(merged));
     let uid = 0;
+    let confirmCalls = 0;
     const context = vm.createContext({
         GM_getValue: (key, fallback) => values.has(key) ? values.get(key) : fallback,
         GM_setValue: (key, value) => values.set(key, value),
         GM_deleteValue: (key) => values.delete(key),
         Utils: { uid: (prefix) => `${prefix}-${++uid}` },
-        window: { dispatchEvent: () => {}, addEventListener: () => {}, removeEventListener: () => {} }
+        URL,
+        window: {
+            dispatchEvent: () => {},
+            addEventListener: () => {},
+            removeEventListener: () => {},
+            confirm: () => { confirmCalls++; return true; }
+        }
     });
 
     vm.runInContext(configSource, context, { filename: 'src/config.js' });
@@ -36,7 +43,8 @@ function createProviderHarness(initialValues = {}) {
         defaultProvider,
         providerManager,
         values,
-        CONFIG: vm.runInContext('CONFIG', context)
+        CONFIG: vm.runInContext('CONFIG', context),
+        get confirmCalls() { return confirmCalls; }
     };
 }
 
@@ -179,4 +187,56 @@ test('fallback só é resolvido quando escolhido e nunca pode ser também o prin
     providerManager.setActive(secondary.id);
     assert.equal(providerManager.getFallback(), null);
     assert.equal(providerManager.resolveForRequest().primary.id, secondary.id);
+});
+
+
+test('URLs dos provedores nativos são aceitas sem confirmação e o Ollama local usa HTTP', () => {
+    const harness = createProviderHarness();
+    const nativeHosts = [
+        'https://openrouter.ai/api/v1',
+        'https://generativelanguage.googleapis.com/v1beta/openai',
+        'https://api.mistral.ai/v1',
+        'https://api.cloudflare.com/client/v4/accounts/example/ai/v1',
+        'https://text.pollinations.ai',
+        'https://gen.pollinations.ai',
+        'https://api.groq.com/openai/v1',
+        'https://oai.endpoints.kepler.ai.cloud.ovh.net/v1'
+    ];
+
+    for (const url of nativeHosts) {
+        harness.providerManager.add({ url, model: 'test-model' });
+    }
+    harness.providerManager.add({ url: 'http://localhost:11434/v1', model: 'llama3.2' });
+
+    assert.equal(harness.confirmCalls, 0);
+    const providers = harness.providerManager.list();
+    assert.ok(providers.some((provider) => provider.url === 'http://localhost:11434/v1/chat/completions'));
+});
+
+test('URLs customizadas e portas não padrão exigem confirmação', () => {
+    const harness = createProviderHarness();
+    harness.providerManager.add({ url: 'https://api.example.test/v1', model: 'custom-model' });
+    assert.equal(harness.confirmCalls, 1);
+
+    harness.providerManager.add({ url: 'https://api.groq.com:8443/openai/v1', model: 'custom-port-model' });
+    assert.equal(harness.confirmCalls, 2);
+});
+
+test('validação de URL rejeita protocolos inseguros e credenciais embutidas', () => {
+    const { providerManager } = createProviderHarness();
+    for (const url of [
+        'javascript:alert(1)',
+        'file:///etc/passwd',
+        'ftp://api.example.test/v1',
+        'http://api.example.test/v1',
+        'https://user:password@api.example.test/v1'
+    ]) {
+        assert.throws(() => providerManager.add({ url, model: 'invalid-model' }), Error, url);
+    }
+});
+
+test('URL com hostname Unicode é normalizada pelo parser nativo', () => {
+    const { providerManager } = createProviderHarness();
+    const provider = providerManager.add({ url: 'https://münich.example/v1', model: 'unicode-host' });
+    assert.match(provider.url, /^https:\/\/xn--mnich-kva\.example\/v1\/chat\/completions$/);
 });
