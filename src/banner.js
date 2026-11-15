@@ -30,10 +30,16 @@
 // @grant        GM_listValues
 // @connect      openrouter.ai
 // @connect      ai-gateway.kilo.ai
+// @connect      text.pollinations.ai
 // @connect      gen.pollinations.ai
 // @connect      keylessai.thryx.workers.dev
 // @connect      api.groq.com
 // @connect      oai.endpoints.kepler.ai.cloud.ovh.net
+// @connect      generativelanguage.googleapis.com
+// @connect      api.mistral.ai
+// @connect      api.cloudflare.com
+// @connect      localhost
+// @connect      127.0.0.1
 // @require      https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js#sha256=KAM+RJox68w5blvosTtjFSvwMJQoj7WGcDQyGSe84Ic=
 // @noframes
 // @run-at       document-idle
