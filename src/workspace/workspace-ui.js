@@ -522,7 +522,8 @@ const WorkspaceUI = (() => {
                 [
                     { label: I18n.t('ws.project.cancel'), value: false },
                     { label: I18n.t('ws.project.delete'), variant: 'primary', action: async () => {
-                        await Workspace.projects.remove(currentProject.id);
+                        const removed = await Workspace.projects.remove(currentProject.id);
+                        if (!removed) throw new Error(I18n.t('ws.errors.projectMissing'));
                         if (Workspace.getActiveProjectId() === currentProject.id) await Workspace.setActiveProjectId(null);
                         return true;
                     } }
@@ -555,7 +556,12 @@ const WorkspaceUI = (() => {
             const existing = new Set(files.map(file => file.path));
             for (const incoming of Array.from(fileList)) {
                 try {
-                    const content = await incoming.text();
+                    if (incoming.size > 1024 * 1024) throw new Error(I18n.t('ws.errors.fileTooLarge'));
+                    const mime = (incoming.type || '').toLowerCase();
+                    const textMime = !mime || mime.startsWith('text/')
+                        || ['application/json', 'application/xml', 'application/javascript', 'application/x-yaml'].includes(mime);
+                    if (!textMime) throw new Error(I18n.t('ws.errors.textOnly'));
+                    const content = new TextDecoder('utf-8', { fatal: true }).decode(await incoming.arrayBuffer());
                     const validation = Workspace.files.validate({ path: incoming.name, content });
                     if (!validation.valid) throw new Error(validation.message);
                     if (existing.has(validation.path)) throw new Error(I18n.t('ws.errors.duplicatePath', { path: validation.path }));
@@ -592,7 +598,8 @@ const WorkspaceUI = (() => {
                 [
                     { label: I18n.t('ws.project.cancel'), value: false },
                     { label: I18n.t('ws.files.delete'), variant: 'primary', action: async () => {
-                        await Workspace.files.remove(currentProject.id, selectedFile.id);
+                        const removed = await Workspace.files.remove(currentProject.id, selectedFile.id);
+                        if (!removed) throw new Error(I18n.t('ws.errors.fileMissing'));
                         return true;
                     } }
                 ]
