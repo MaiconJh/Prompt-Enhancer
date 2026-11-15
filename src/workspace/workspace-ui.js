@@ -177,7 +177,8 @@ const WorkspaceUI = (() => {
             onSave: saveFile,
             onDelete: deleteFile,
             onToggleExplorer: toggleExplorer,
-            onToggleFocus: toggleFocusMode
+            onToggleFocus: toggleFocusMode,
+            onToggleInspector: toggleInspector
         });
         const {
             panel: editorPanel,
@@ -243,7 +244,12 @@ const WorkspaceUI = (() => {
             projectSave
         );
 
-        root.append(header, navigation, overviewView, filesView, accessView, projectSettings);
+        const inspectorView = WorkspaceInspectorView.create({
+            sections: [accessView, projectSettings],
+            onClose: toggleInspector
+        });
+        workspaceLayout.appendChild(inspectorView.panel);
+                root.append(header, navigation, overviewView, filesView);
         let projects = [];
         let currentProject = null;
         let files = [];
@@ -252,6 +258,7 @@ const WorkspaceUI = (() => {
 
         let explorerCollapsed = false;
         let focusMode = false;
+        let inspectorOpen = false;
 
         function toggleExplorer() {
             explorerCollapsed = !explorerCollapsed;
@@ -263,6 +270,12 @@ const WorkspaceUI = (() => {
             focusMode = !focusMode;
             root.classList.toggle('is-focus-mode', focusMode);
             editorView.setFocusMode(focusMode);
+        }
+
+        function toggleInspector() {
+            inspectorOpen = !inspectorOpen;
+            inspectorView.setOpen(inspectorOpen);
+            editorView.setInspectorOpen(inspectorOpen);
         }
 
         function setActiveView(key) {
@@ -340,9 +353,9 @@ const WorkspaceUI = (() => {
 
         function updateProjectControls() {
             const hasProject = !!currentProject;
-            projectSettings.hidden = !hasProject || activeView !== 'settings';
+            projectSettings.hidden = !hasProject;
             filesView.hidden = !hasProject || activeView !== 'files';
-            accessView.hidden = !hasProject || activeView !== 'access';
+            accessView.hidden = !hasProject;
             for (const [view] of viewDefinitions) viewButtons[view].disabled = view !== 'overview' && !hasProject;
             if (!hasProject && activeView !== 'overview') setActiveView('overview');
             updateOverview();
