@@ -386,7 +386,7 @@ The refactor is ready when:
 11. Resolver/Composer remain read-only.
 12. No versioning, snapshots, diffs or restore mechanisms are introduced.
 13. PT-BR and EN are complete for every new label, status, validation and error.
-14. Build and CI pass on Node 22 and Node 24.
+14. Monaco is bundled locally with its required workers and does not load runtime assets from a CDN.\n15. The Monaco editor is created lazily, disposed when no longer needed and keeps unsaved drafts after failed saves.\n16. Editor undo/redo remains session-local; no persistent history or snapshots are introduced.\n17. Build and CI pass on Node 22 and Node 24.
 
 ## 13. Explicit non-goals
 
@@ -401,15 +401,3 @@ The refactor is ready when:
 - Replacing ProjectContext with Workspace.
 - Runtime CDN loading or remote Monaco workers.
 - Introducing a new UI framework or unrelated design system.
-
-## 13. Explicit non-goals
-
-- Cloud synchronization or remote project storage.
-- Git integration.
-- Binary assets, image preview or arbitrary file execution.
-- AI-generated file modifications.
-- Automatic project discovery from the host page.
-- Multiple simultaneously active projects.
-- File version history, snapshots, diff or restore.
-- Replacing ProjectContext with Workspace.
-- Introducing a third-party code editor in the first iteration.
