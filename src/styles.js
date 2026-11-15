@@ -3078,6 +3078,15 @@ function injectStyles() {
             flex-direction: column;
             overflow: hidden;
         }
+        .pe-scope .pe-modal.is-workspace-expanded {
+            width: min(1280px, calc(100vw - 48px));
+            height: min(900px, calc(100dvh - 48px));
+            max-height: min(900px, calc(100dvh - 48px));
+        }
+        .pe-scope .pe-modal.is-workspace-expanded .pe-panel__body {
+            padding: 18px 22px 28px;
+        }
+
         .pe-scope .pe-modal::before {
             content: "";
             position: absolute;
@@ -4446,15 +4455,6 @@ function injectStyles() {
         .pe-workspace__splitter:focus-visible { box-shadow: var(--pe-focus-ring); }
 .pe-workspace__inspector { display: none; }
         .pe-workspace.is-focus-mode .pe-workspace__inspector-toggle { display: none; }
-        .pe-scope .pe-modal.is-workspace-expanded {
-            width: min(1280px, calc(100vw - 48px));
-            height: min(900px, calc(100dvh - 48px));
-            max-height: min(900px, calc(100dvh - 48px));
-        }
-        .pe-scope .pe-modal.is-workspace-expanded .pe-panel__body {
-            padding: 18px 22px 28px;
-        }
-
         .pe-workspace__layout {
             position: relative;
             display: grid;
