@@ -39,17 +39,14 @@ test('cria vários arquivos em uma única chamada atômica', async () => {
     const result = await controller.createFiles('project-a', 'src/a.js\ndocs/readme.md');
     assert.equal(calls.length, 1);
     assert.equal(calls[0].projectId, 'project-a');
-    assert.deepEqual(calls[0].files.map(file => file.path), ['src/a.js', 'docs/readme.md']);
+    assert.equal(Array.from(calls[0].files, file => file.path).join('|'), 'src/a.js|docs/readme.md');
     assert.equal(result.length, 2);
 });
 
 test('cria pasta somente junto com seus arquivos iniciais', async () => {
     const { controller, calls } = createHarness();
     await controller.createFolder('project-a', 'src/components/', 'Button.jsx\nforms/Input.jsx');
-    assert.deepEqual(calls[0].files.map(file => file.path), [
-        'src/components/Button.jsx',
-        'src/components/forms/Input.jsx'
-    ]);
+    assert.equal(Array.from(calls[0].files, file => file.path).join('|'), 'src/components/Button.jsx|src/components/forms/Input.jsx');
 });
 
 test('importa caminhos relativos e delega o lote inteiro a createMany', async () => {
@@ -63,7 +60,7 @@ test('importa caminhos relativos e delega o lote inteiro a createMany', async ()
         makeFile('README.md', 'sample/README.md', '# Docs')
     ]);
     assert.equal(calls.length, 1);
-    assert.deepEqual(calls[0].files.map(file => file.path), ['sample/src/index.js', 'sample/README.md']);
+    assert.equal(Array.from(calls[0].files, file => file.path).join('|'), 'sample/src/index.js|sample/README.md');
 });
 
 test('rejeita MIME binário, UTF-8 inválido e caminho inválido antes de persistir', async () => {
