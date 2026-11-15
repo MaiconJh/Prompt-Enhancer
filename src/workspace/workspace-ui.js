@@ -266,6 +266,11 @@ const WorkspaceUI = (() => {
 
         function toggleFocusMode() {
             focusMode = !focusMode;
+            if (focusMode && inspectorOpen) {
+                inspectorOpen = false;
+                inspectorView.setOpen(false);
+                editorView.setInspectorOpen(false);
+            }
             root.classList.toggle('is-focus-mode', focusMode);
             editorView.setFocusMode(focusMode);
         }
