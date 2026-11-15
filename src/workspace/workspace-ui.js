@@ -57,7 +57,9 @@ const WorkspaceUI = (() => {
             button.setAttribute('role', 'tab');
             button.setAttribute('aria-selected', String(key === activeView));
             button.dataset.view = key;
-            button.addEventListener('click', () => setActiveView(key));
+            button.addEventListener('click', async () => {
+                if (activeView !== key && await confirmLeave()) setActiveView(key);
+            });
             navigation.appendChild(button);
             viewButtons[key] = button;
         }
@@ -384,9 +386,15 @@ const WorkspaceUI = (() => {
         }
 
         async function refreshFiles() {
-            if (!currentProject) { files = []; buildTree(); return; }
+            if (!currentProject) {
+                files = [];
+                buildTree();
+                updateOverview();
+                return;
+            }
             files = await Workspace.files.list(currentProject.id);
             buildTree();
+            updateOverview();
         }
 
         async function loadProject(projectId) {
@@ -739,13 +747,14 @@ const WorkspaceUI = (() => {
         }
 
         projectSelect.addEventListener('change', () => changeProject(projectSelect.value));
-        navigation.addEventListener('keydown', event => {
+        navigation.addEventListener('keydown', async event => {
             if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
             const available = viewDefinitions.map(([key]) => key).filter(key => key === 'overview' || !!currentProject);
             const current = available.indexOf(activeView);
             const next = event.key === 'Home' ? 0 : event.key === 'End' ? available.length - 1
                 : (current + (event.key === 'ArrowRight' ? 1 : -1) + available.length) % available.length;
             event.preventDefault();
+            if (available[next] !== activeView && !await confirmLeave()) return;
             setActiveView(available[next]);
             viewButtons[available[next]].focus();
         });
