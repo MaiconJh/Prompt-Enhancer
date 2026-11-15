@@ -8,6 +8,11 @@ const sourceDir = path.join(root, 'src');
 const outputDir = path.join(root, 'dist');
 const outputFile = path.join(outputDir, 'prompt-enhancer.user.js');
 
+const packageJson = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
+const packageVersion = packageJson.version;
+const escapedVersion = packageVersion.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\const dev = process.argv.includes('--dev') || process.env.PE_DEV === '1';
+const minifyCss = process.argv.includes('--minify-css') || process.env.PE_MINIFY_CSS === '1';');
+
 const dev = process.argv.includes('--dev') || process.env.PE_DEV === '1';
 const minifyCss = process.argv.includes('--minify-css') || process.env.PE_MINIFY_CSS === '1';
 
@@ -132,7 +137,147 @@ if (dev) {
         '// @run-at       document-idle',
         `// @updateURL   http://127.0.0.1:8787/prompt-enhancer.user.js\n// @downloadURL http://127.0.0.1:8787/prompt-enhancer.user.js\n// @run-at       document-idle`
     );
-    bundle = bundle.replace(/^(\/\/ @version\s+)1\.0\.0(\s*)$/m, `$11.0.0-dev.${timestamp}$2`);
+    const versionPattern = new RegExp(`^(\\/\\/ @version\\s+)${escapedVersion}(\\s*)import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { renderModuleMetadata, STRUCTURAL_FILES, validateManifest } from './manifest-schema.js';
+
+const root = path.dirname(fileURLToPath(import.meta.url));
+const sourceDir = path.join(root, 'src');
+const outputDir = path.join(root, 'dist');
+const outputFile = path.join(outputDir, 'prompt-enhancer.user.js');
+
+const packageJson = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
+const packageVersion = packageJson.version;
+const escapedVersion = packageVersion.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\const dev = process.argv.includes('--dev') || process.env.PE_DEV === '1';
+const minifyCss = process.argv.includes('--minify-css') || process.env.PE_MINIFY_CSS === '1';');
+
+const dev = process.argv.includes('--dev') || process.env.PE_DEV === '1';
+const minifyCss = process.argv.includes('--minify-css') || process.env.PE_MINIFY_CSS === '1';
+
+let manifest;
+try {
+    manifest = JSON.parse(await readFile(path.join(root, 'manifest.json'), 'utf8'));
+    validateManifest(manifest);
+} catch (error) {
+    throw new Error(`Não foi possível ler manifest.json válido: ${error.message}`);
+}
+
+const expectedFiles = [...STRUCTURAL_FILES, ...manifest.modules.map(({ file }) => file)].sort();
+const actualFiles = (await readdir(sourceDir, { withFileTypes: true }))
+    .filter((entry) => entry.isFile())
+    .map((entry) => entry.name)
+    .sort();
+const missingFiles = expectedFiles.filter((name) => !actualFiles.includes(name));
+const extraFiles = actualFiles.filter((name) => !expectedFiles.includes(name));
+if (missingFiles.length || extraFiles.length) {
+    const details = [
+        missingFiles.length ? `ausentes: ${missingFiles.join(', ')}` : '',
+        extraFiles.length ? `inesperados: ${extraFiles.join(', ')}` : ''
+    ].filter(Boolean).join('; ');
+    throw new Error(`Conteúdo de src/ não corresponde ao manifest.json (${details}).`);
+}
+
+async function readSource(name) {
+    return readFile(path.join(sourceDir, name), 'utf8');
+}
+
+const banner = await readSource('banner.js');
+
+/**
+ * Minifica cirurgicamente o objeto DICTS de src/i18n.js no bundle de build.
+ * Mantém o source do repo legível (multilinha) e deixa o dist com o dicionário
+ * em uma única linha (JSON compacto), sem dependências externas.
+ * Usa o próprio parser V8 (new Function) para validar a sintaxe e JSON.stringify
+ * para serializar de volta com segurança, evitando quebras de string por regex.
+ */
+function minifyDictionaries(source) {
+    const marker = 'const DICTS = {';
+    const startIndex = source.indexOf(marker);
+    if (startIndex === -1) return source;
+
+    let openBraces = 0;
+    let endIndex = -1;
+
+    // Encontra o fechamento exato do objeto DICTS contando as chaves
+    for (let i = startIndex + marker.length - 1; i < source.length; i++) {
+        if (source[i] === '{') openBraces++;
+        else if (source[i] === '}') {
+            openBraces--;
+            if (openBraces === 0) {
+                endIndex = i + 1;
+                if (source[endIndex] === ';') endIndex++;
+                break;
+            }
+        }
+    }
+
+    if (endIndex === -1) return source;
+
+    // Extrai apenas o objeto literal { ... }
+    const dictCode = source.substring(startIndex + 'const DICTS ='.length, endIndex - 1).trim();
+
+    try {
+        // Parser do próprio Node valida a sintaxe do objeto multilinha
+        const dictObj = new Function(`return (${dictCode})`)();
+
+        // JSON.stringify compacta tudo em uma linha e normaliza aspas/acentos
+        const minifiedDict = `const DICTS = ${JSON.stringify(dictObj)};`;
+
+        // Substitui o bloco original no source
+        return source.substring(0, startIndex) + minifiedDict + source.substring(endIndex);
+    } catch (e) {
+        console.warn('[build] Falha ao minificar dicionários i18n:', e.message);
+        return source;
+    }
+}
+
+const open = await readSource('open.js');
+const modules = await Promise.all(manifest.modules.map(async (module) => {
+    let source = await readSource(module.file);
+
+    // Minifica o bloco CSS do styles.js (mantém o source legível no repo).
+    // Ative com --minify-css ou PE_MINIFY_CSS=1 (ex.: build de produção).
+    // Colapsa apenas o interior de cada bloco { ... } (seletor + propriedades
+    // em uma linha) e preserva quebras entre blocos/seções.
+    if (module.file === 'styles.js' && minifyCss) {
+        const match = source.match(/const css = `([\s\S]*)`;/);
+        if (match) {
+            let css = match[1]
+                .replace(/\/\*[\s\S]*?\*\//g, '');            // remove comentários CSS
+            css = css.replace(/\{([\s\S]*?)\}/g, (_m, body) => {
+                const minBody = body
+                    .replace(/\s+/g, ' ')
+                    .replace(/\s*([{}:;,>+~\[\]()])\s*/g, '$1')
+                    .replace(/;}\s*$/, '}')
+                    .trim();
+                return `{${minBody}}`;
+            });
+            source = source.replace(match[1], css.trim());
+        }
+    }
+
+    // Minifica o bloco DICTS do i18n.js no build de produção.
+    // Ativado por --minify-css, PE_MINIFY_CSS=1, --minify-i18n ou PE_MINIFY_I18N=1.
+    if (module.file === 'i18n.js' && (minifyCss || process.argv.includes('--minify-i18n') || process.env.PE_MINIFY_I18N === '1')) {
+        source = minifyDictionaries(source);
+    }
+
+    return `${renderModuleMetadata(module)}\n${source}`;
+}));
+const close = await readSource('close.js');
+let bundle = `${banner}\n\n${open}\n${modules.join('\n\n')}\n${close}\n`;
+
+await mkdir(outputDir, { recursive: true });
+
+if (dev) {
+    const timestamp = Date.now();
+    bundle = bundle.replace(
+        '// @run-at       document-idle',
+        `// @updateURL   http://127.0.0.1:8787/prompt-enhancer.user.js\n// @downloadURL http://127.0.0.1:8787/prompt-enhancer.user.js\n// @run-at       document-idle`
+    );
+, 'm');
+    bundle = bundle.replace(versionPattern, `$1${packageVersion}-dev.${timestamp}$2`);
     bundle = `// pe-dev-build\n${bundle}`;
     console.log(`[build:dev] updateURL + version bump ${new Date().toISOString()}`);
 }
