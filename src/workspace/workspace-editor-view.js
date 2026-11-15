@@ -7,7 +7,7 @@ const WorkspaceEditorView = (() => {
         return node;
     };
 
-    function create({ labeledField, onSave, onDelete, onToggleExplorer, onToggleFocus }) {
+    function create({ labeledField, onSave, onDelete, onToggleExplorer, onToggleFocus, onToggleInspector }) {
         const panel = element('section', 'pe-workspace__editor');
         const heading = element('div', 'pe-workspace__editor-toolbar');
         const title = element('div', 'pe-workspace__section-heading', I18n.t('ws.editor.title'));
@@ -18,13 +18,19 @@ const WorkspaceEditorView = (() => {
             variant: 'ghost',
             onClick: onToggleExplorer
         });
+        const inspectorButton = Atoms.buttonNode({
+            label: I18n.t('ws.inspector.toggle'),
+            ariaLabel: I18n.t('ws.inspector.toggle'),
+            variant: 'ghost',
+            onClick: onToggleInspector
+        });
         const focusButton = Atoms.buttonNode({
             label: I18n.t('ws.editor.focus'),
             ariaLabel: I18n.t('ws.editor.focus'),
             variant: 'ghost',
             onClick: onToggleFocus
         });
-        tools.append(explorerToggleButton, focusButton);
+        tools.append(explorerToggleButton, inspectorButton, focusButton);
         heading.append(title, tools);
 
         const empty = element('div', 'pe-workspace__empty', I18n.t('ws.editor.empty'));
@@ -64,11 +70,16 @@ const WorkspaceEditorView = (() => {
             deleteButton,
             explorerToggleButton,
             focusButton,
+            inspectorButton,
             setExplorerCollapsed(collapsed) {
                 explorerToggleButton.textContent = collapsed
                     ? I18n.t('ws.editor.showExplorer')
                     : I18n.t('ws.editor.hideExplorer');
                 explorerToggleButton.setAttribute('aria-label', explorerToggleButton.textContent);
+            },
+            setInspectorOpen(open) {
+                inspectorButton.textContent = open ? I18n.t('ws.inspector.hide') : I18n.t('ws.inspector.toggle');
+                inspectorButton.setAttribute('aria-label', inspectorButton.textContent);
             },
             setFocusMode(active) {
                 focusButton.textContent = active ? I18n.t('ws.editor.exitFocus') : I18n.t('ws.editor.focus');
