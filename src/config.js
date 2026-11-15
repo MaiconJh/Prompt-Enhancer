@@ -1,11 +1,10 @@
-// ===== Module: config.js =====
+// ===== src/config.js =====
 // Description: Defines provider defaults, runtime configuration, prompt templates, and animation constants.
 // Interfaces:
 //   Provides: DEFAULT_PROVIDER, CONFIG, DUR, EASE
 //   Consumes: GM_getValue
 // Interactions:
 //   - Provides shared settings to provider, context, API, and UI modules.
-// ===== src/config.js =====
     const ConfigStore = (() => {
         const memoryOverrides = new Map();
 
@@ -86,8 +85,12 @@
             'Preserve rigorosamente a intenção, a ação principal, o idioma original (salvo instrução explícita em contrário) e o tipo de entregável do pedido original. Se o pedido for de implementação, correção, refatoração ou alteração, o prompt aprimorado continua sendo uma tarefa prática de implementação, correção, refatoração ou alteração.',
             'Separe com clareza o estado atual (código existente, ambiente, restrições) das alterações desejadas. Incorpore o contexto fornecido (arquivos, trechos, restrições) como detalhes concretos do prompt e resuma blocos extensos sem copiá-los integralmente.',
             'Se faltar informação secundária, complete com hipóteses técnicas razoáveis inferidas do contexto. Não faça perguntas ao usuário, não peça esclarecimentos e não liste o que falta saber.',
-            'Retorne um único prompt em texto contínuo ou parágrafos naturais bem articulados. Não inclua títulos, cabeçalhos markdown, seções nomeadas, listas numeradas de perguntas, cercas de código envolvendo toda a resposta ou marcadores de análise.',
-            'Retorne APENAS o prompt aprimorado.'
+            'Retorne um único prompt em texto contínuo ou parágrafos naturais bem articulados. Não inclua títulos, cabeçalhos markdown, seções nomeadas, listas numeradas de perguntas, cercas de código envolvendo toda a resposta.',
+            'Retorne APENAS o prompt aprimorado.',
+            'Preserve a intenção, a ação e o tipo de resultado solicitados.',
+            'Quando o pedido for de implementação, correção ou alteração, mantenha esse objetivo.',
+            'desenvolva o pedido original sem perder o resultado que o usuário quer alcançar.',
+            'Para pedidos de implementação, correção ou alteração, mantenha a tarefa como objetivo.'
         ]),
         GUIDED_QUESTIONS: ConfigStore.composePrompt([
             'Você é um especialista em engenharia de prompts e levantamento de requisitos.',

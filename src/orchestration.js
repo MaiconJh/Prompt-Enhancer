@@ -65,6 +65,84 @@
         onEnhance(lastEnhance.btn, { skipParamsCheck: true, skipContext: false, forceNonStream: true, retryOfRunId: lastEnhance.runId || null });
     }
 
+// Validação e reparo delegados aos módulos output-validator e repair-handler
+// (globalThis.PE). Não há validação inline duplicada aqui.
+async function _enhanceWithValidation(original, answersOrOpts, opts = {}) {
+    let isGuided = Array.isArray(answersOrOpts);
+    let answers = null;
+    if (isGuided) {
+        answers = answersOrOpts;
+    } else {
+        opts = answersOrOpts;
+    }
+
+    const handler = new globalThis.PE.RepairHandler();
+    let enhanced;
+    let validation;
+    let analysis = null;
+    let repaired = false;
+
+    if (isGuided) {
+        enhanced = await ApiClient.enhanceWithAnswers(original, answers, {
+            ...opts,
+            callKind: 'enhance-with-answers',
+            attempt: 1
+        });
+    } else {
+        const result = await ApiClient.enhance(original, opts);
+        enhanced = result.prompt;
+        analysis = result.analysis;
+        validation = result.validation;
+        repaired = result.repaired;
+    }
+
+    if (isGuided) {
+        validation = globalThis.PE.validateOutput(original, enhanced);
+    }
+
+    if (!validation.valid && handler.canRepair()) {
+        handler.recordRepair();
+        const repairText = [
+            'Previous attempt produced invalid output: ' + validation.violations.map(v => v.message || v.type).join('; '),
+            'Reply with ONLY the enhanced prompt. No analysis, no meta-commentary.',
+            'Original request:',
+            original
+        ].join('\n\n');
+
+        const firstValidation = validation;
+        const firstEnhanced = enhanced;
+
+        if (isGuided) {
+            enhanced = await ApiClient.enhanceWithAnswers(repairText, answers, {
+                ...opts,
+                callKind: 'repair',
+                attempt: 2
+            });
+            validation = globalThis.PE.validateOutput(original, enhanced);
+        } else {
+            enhanced = await ApiClient.call(repairText, {
+                ...opts,
+                wrapUserContent: false,
+                repairPrevious: enhanced,
+                callKind: 'repair',
+                attempt: 2
+            });
+            validation = globalThis.PE.validateOutput(original, enhanced);
+        }
+
+        // Melhor das duas tentativas: se o reparo piorou, volta à primeira versão
+        if (validation.violations.length > firstValidation.violations.length) {
+            enhanced = firstEnhanced;
+            validation = firstValidation;
+            repaired = false;
+        } else {
+            repaired = true;
+        }
+    }
+
+    return { enhanced, validation, analysis: analysis || null, repaired: repaired || false };
+}
+
     async function onEnhance(btn, { skipParamsCheck = false, skipContext = false, forceNonStream = false, retryOfRunId = null } = {}) {
         if (State.isProcessing || State.isGuiding) return;
         const el = State.activeInput;
@@ -93,7 +171,7 @@
         overlay.setState('connecting');
 
         try {
-            const enhanced = await ApiClient.call(original, {
+            const { enhanced, validation, analysis } = await _enhanceWithValidation(original, {
                 params, skipContext, forceNonStream,
                 runId: capturedRunId,
                 callKind: 'main',
@@ -103,9 +181,9 @@
             overlay.setState('finalizing');
             await new Promise(r => setTimeout(r, 140));
             overlay.destroy();
-            EnhancementHistory.endRun(capturedRunId, { status: 'success', output: enhanced });
+            EnhancementHistory.endRun(capturedRunId, { status: 'success', output: enhanced, validation });
             State.preview = Molecules.preview({
-                original, enhanced, anchor: getAnchor(), trigger: btn || el,
+                original, enhanced, anchor: getAnchor(), trigger: btn || el, analysis,
                 onCancel: () => {
                     const run = EnhancementHistory.listRuns().find(r => r.id === capturedRunId);
                     if (run?.outcome !== 'applied') {
@@ -201,20 +279,20 @@
             onSubmit: async (answers, { onEvent } = {}) => {
                 wizardSubmitted = true;
                 try {
-                    const enhanced = await ApiClient.enhanceWithAnswers(base, answers, {
+                    const { enhanced, validation, analysis } = await _enhanceWithValidation(base, answers, {
                         params,
                         runId: capturedRunId,
                         callKind: 'enhance-with-answers',
                         attempt: 1,
                         onEvent
                     });
-                    EnhancementHistory.endRun(capturedRunId, { status: 'success', output: enhanced });
+                    EnhancementHistory.endRun(capturedRunId, { status: 'success', output: enhanced, validation });
                     return {
                         onSuccess: () => {
                             State.wizard = null;
                             State.isGuiding = false;
                             State.preview = Molecules.preview({
-                                original: base, enhanced, anchor: getAnchor(), trigger: btn || el,
+                                original: base, enhanced, anchor: getAnchor(), trigger: btn || el, analysis,
                                 onCancel: () => {
                                     const run = EnhancementHistory.listRuns().find(r => r.id === capturedRunId);
                                     if (run?.outcome !== 'applied') {

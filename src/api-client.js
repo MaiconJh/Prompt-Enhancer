@@ -7,6 +7,14 @@
         return normalizedBase + normalizedPath;
     }
 
+    function _parseAnalisePrompt(text) {
+        const analiseMatch = text.match(/<analise>([\s\S]*?)<\/analise>/i);
+        const promptMatch = text.match(/<prompt>([\s\S]*?)<\/prompt>/i);
+        const analysis = analiseMatch ? analiseMatch[1].trim() : null;
+        const prompt = promptMatch ? promptMatch[1].trim() : null;
+        return { analysis, prompt };
+    }
+
     function resolveProviderConfig() {
         const pinned = typeof ProviderManager !== 'undefined' && ProviderManager.getPinned
             ? ProviderManager.getPinned()
@@ -162,7 +170,7 @@
             return run();
         },
 
-        _postOnce(systemPrompt, userContent, { params = {}, skipContext = false, timeoutOverride = null, timeoutContextBytes = 0, onEvent = null, forceNonStream = false, mainCall = false, providerOverride = null, runId = null, callKind = 'main', attempt = 1, retryOf = null, continuation = null } = {}) {
+        _postOnce(systemPrompt, userContent, { params = {}, skipContext = false, timeoutOverride = null, timeoutContextBytes = 0, onEvent = null, forceNonStream = false, mainCall = false, providerOverride = null, runId = null, callKind = 'main', attempt = 1, retryOf = null, continuation = null, repairPrevious = null } = {}) {
             return new Promise((resolve, reject) => {
                 const startedAt = Date.now();
                 const emitHistoryEarly = (partial) => {
@@ -203,7 +211,13 @@
                         { role: 'assistant', content: continuation },
                         { role: 'user', content: 'Continue exatamente do ponto em que a resposta anterior parou. Não repita nem reescreva o conteúdo anterior; produza somente a continuação.' }
                     ]
-                    : [{ role: 'system', content: fullSystem }, { role: 'user', content: userContent }];
+                    : repairPrevious != null
+                        ? [
+                            { role: 'system', content: fullSystem },
+                            { role: 'assistant', content: repairPrevious },
+                            { role: 'user', content: userContent }
+                          ]
+                        : [{ role: 'system', content: fullSystem }, { role: 'user', content: userContent }];
                 const payload = { model: activeProvider.model, messages, stream: useStream, ...apiParams };
                 if (payload.temperature === undefined) payload.temperature = 0.7;
                 if (payload.max_tokens === undefined) payload.max_tokens = 2048;
@@ -414,7 +428,23 @@
         },
 
         abort() { const req = State._currentRequest; if (req) { try { req.abort(); } catch (_) {} } },
-        call(prompt, options = {}) { return ApiClient._post(SystemPromptManager.withUserInstructions(CONFIG.SYSTEM_PROMPT), prompt, { ...options, mainCall: true }); },
+        call(prompt, options = {}) {
+            const userContent = options.wrapUserContent !== false ? '<pedido_original>' + prompt + '</pedido_original>' : prompt;
+            return ApiClient._post(SystemPromptManager.withUserInstructions(CONFIG.SYSTEM_PROMPT), userContent, { ...options, mainCall: true });
+        },
+
+        async enhance(prompt, options = {}) {
+            let analysis = null;
+            let enhancedRaw = await ApiClient.call(prompt, { ...options, mainCall: true });
+
+            let parsed = _parseAnalisePrompt(enhancedRaw);
+            let enhanced = parsed.prompt ?? enhancedRaw;
+            analysis = parsed.analysis ?? null;
+
+            let validation = globalThis.PE.validateOutput(prompt, enhanced);
+
+            return { prompt: enhanced, analysis, validation };
+        },
 
         async generateQuestions(prompt, options = {}) {
             const raw = await ApiClient._post(

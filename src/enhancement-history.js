@@ -97,7 +97,7 @@
             } catch (_) { return null; }
         }
 
-        function endRun(runId, { status, output, error } = {}) {
+        function endRun(runId, { status, output, error, validation } = {}) {
             const run = _getRun(runId);
             if (!run) return;
             run.endedAt = Date.now();
@@ -108,6 +108,7 @@
             }
             if (output !== undefined) run.output = output === null ? null : truncRunText(String(output || ''));
             if (error !== undefined) run.error = error ? { code: error.code || '', message: String(error.message || ''), meta: error.meta || null } : null;
+            if (validation !== undefined) run.validation = validation;
             runs.set(runId, run);
             _saveRun(run);
         }

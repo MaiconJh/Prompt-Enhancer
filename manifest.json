@@ -479,6 +479,22 @@
       ]
     },
     {
+      "file": "anchor-extractor.js",
+      "description": "Extracts, normalizes, and compares code anchors (identifiers, URLs, placeholders) across original and enhanced prompts.",
+      "interfaces": {
+        "provides": [
+          "extractAnchors",
+          "normalizeAnchor",
+          "compareAnchors",
+          "ANCHOR_CATEGORIES"
+        ],
+        "consumes": []
+      },
+      "interactions": [
+        "Used by output-validator to detect lost anchors between original text and model output."
+      ]
+    },
+    {
       "file": "api-client.js",
       "description": "Builds provider requests, composes prompts and context, and handles streaming and retries.",
       "interfaces": {
@@ -546,6 +562,38 @@
       },
       "interactions": [
         "Receives Composer actions and coordinates ApiClient, history, settings, and result interfaces."
+      ]
+    },
+    {
+      "file": "output-validator.js",
+      "description": "Deterministic output validator that detects lost anchors, language/script changes, and meta comments in model responses.",
+      "interfaces": {
+        "provides": [
+          "validateOutput"
+        ],
+        "consumes": [
+          "extractAnchors",
+          "compareAnchors"
+        ]
+      },
+      "interactions": [
+        "Used by orchestration and ApiClient.enhance to validate model outputs before applying them."
+      ]
+    },
+    {
+      "file": "repair-handler.js",
+      "description": "Repair handler with a ceiling of 1 attempt. Tracks violations and allows at most one repair pass.",
+      "interfaces": {
+        "provides": [
+          "RepairHandler",
+          "MAX_REPAIRS"
+        ],
+        "consumes": [
+          "validateOutput"
+        ]
+      },
+      "interactions": [
+        "Used by orchestration to limit repair attempts when validation fails."
       ]
     },
     {

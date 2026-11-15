@@ -449,11 +449,29 @@
             return { panel, body, footerEl, close: closeFn };
         },
 
-        preview({ original, enhanced, anchor, onApply, onCancel, trigger }) {
+        preview({ original, enhanced, anchor, onApply, onCancel, trigger, analysis }) {
             const prevActive = document.activeElement;
             let wasApplied = false;
             const body = document.createElement('div');
             body.innerHTML = `<div class="pe-field"><span class="pe-field-label">${Utils.escapeHtml(I18n.t('pv.original'))}</span><div class="pe-field-text">${Utils.escapeHtml(original)}</div></div><div class="pe-field"><span class="pe-field-label">${Utils.escapeHtml(I18n.t('pv.enhanced'))}</span><div class="pe-field-text" data-pe-stream>${Utils.escapeHtml(enhanced)}</div></div>`;
+            if (analysis) {
+                const changed = analysis.changed || [];
+                const assumptions = analysis.assumptions || [];
+                const warning = analysis.validationWarning || null;
+                let changedHtml = '';
+                if (changed.length) {
+                    changedHtml = `<div class="pe-field"><span class="pe-field-label">${Utils.escapeHtml(I18n.t('pv.changed'))}</span><ul class="pe-list">${changed.map(c => `<li>${Utils.escapeHtml(c)}</li>`).join('')}</ul></div>`;
+                }
+                let assumptionsHtml = '';
+                if (assumptions.length) {
+                    assumptionsHtml = `<div class="pe-field"><span class="pe-field-label">${Utils.escapeHtml(I18n.t('pv.assumptions'))}</span><ul class="pe-list">${assumptions.map(a => `<li>${Utils.escapeHtml(a)}</li>`).join('')}</ul></div>`;
+                }
+                let warningHtml = '';
+                if (warning) {
+                    warningHtml = `<div class="pe-field pe-field-warning"><span class="pe-field-label">${Utils.escapeHtml(I18n.t('pv.validationWarning'))}</span><div class="pe-field-text">${Utils.escapeHtml(warning)}</div></div>`;
+                }
+                body.innerHTML += changedHtml + assumptionsHtml + warningHtml;
+            }
             const cancelBtn = Atoms.button({ icon: 'x', label: I18n.t('pv.cancel'), ariaLabel: I18n.t('pv.cancel'), variant: 'outline', onClick: () => handleCancel() });
             const applyBtn = Atoms.button({ icon: 'check', label: I18n.t('pv.apply'), ariaLabel: I18n.t('pv.apply'), variant: 'primary', onClick: () => handleApply() });
             const { panel, close } = Molecules.panel({ title: I18n.t('pv.title'), anchor, children: body, footer: [cancelBtn, applyBtn], onClose: () => { try { (trigger || prevActive)?.focus?.(); } catch (_) {} if (!wasApplied) onCancel?.(); } });

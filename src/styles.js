@@ -1077,6 +1077,21 @@ function injectStyles() {
             min-width: 0;
             max-width: 100%;
         }
+        .pe-list {
+            margin: 8px 0 0 0;
+            padding-left: 20px;
+        }
+        .pe-list li {
+            margin: 4px 0;
+            font-size: var(--pe-fs-md);
+            color: var(--pe-text);
+            line-height: 1.5;
+        }
+        .pe-field-warning {
+            background: var(--pe-surface-warn, #fffbeb);
+            border: 1px solid var(--pe-warn-border, #fcd34d);
+            border-radius: var(--pe-radius);
+        }
 
         .pe-prompt-base {
             margin-bottom: 12px;

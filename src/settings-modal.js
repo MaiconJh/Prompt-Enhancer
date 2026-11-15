@@ -1538,7 +1538,7 @@
                         const callStatus = call.error ? 'is-error' : 'is-success';
                         const callStatusIcon = call.error ? '✗' : '✓';
                         const callDur = call.durationMs >= 1000 ? `${(call.durationMs / 1000).toFixed(2)}s` : `${call.durationMs}ms`;
-                        const kindLabel = call.kind === 'questions' ? I18n.t('sm.history.call.questions') : call.kind === 'enhance-with-answers' ? I18n.t('sm.history.call.enhanceWithAnswers') : I18n.t('sm.history.call.main');
+                        const kindLabel = call.kind === 'questions' ? I18n.t('sm.history.call.questions') : call.kind === 'enhance-with-answers' ? I18n.t('sm.history.call.enhanceWithAnswers') : call.kind === 'repair' ? I18n.t('sm.history.call.repair') : I18n.t('sm.history.call.main');
                         const retryTag = call.retryOf ? ` · ${I18n.t('sm.history.call.retry')}` : '';
                         const streamTag = call.streamUsed ? ` · ${I18n.t('sm.history.call.stream')}` : '';
                         const fbTag = call.fallbackUsed ? ` · ${I18n.t('sm.history.call.fallback')}` : '';
