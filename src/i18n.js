@@ -285,6 +285,8 @@ const DICTS = {
     "ws.errors.createFileFailed": "Não foi possível criar o arquivo.",
     "ws.errors.duplicatePath": "Já existe um arquivo com o caminho {path}.",
     "ws.errors.importFailed": "Não foi possível importar o arquivo.",
+    "ws.errors.fileTooLarge": "O arquivo excede o limite de 1 MiB.",
+    "ws.errors.textOnly": "Somente arquivos de texto UTF-8 podem ser importados.",
     "ws.errors.permissionFailed": "Não foi possível alterar a permissão do arquivo.",
     "ws.errors.initializeFailed": "Não foi possível inicializar o Workspace."
     "sm.context.section.uiLanguage": "Idioma da interface",
@@ -911,6 +913,8 @@ const DICTS = {
     "ws.errors.createFileFailed": "Could not create the file.",
     "ws.errors.duplicatePath": "A file already exists at {path}.",
     "ws.errors.importFailed": "Could not import the file.",
+    "ws.errors.fileTooLarge": "The file exceeds the 1 MiB limit.",
+    "ws.errors.textOnly": "Only UTF-8 text files can be imported.",
     "ws.errors.permissionFailed": "Could not update the file permission.",
     "ws.errors.initializeFailed": "Could not initialize Workspace."
     "sm.context.section.uiLanguage": "Interface language",
