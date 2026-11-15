@@ -250,16 +250,16 @@ test('catálogo estático usa hosts declarados nas permissões @connect', async 
     const bannerSource = await readFile(new URL('../banner.js', sourceDir), 'utf8');
     const catalogSource = await readFile(new URL('../provider-catalog.js', sourceDir), 'utf8');
     const declaredHosts = new Set(
-        [...bannerSource.matchAll(/^\\s*\/\/ @connect\\s+([^\\s]+)\\s*$/gm)]
+        [...bannerSource.matchAll(/^\s*\/\/ @connect\s+([^\s]+)\s*$/gm)]
             .map((match) => match[1].toLowerCase())
     );
-    const catalogUrls = [...catalogSource.matchAll(/baseUrl:\\s*'([^']+)'/g)]
+    const catalogUrls = [...catalogSource.matchAll(/baseUrl:\s*'([^']+)'/g)]
         .map((match) => match[1])
         .filter((value) => value.startsWith('http://') || value.startsWith('https://'));
 
     assert.ok(catalogUrls.length > 0, 'Catálogo precisa conter endpoints HTTP(S).');
     for (const value of catalogUrls) {
-        const hostname = new URL(value.replace(/\\{[^}]+\\}/g, 'placeholder')).hostname.toLowerCase();
+        const hostname = new URL(value.replace(/\{[^}]+\}/g, 'placeholder')).hostname.toLowerCase();
         assert.ok(
             declaredHosts.has(hostname),
             `Host do catálogo sem @connect correspondente: ${hostname}`
