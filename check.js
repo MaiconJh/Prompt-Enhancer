@@ -19,11 +19,21 @@ try {
 }
 
 try {
+    async function collectSourceFiles(prefix = '') {
+        const directory = prefix ? path.join(sourceDir, ...prefix.split('/')) : sourceDir;
+        const entries = await readdir(directory, { withFileTypes: true });
+        const files = [];
+        for (const entry of entries) {
+            const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
+            if (entry.isDirectory()) {
+                if (relative === 'tests') continue;
+                files.push(...await collectSourceFiles(relative));
+            } else if (entry.isFile()) files.push(relative);
+        }
+        return files;
+    }
     const expectedFiles = [...STRUCTURAL_FILES, ...manifest.modules.map(({ file }) => file)].sort();
-    const actualFiles = (await readdir(sourceDir, { withFileTypes: true }))
-        .filter((entry) => entry.isFile())
-        .map((entry) => entry.name)
-        .sort();
+    const actualFiles = (await collectSourceFiles()).sort();
     const missingFiles = expectedFiles.filter((name) => !actualFiles.includes(name));
     const extraFiles = actualFiles.filter((name) => !expectedFiles.includes(name));
     if (missingFiles.length || extraFiles.length) {
@@ -34,7 +44,7 @@ try {
         failures.push(`Conteúdo de src/ não corresponde ao manifest.json (${details}).`);
     } else {
         for (const name of expectedFiles) {
-            const firstLine = (await readFile(path.join(sourceDir, name), 'utf8')).split(/\r?\n/, 1)[0];
+            const firstLine = (await readFile(path.join(sourceDir, ...name.split('/')), 'utf8')).split(/\r?\n/, 1)[0];
             if (firstLine !== `// ===== src/${name} =====`) {
                 failures.push(`Marcador inválido em src/${name}: esperado "// ===== src/${name} =====".`);
             }
@@ -97,7 +107,7 @@ const requiredSymbols = [
     'SystemPromptManager', 'StreamParser', 'Anim', 'GEAR_STATES', 'createGear',
     'injectStyles', 'ICONS', 'Atoms', 'codeAttachment', 'contextPopover', 'State',
     'settingsModal', 'wireOverlayToEvents', 'Molecules', 'ApiClient', 'Composer',
-    'Theme', 'init'
+    'Theme', 'WorkspaceModel', 'WorkspaceStorage', 'ProjectManager', 'FileRegistry', 'Workspace', 'init'
 ];
 
 for (const symbol of requiredSymbols) {
@@ -132,7 +142,7 @@ for (const grant of declaredGrants) {
     }
 }
 
-const markerCount = (source.match(/^\/\/ ===== src\/[^/]+\.js =====$/gm) || []).length;
+const markerCount = (source.match(/^\/\/ ===== src\/.+\.js =====$/gm) || []).length;
 if (markerCount !== manifest.modules.length + STRUCTURAL_FILES.length) {
     failures.push(`Quantidade de marcadores inválida no bundle: ${markerCount} (esperado ${manifest.modules.length + STRUCTURAL_FILES.length}).`);
 }

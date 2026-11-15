@@ -1,5 +1,6 @@
 // ===== src/bootstrap.js =====
     function init() {
+        Workspace.init().catch(error => console.error('[PE Workspace] Falha ao inicializar:', error));
         Theme.apply();
         injectStyles();
         HostShield.install();
