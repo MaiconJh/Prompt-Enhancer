@@ -39,42 +39,54 @@ const WorkspaceUI = (() => {
         const createProjectRow = element('div', 'pe-workspace__create-project');
         createProjectRow.append(createName, createProjectButton);
         header.append(projectSelect, createProjectRow, projectDeleteButton);
-        root.appendChild(header);
 
-        const projectSettings = element('section', 'pe-workspace__project-settings');
-        const projectName = element('input', 'pe-param-input');
-        projectName.type = 'text';
-        projectName.maxLength = 100;
-        const projectDescription = element('input', 'pe-param-input');
-        projectDescription.type = 'text';
-        projectDescription.maxLength = 500;
-        const accessMode = element('select', 'pe-param-input');
-        for (const [value, label] of [
-            ['selected', I18n.t('ws.access.selected')],
-            ['all', I18n.t('ws.access.all')],
-            ['none', I18n.t('ws.access.none')]
-        ]) {
-            const option = element('option', '', label);
-            option.value = value;
-            accessMode.appendChild(option);
+        const navigation = element('nav', 'pe-workspace__navigation');
+        navigation.setAttribute('aria-label', I18n.t('ws.navigation.label'));
+        navigation.setAttribute('role', 'tablist');
+        const viewButtons = {};
+        const viewDefinitions = [
+            ['overview', 'ws.nav.overview'],
+            ['files', 'ws.nav.files'],
+            ['access', 'ws.nav.access'],
+            ['settings', 'ws.nav.settings']
+        ];
+        let activeView = 'overview';
+        for (const [key, labelKey] of viewDefinitions) {
+            const button = element('button', 'pe-workspace__nav-button', I18n.t(labelKey));
+            button.type = 'button';
+            button.setAttribute('role', 'tab');
+            button.setAttribute('aria-selected', String(key === activeView));
+            button.dataset.view = key;
+            button.addEventListener('click', async () => {
+                if (activeView !== key && await confirmLeave()) setActiveView(key);
+            });
+            navigation.appendChild(button);
+            viewButtons[key] = button;
         }
-        const instructions = element('textarea', 'pe-workspace__instructions');
-        instructions.maxLength = 20_000;
-        const projectSave = Atoms.buttonNode({
-            label: I18n.t('ws.project.saveSettings'),
-            ariaLabel: I18n.t('ws.project.saveSettings'),
-            variant: 'outline',
-            onClick: async () => { try { await saveProjectSettings(); } catch (error) { notify(error.message || I18n.t('ws.errors.operationFailed'), 'error'); } }
-        });
-        projectSettings.append(
-            labeledField('ws.project.name', projectName),
-            labeledField('ws.project.description', projectDescription),
-            labeledField('ws.access.projectMode', accessMode),
-            labeledField('ws.project.instructions', instructions),
-            projectSave
-        );
-        root.appendChild(projectSettings);
 
+        const overviewView = element('section', 'pe-workspace__view pe-workspace__overview');
+        overviewView.dataset.viewPanel = 'overview';
+        const overviewHeading = element('div', 'pe-workspace__view-heading', I18n.t('ws.overview.title'));
+        const overviewName = element('h3', 'pe-workspace__overview-name', I18n.t('sm.workspace.none'));
+        const overviewDescription = element('p', 'pe-workspace__overview-description', I18n.t('ws.overview.noProject'));
+        const overviewStats = element('div', 'pe-workspace__overview-stats');
+        const overviewFiles = element('div', 'pe-workspace__stat');
+        const overviewFilesLabel = element('span', 'pe-workspace__stat-label', I18n.t('ws.overview.files'));
+        const overviewFilesValue = element('strong', 'pe-workspace__stat-value', '0');
+        overviewFiles.append(overviewFilesLabel, overviewFilesValue);
+        const overviewStorage = element('div', 'pe-workspace__stat');
+        const overviewStorageLabel = element('span', 'pe-workspace__stat-label', I18n.t('ws.overview.storage'));
+        const overviewStorageValue = element('strong', 'pe-workspace__stat-value', '0 B');
+        overviewStorage.append(overviewStorageLabel, overviewStorageValue);
+        const overviewAccess = element('div', 'pe-workspace__stat');
+        const overviewAccessLabel = element('span', 'pe-workspace__stat-label', I18n.t('ws.overview.aiAccess'));
+        const overviewAccessValue = element('strong', 'pe-workspace__stat-value', '—');
+        overviewAccess.append(overviewAccessLabel, overviewAccessValue);
+        overviewStats.append(overviewFiles, overviewStorage, overviewAccess);
+        overviewView.append(overviewHeading, overviewName, overviewDescription, overviewStats);
+
+        const filesView = element('section', 'pe-workspace__view');
+        filesView.dataset.viewPanel = 'files';
         const workspaceLayout = element('div', 'pe-workspace__layout');
         const explorer = element('section', 'pe-workspace__explorer');
         const explorerHeader = element('div', 'pe-workspace__section-heading', I18n.t('ws.files.title'));
@@ -116,13 +128,6 @@ const WorkspaceUI = (() => {
         fileContent.spellcheck = false;
         fileContent.setAttribute('aria-label', I18n.t('ws.editor.content'));
         const fileMeta = element('div', 'pe-workspace__meta');
-        const fileAccess = element('select', 'pe-param-input');
-        for (const [value, label] of [['allowed', I18n.t('ws.access.allowed')], ['denied', I18n.t('ws.access.denied')]]) {
-            const option = element('option', '', label);
-            option.value = value;
-            fileAccess.appendChild(option);
-        }
-        const accessHint = element('div', 'pe-workspace__hint');
         const editorActions = element('div', 'pe-workspace__editor-actions');
         const fileDeleteButton = Atoms.buttonNode({
             label: I18n.t('ws.files.delete'),
@@ -141,19 +146,96 @@ const WorkspaceUI = (() => {
             labeledField('ws.editor.path', filePath),
             fileContent,
             fileMeta,
-            labeledField('ws.access.filePermission', fileAccess),
-            accessHint,
             editorActions
         );
         editorPanel.append(editorHeading, editorEmpty, editor);
         workspaceLayout.appendChild(editorPanel);
-        root.appendChild(workspaceLayout);
+        filesView.appendChild(workspaceLayout);
 
+        const accessView = element('section', 'pe-workspace__view pe-workspace__access');
+        accessView.dataset.viewPanel = 'access';
+        const accessHeading = element('div', 'pe-workspace__view-heading', I18n.t('ws.nav.access'));
+        const accessDescription = element('p', 'pe-workspace__view-description', I18n.t('ws.access.description'));
+        const accessMode = element('select', 'pe-param-input');
+        for (const [value, label] of [
+            ['selected', I18n.t('ws.access.selected')],
+            ['all', I18n.t('ws.access.all')],
+            ['none', I18n.t('ws.access.none')]
+        ]) {
+            const option = element('option', '', label);
+            option.value = value;
+            accessMode.appendChild(option);
+        }
+        const fileAccess = element('select', 'pe-param-input');
+        for (const [value, label] of [['allowed', I18n.t('ws.access.allowed')], ['denied', I18n.t('ws.access.denied')]]) {
+            const option = element('option', '', label);
+            option.value = value;
+            fileAccess.appendChild(option);
+        }
+        const accessHint = element('div', 'pe-workspace__hint');
+        const accessProjectField = labeledField('ws.access.projectMode', accessMode);
+        const accessFileField = labeledField('ws.access.filePermission', fileAccess);
+        const accessFileLabel = element('div', 'pe-workspace__selected-file', I18n.t('ws.access.noFile'));
+        accessView.append(accessHeading, accessDescription, accessProjectField, accessFileLabel, accessFileField, accessHint);
+
+        const projectSettings = element('section', 'pe-workspace__view pe-workspace__project-settings');
+        projectSettings.dataset.viewPanel = 'settings';
+        const settingsHeading = element('div', 'pe-workspace__view-heading', I18n.t('ws.nav.settings'));
+        const projectName = element('input', 'pe-param-input');
+        projectName.type = 'text';
+        projectName.maxLength = 100;
+        const projectDescription = element('input', 'pe-param-input');
+        projectDescription.type = 'text';
+        projectDescription.maxLength = 500;
+        const instructions = element('textarea', 'pe-workspace__instructions');
+        instructions.maxLength = 20_000;
+        const projectSave = Atoms.buttonNode({
+            label: I18n.t('ws.project.saveSettings'),
+            ariaLabel: I18n.t('ws.project.saveSettings'),
+            variant: 'outline',
+            onClick: async () => { try { await saveProjectSettings(); } catch (error) { notify(error.message || I18n.t('ws.errors.operationFailed'), 'error'); } }
+        });
+        projectSettings.append(
+            settingsHeading,
+            labeledField('ws.project.name', projectName),
+            labeledField('ws.project.description', projectDescription),
+            labeledField('ws.project.instructions', instructions),
+            projectSave
+        );
+
+        root.append(header, navigation, overviewView, filesView, accessView, projectSettings);
         let projects = [];
         let currentProject = null;
         let files = [];
         let selectedFile = null;
         let loading = false;
+
+        function setActiveView(key) {
+            const next = viewDefinitions.some(([view]) => view === key) ? key : 'overview';
+            if (next !== 'overview' && !currentProject) return;
+            activeView = next;
+            for (const [view] of viewDefinitions) {
+                const selected = view === activeView;
+                viewButtons[view].setAttribute('aria-selected', String(selected));
+                viewButtons[view].tabIndex = selected ? 0 : -1;
+                const panel = root.querySelector('[data-view-panel="' + view + '"]');
+                if (panel) panel.hidden = !selected;
+            }
+        }
+
+        function updateOverview() {
+            overviewName.textContent = currentProject?.name || I18n.t('sm.workspace.none');
+            overviewDescription.textContent = currentProject
+                ? (currentProject.description || I18n.t('ws.overview.noDescription'))
+                : I18n.t('ws.overview.noProject');
+            overviewFilesValue.textContent = String(files.length);
+            const totalBytes = files.reduce((sum, file) => sum + (Number(file.size) || 0), 0);
+            overviewStorageValue.textContent = Utils.formatBytes(totalBytes);
+            const mode = currentProject?.settings?.aiAccessMode || 'selected';
+            overviewAccessValue.textContent = mode === 'all'
+                ? I18n.t('ws.access.all')
+                : mode === 'none' ? I18n.t('ws.access.none') : I18n.t('ws.access.selected');
+        }
 
         function labeledField(key, control) {
             const wrapper = element('label', 'pe-workspace__field');
@@ -198,12 +280,17 @@ const WorkspaceUI = (() => {
             if (effectiveMode === 'none') accessHint.textContent = I18n.t('ws.access.overriddenNone');
             else if (effectiveMode === 'all') accessHint.textContent = I18n.t('ws.access.overriddenAll');
             else accessHint.textContent = I18n.t('ws.access.selectedHint');
+            accessFileLabel.textContent = hasFile ? selectedFile.path : I18n.t('ws.access.noFile');
         }
 
         function updateProjectControls() {
             const hasProject = !!currentProject;
-            projectSettings.hidden = !hasProject;
-            workspaceLayout.hidden = !hasProject;
+            projectSettings.hidden = !hasProject || activeView !== 'settings';
+            filesView.hidden = !hasProject || activeView !== 'files';
+            accessView.hidden = !hasProject || activeView !== 'access';
+            for (const [view] of viewDefinitions) viewButtons[view].disabled = view !== 'overview' && !hasProject;
+            if (!hasProject && activeView !== 'overview') setActiveView('overview');
+            updateOverview();
             projectSelect.disabled = loading;
             createName.disabled = loading;
             projectName.disabled = loading;
@@ -299,9 +386,15 @@ const WorkspaceUI = (() => {
         }
 
         async function refreshFiles() {
-            if (!currentProject) { files = []; buildTree(); return; }
+            if (!currentProject) {
+                files = [];
+                buildTree();
+                updateOverview();
+                return;
+            }
             files = await Workspace.files.list(currentProject.id);
             buildTree();
+            updateOverview();
         }
 
         async function loadProject(projectId) {
@@ -654,6 +747,17 @@ const WorkspaceUI = (() => {
         }
 
         projectSelect.addEventListener('change', () => changeProject(projectSelect.value));
+        navigation.addEventListener('keydown', async event => {
+            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+            const available = viewDefinitions.map(([key]) => key).filter(key => key === 'overview' || !!currentProject);
+            const current = available.indexOf(activeView);
+            const next = event.key === 'Home' ? 0 : event.key === 'End' ? available.length - 1
+                : (current + (event.key === 'ArrowRight' ? 1 : -1) + available.length) % available.length;
+            event.preventDefault();
+            if (available[next] !== activeView && !await confirmLeave()) return;
+            setActiveView(available[next]);
+            viewButtons[available[next]].focus();
+        });
         createName.addEventListener('keydown', event => { if (event.key === 'Enter') createProject(); });
         projectName.addEventListener('input', updateProjectControls);
         projectDescription.addEventListener('input', updateProjectControls);
@@ -685,6 +789,7 @@ const WorkspaceUI = (() => {
             }
         }
 
+        setActiveView('overview');
         updateProjectControls();
         initialize();
         return { refresh: initialize };

@@ -17,6 +17,19 @@ test('Workspace UI possui sintaxe válida e é registrado como módulo de produ�
     assert.ok(module.interfaces.consumes.includes('Atoms'));
 });
 
+test('Workspace UI separa navegação em quatro áreas independentes', () => {
+    for (const [view, variable] of [
+        ['overview', 'overviewView'],
+        ['files', 'filesView'],
+        ['access', 'accessView'],
+        ['settings', 'projectSettings']
+    ]) assert.ok(uiSource.includes(variable + ".dataset.viewPanel = '" + view + "'"));
+    assert.match(uiSource, /function setActiveView\(key\)/);
+    assert.match(uiSource, /aria-selected/);
+    assert.match(uiSource, /function updateOverview\(\)/);
+    assert.doesNotMatch(uiSource, /workspaceLayout\.hidden/);
+});
+
 test('aba Workspace monta o gerenciador dedicado', () => {
     assert.match(settingsSource, /function renderWorkspace\(\)\s*\{\s*WorkspaceUI\.render\(bodyEl\);/);
     const settingsModule = manifest.modules.find(item => item.file === 'settings-modal.js');
@@ -67,6 +80,13 @@ test('permissão visual reflete o modo efetivo do projeto', () => {
 test('novas mensagens do Workspace existem em PT-BR e EN', () => {
     const keys = [...new Set([...uiSource.matchAll(/I18n\.t\('([^']+)'/g)].map(match => match[1]))];
     for (const key of keys.filter(value => value.startsWith('ws.'))) {
+        assert.equal(i18n.split('"' + key + '":').length - 1, 2, key + ' deve existir nos dois idiomas');
+    }
+    for (const key of [
+        'ws.navigation.label', 'ws.nav.overview', 'ws.nav.files', 'ws.nav.access', 'ws.nav.settings',
+        'ws.overview.title', 'ws.overview.files', 'ws.overview.storage', 'ws.overview.aiAccess',
+        'ws.overview.noProject', 'ws.overview.noDescription', 'ws.access.description', 'ws.access.noFile'
+    ]) {
         assert.equal(i18n.split('"' + key + '":').length - 1, 2, key + ' deve existir nos dois idiomas');
     }
     for (const key of ['ws.project.name', 'ws.project.description', 'ws.access.projectMode', 'ws.project.instructions', 'ws.editor.path', 'ws.access.filePermission']) {

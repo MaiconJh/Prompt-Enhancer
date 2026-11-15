@@ -2,7 +2,7 @@
 
 **Status:** Proposed specification  
 **Scope:** UI information architecture, interaction model, module boundaries and acceptance criteria  
-**Baseline:** `main` after PR #7 (`8c2df35`)  
+**Baseline:** `main` after PR #14 (`73f4a78`)  
 **Decision:** The Workspace is a first-class project knowledge manager. It is not another manual context source and must not be embedded as a small form inside the existing Context & Language view.
 
 ## 1. Goals
@@ -13,7 +13,7 @@
 4. Preserve the existing `ProjectContext` workflow as a distinct, user-managed context source.
 5. Keep the AI integration read-only. UI actions may mutate Workspace data; Context Resolver and Context Composer may only read and compose it.
 6. Reuse the current visual system, theme tokens, SVG atoms, modal shell and localization conventions.
-7. Keep the design compatible with the repository's manifest-driven concatenated build.
+7. Preserve the existing userscript runtime and manifest-driven application build while introducing a dedicated, locally bundled ESM build for Monaco and its workers.
 
 ## 2. Current baseline and constraints
 
@@ -208,47 +208,67 @@ The UI must reflect the Resolver's actual access behavior, not implement a secon
 
 ## 7. Visual and interaction system
 
-Reuse:
-- Existing modal shell and tab primitives.
-- Existing `--pe-*` design tokens for surfaces, borders, typography, spacing, radii, focus and semantic feedback.
-- Existing light/dark theme support.
-- `Atoms.icon()` and `Atoms.button()` for consistent SVG controls.
-- `Utils.escapeHtml()` or DOM `textContent` for untrusted file names and project metadata.
-- Existing toast and confirmation patterns where suitable.
+The Workspace becomes a focused project-management workspace with four primary destinations:
 
-Do not add a new UI framework, external editor dependency or unrelated design system in this phase.
+1. **Overview** — active project identity, file totals, storage usage, access summary and recent state. This is a compact operational overview, not a dashboard full of decorative cards.
+2. **Files** — hierarchical explorer, file operations and the editing environment.
+3. **AI access** — project-wide mode, per-file permissions and effective-access explanations.
+4. **Project settings** — project name, description and instructions.
 
-Visual hierarchy:
-1. Project identity and active status.
-2. File navigation and selected file.
-3. Editing surface.
-4. Access inspector and secondary metadata.
+The file editing environment is a dedicated workspace state within Files. It should prioritize editor space and may collapse or temporarily replace the explorer on narrow layouts. Create/import/rename/delete actions should open contextual dialogs or compact panels instead of permanently occupying the editor surface.
 
-Avoid oversized dashboard cards. The Workspace is a practical file-management surface; prioritize density, clear selection, readable text and low-friction editing.
+Reuse the existing design tokens, modal shell, theme support, SVG atoms, toast patterns and localization. Do not introduce a second design system or a new application framework.
 
-Accessibility requirements:
-- Use semantic buttons and labels.
-- Provide accessible names for icon-only controls.
-- Expose tree/list selection and expanded state with appropriate ARIA attributes.
-- Preserve visible keyboard focus.
-- Support keyboard navigation between tree items and editor controls.
+### Monaco Editor
+
+Use the ESM distribution of `monaco-editor`, not the deprecated AMD/RequireJS distribution. Monaco must be bundled at build time and shipped locally inside the userscript. Runtime CDN loading, remote workers and external script injection are not acceptable.
+
+The integration must provide:
+- Language selection based on the file extension, with a safe plaintext fallback.
+- Syntax highlighting, line numbers, indentation, bracket matching, editor search and replace, keyboard shortcuts and configurable themes.
+- A visible dirty/saved state and explicit save action.
+- A minimum usable editor height, responsive resizing and editor-owned scrolling.
+- Optional minimap, disabled by default in narrow layouts.
+- Proper disposal of editor instances, models and listeners when files or views are changed.
+- Lazy initialization when the user first opens a file, not during userscript startup.
+- Worker bundles that are local and compatible with the userscript execution environment.
+
+Monaco's undo/redo stack is session-local editor behavior only. Do not persist edit history, snapshots, diffs, restore points or version-based conflict handling.
+
+### Monaco build boundary
+
+The existing application build concatenates manifest modules and is not an ESM bundler. Do not attempt to concatenate Monaco's ESM source directly into that pipeline.
+
+Introduce a dedicated build step for the Monaco entry point and worker bundles. The main build should consume generated, version-controlled-source-derived build artifacts from the local dependency tree and embed them into the final userscript. The generated artifacts belong in `dist/`, never in `src/` or the manifest module list. The build must fail clearly if Monaco assets or worker bundles are missing.
+
+The exact bundler and worker transport must be validated against the userscript runtime before implementation is considered complete. No runtime CDN or separately hosted worker files may be assumed.
+
+Accessibility:
+- Use semantic controls and accessible names.
+- Keep keyboard focus visible and preserve predictable focus when opening/closing dialogs.
 - Announce loading, save success and errors through the existing accessible feedback mechanism.
-- Do not rely on color alone for permission status.
+- Do not rely on color alone for permission or dirty-state indicators.
+- Provide a usable keyboard path between explorer, editor and inspector.
 
 ## 8. Module boundaries
 
-The current repository is a manifest-driven concatenated JavaScript application. New source modules must be registered in `manifest.json` with accurate `provides`, `consumes` and `interactions` metadata, and tests must remain outside the production module list.
+The repository remains a manifest-driven JavaScript userscript. Every runtime source module under `src/` must be registered in `manifest.json`; tests and build scripts remain outside the production module list.
 
-Recommended initial decomposition:
+Use pragmatic separation by responsibility:
 
-- `settings-modal.js`: modal shell, tab definitions, navigation, shared footer and lifecycle only.
-- `settings-views.js` (or equivalent): focused renderers for Parameters, Manual Context, Response and Interface. Existing System Prompt, History and Provider renderers can remain where they are initially, then be extracted only if the refactor materially simplifies the shell.
-- `workspace/workspace-ui.js`: Workspace view composition and state lifecycle.
-- `workspace/workspace-project-view.js` and `workspace/workspace-file-view.js`: introduce only if the manager module becomes difficult to maintain; do not split into many tiny modules preemptively.
+- `workspace/workspace-ui.js`: composition root, navigation between Workspace destinations and lifecycle of the active view.
+- `workspace/workspace-controller.js`: state and transitions, project/file operations, dirty-draft decisions, error normalization and calls to the public Workspace facade.
+- `workspace/workspace-overview-view.js`: overview rendering and summary states.
+- `workspace/workspace-explorer-view.js`: tree rendering, selection and file actions.
+- `workspace/workspace-editor-view.js`: Monaco lifecycle, editor options, model synchronization and editor events.
+- `workspace/workspace-access-view.js`: global and per-file AI access controls, including effective-access explanations.
+- `workspace/workspace-project-settings-view.js`: project metadata and instructions.
 
-Workspace UI should receive or use only the public `Workspace` facade plus shared UI primitives. It must not access storage internals. Keep DOM state local to the view and refresh it from the facade after successful mutations.
+Do not create a separate module for every button, dialog or helper. Views should render and emit intent; the controller owns mutations and state transitions. Keep the controller independent of Monaco APIs. The editor view receives the selected file, current draft and callbacks, and must never access IndexedDB or mutate Workspace data directly.
 
-The action-bar quick-access entry should be integrated through the existing Composer/action-bar extension points, not by making the settings modal depend on Composer internals.
+All data reads and writes must use the public `Workspace` facade. UI code must not access IndexedDB, `WorkspaceStorage`, `ProjectManager` or `FileRegistry`. The AI-facing Context Resolver and Composer remain read-only.
+
+The existing `settings-modal.js` remains responsible for the modal shell and tab routing. It should mount `WorkspaceUI` and not own Workspace project/file state.
 
 ### Persistence ownership
 
@@ -303,42 +323,49 @@ Avoid treating failed reads as proof that a project or file does not exist.
 
 ## 11. Delivery sequence
 
-### Phase 1 — Settings information architecture
-- Replace the `context` tab with `workspace`, `manualContext`, `response` and `interface`.
-- Move existing controls without changing their behavior or persistence.
-- Update PT-BR and EN translations.
-- Preserve active-tab navigation, footer semantics and modal accessibility.
-- Add tests or focused verification for the tab routing and existing setting callbacks.
+### Phase 1 — Workspace shell and navigation
+- Replace the monolithic always-visible form with the four destinations: Overview, Files, AI access and Project settings.
+- Add clear empty, loading, error and no-active-project states.
+- Keep the active project selector accessible from the shell.
+- Preserve all existing project/file operations and dirty-draft protections during the transition.
+- Add tests for navigation, view mounting and state preservation.
 
-### Phase 2 — Workspace API permission support
-- Add validated per-file access mutation.
-- Add tests for allowed/denied values, invalid values, missing files and cross-project IDs.
-- Keep the Resolver as the source of effective access behavior.
+### Phase 2 — Controller and view boundaries
+- Move project/file state transitions and mutations into `WorkspaceController`.
+- Extract overview, explorer, access and project-settings views.
+- Keep view modules focused on rendering and user intent.
+- Keep the controller independent of Monaco and the UI framework.
 
-### Phase 3 — Workspace manager shell
-- Project selector and project actions.
-- Project-level instructions and access mode.
-- File explorer with derived folders.
-- Loading, empty and error states.
+### Phase 3 — Monaco build integration
+- Add a pinned `monaco-editor` dependency and a dedicated build dependency.
+- Implement the dedicated ESM build and worker packaging.
+- Embed the editor runtime and worker sources into the generated userscript without runtime network access.
+- Verify the final userscript runs in the supported userscript manager environment.
+- Add build assertions for editor and worker artifacts.
 
-### Phase 4 — File operations
-- Create and import text files.
-- Load and edit content.
-- Save path/content.
-- Delete files and projects with confirmation.
-- Dirty-draft protection.
+### Phase 4 — Monaco editor experience
+- Replace the textarea with Monaco.
+- Add extension-based language detection, themes, dirty-state integration, explicit save and editor disposal.
+- Preserve draft contents on failed save, file switching and project switching.
+- Keep file path and metadata editing outside the Monaco text model.
+- Keep undo/redo local to the editor session; do not add persistent history.
 
-### Phase 5 — Composer quick access
-- Show active project and useful counts.
-- Open the Workspace settings view directly.
-- Keep this distinct from manual ProjectContext access.
+### Phase 5 — Explorer and contextual interactions
+- Refine tree navigation, keyboard behavior and selected-file states.
+- Move create/import/rename/delete operations into contextual dialogs or panels.
+- Improve file metadata, empty states and responsive behavior.
+- Verify project and file destructive operations retain confirmation and dirty-draft protection.
 
-### Phase 6 — Verification
-- Workspace unit tests.
-- Settings behavior and localization checks.
-- Build/manifest validation.
+### Phase 6 — Access inspector and refinement
+- Present global and per-file permissions together.
+- Explain effective access and disabled/overridden states.
+- Refine responsive layout, focus management, light/dark themes and localization.
+
+### Phase 7 — Verification
+- Workspace unit and UI tests.
+- Build/manifest validation, including Monaco worker packaging.
 - CI on supported Node versions (currently Node 22 and 24).
-- Manual verification in light/dark themes and narrow/wide modal layouts.
+- Manual verification in the actual userscript runtime, light/dark themes, narrow/wide layouts, and representative text/code file types.
 
 Each phase should be independently reviewable. Create draft PRs for substantial phases and do not merge without explicit authorization.
 
@@ -359,7 +386,7 @@ The refactor is ready when:
 11. Resolver/Composer remain read-only.
 12. No versioning, snapshots, diffs or restore mechanisms are introduced.
 13. PT-BR and EN are complete for every new label, status, validation and error.
-14. Build and CI pass on Node 22 and Node 24.
+14. Monaco is bundled locally with its required workers and does not load runtime assets from a CDN.\n15. The Monaco editor is created lazily, disposed when no longer needed and keeps unsaved drafts after failed saves.\n16. Editor undo/redo remains session-local; no persistent history or snapshots are introduced.\n17. Build and CI pass on Node 22 and Node 24.
 
 ## 13. Explicit non-goals
 
@@ -370,5 +397,7 @@ The refactor is ready when:
 - Automatic project discovery from the host page.
 - Multiple simultaneously active projects.
 - File version history, snapshots, diff or restore.
+- Persistent editor undo history or restore points.
 - Replacing ProjectContext with Workspace.
-- Introducing a third-party code editor in the first iteration.
+- Runtime CDN loading or remote Monaco workers.
+- Introducing a new UI framework or unrelated design system.
