@@ -86,6 +86,7 @@ const WorkspaceUI = (() => {
         const filesView = element('section', 'pe-workspace__view');
         filesView.dataset.viewPanel = 'files';
         const workspaceLayout = element('div', 'pe-workspace__layout');
+        const panelLayout = WorkspacePanelLayout.create({ root });
         const explorer = element('section', 'pe-workspace__explorer');
         const explorerHeader = element('div', 'pe-workspace__section-heading', I18n.t('ws.files.title'));
         const newPath = element('input', 'pe-param-input');
@@ -168,7 +169,7 @@ const WorkspaceUI = (() => {
         tree.setAttribute('role', 'tree');
         tree.setAttribute('aria-label', I18n.t('ws.files.title'));
         explorer.append(explorerHeader, fileActions, treeSearch, tree);
-        workspaceLayout.appendChild(explorer);
+        workspaceLayout.append(explorer, panelLayout.splitter);
 
         const editorView = WorkspaceEditorView.create({
             labeledField,
