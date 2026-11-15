@@ -182,7 +182,8 @@ test('cria vários arquivos por uma operação e nega acesso da IA por padrão',
         { path: 'docs/README.md', content: '# Docs' }
     ]);
     assert.equal(created.length, 2);
-    assert.deepEqual(created.map(file => file.path), ['src/index.js', 'docs/README.md']);
+    assert.equal(created[0].path, 'src/index.js');
+    assert.equal(created[1].path, 'docs/README.md');
     assert.ok(created.every(file => file.aiAccess === 'denied'));
     assert.equal([...files.values()].filter(file => file.projectId === 'project_a').length, 2);
 });
