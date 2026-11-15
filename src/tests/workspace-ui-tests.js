@@ -17,7 +17,7 @@ test('Workspace UI possui sintaxe válida e é registrado como módulo de produ�
     assert.ok(module.interfaces.provides.includes('WorkspaceUI'));
     assert.ok(module.interfaces.consumes.includes('Workspace'));
     assert.ok(module.interfaces.consumes.includes('Atoms'));
-    for (const dependency of ['WorkspaceController', 'WorkspaceExplorerView', 'WorkspaceEditorView', 'WorkspaceInspectorView']) {
+    for (const dependency of ['WorkspaceController', 'WorkspaceExplorerView', 'WorkspaceEditorView', 'WorkspaceInspectorView', 'WorkspacePanelLayout']) {
         assert.ok(module.interfaces.consumes.includes(dependency), dependency + ' deve estar declarado no manifest');
     }
 });
