@@ -4456,12 +4456,15 @@ function injectStyles() {
         }
         .pe-workspace__file {
             display: flex;
+            flex: 0 0 30px;
             align-items: center;
             justify-content: space-between;
             gap: var(--pe-space-2);
             width: 100%;
             min-width: 0;
-            padding: 6px 8px;
+            height: 30px;
+            min-height: 30px;
+            padding: 0 8px;
             border: 1px solid transparent;
             border-radius: var(--pe-radius-sm);
             background: transparent;
