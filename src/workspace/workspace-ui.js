@@ -40,21 +40,25 @@ const WorkspaceUI = (() => {
         createProjectRow.append(createName, createProjectButton);
         header.append(projectSelect, createProjectRow, projectDeleteButton);
 
-        const navigation = element('nav', 'pe-workspace__navigation');
+        const navigation = element('nav', 'pe-workspace__activity-bar');
         navigation.setAttribute('aria-label', I18n.t('ws.navigation.label'));
-        navigation.setAttribute('role', 'tablist');
         const viewButtons = {};
         const viewDefinitions = [
-            ['overview', 'ws.nav.overview'],
-            ['files', 'ws.nav.files']
+            ['overview', 'ws.nav.overview', 'home'],
+            ['files', 'ws.nav.files', 'folder'],
+            ['access', 'ws.nav.access', 'shield'],
+            ['settings', 'ws.nav.settings', 'settings']
         ];
         let activeView = 'files';
-        for (const [key, labelKey] of viewDefinitions) {
-            const button = element('button', 'pe-workspace__nav-button', I18n.t(labelKey));
+        for (const [key, labelKey, iconName] of viewDefinitions) {
+            const label = I18n.t(labelKey);
+            const button = element('button', 'pe-workspace__nav-button');
             button.type = 'button';
-            button.setAttribute('role', 'tab');
-            button.setAttribute('aria-selected', String(key === activeView));
+            button.setAttribute('aria-label', label);
+            button.setAttribute('aria-current', String(key === activeView ? 'page' : 'false'));
+            button.title = label;
             button.dataset.view = key;
+            button.append(Atoms.icon(iconName), element('span', 'pe-workspace__nav-label', label));
             button.addEventListener('click', async () => {
                 if (activeView !== key && await confirmLeave()) setActiveView(key);
             });
@@ -243,12 +247,29 @@ const WorkspaceUI = (() => {
             projectSave
         );
 
+        const inspectorDetails = element('section', 'pe-workspace__file-details');
+        const inspectorFilePath = element('div', 'pe-workspace__selected-file', I18n.t('ws.access.noFile'));
+        const inspectorFileType = element('div', 'pe-workspace__detail-value', '—');
+        const inspectorFileSize = element('div', 'pe-workspace__detail-value', '—');
+        const inspectorFilePermission = element('div', 'pe-workspace__detail-value', '—');
+        inspectorDetails.append(
+            element('div', 'pe-workspace__view-heading', I18n.t('ws.inspector.fileDetails')),
+            labeledField('ws.editor.path', inspectorFilePath),
+            labeledField('ws.editor.noExtension', inspectorFileType),
+            labeledField('ws.overview.storage', inspectorFileSize),
+            labeledField('ws.access.filePermission', inspectorFilePermission)
+        );
         const inspectorView = WorkspaceInspectorView.create({
-            sections: [accessView, projectSettings],
+            sections: [inspectorDetails],
             onClose: toggleInspector
         });
         workspaceLayout.appendChild(inspectorView.panel);
-                root.append(header, navigation, overviewView, filesView);
+
+        const main = element('main', 'pe-workspace__main');
+        main.append(overviewView, filesView, accessView, projectSettings);
+        const shell = element('div', 'pe-workspace__shell');
+        shell.append(navigation, main);
+        root.append(header, shell, status);
         let projects = [];
         let currentProject = null;
         let files = [];
@@ -288,7 +309,7 @@ const WorkspaceUI = (() => {
             activeView = next;
             for (const [view] of viewDefinitions) {
                 const selected = view === activeView;
-                viewButtons[view].setAttribute('aria-selected', String(selected));
+                viewButtons[view].setAttribute('aria-current', selected ? 'page' : 'false');
                 viewButtons[view].tabIndex = selected ? 0 : -1;
                 const panel = root.querySelector('[data-view-panel="' + view + '"]');
                 if (panel) panel.hidden = !selected;
@@ -346,9 +367,18 @@ const WorkspaceUI = (() => {
             fileContent.disabled = loading;
             const effectiveMode = currentProject?.settings?.aiAccessMode || 'selected';
             fileAccess.disabled = !hasFile || loading || effectiveMode !== 'selected';
+            const fileSize = hasFile ? Utils.formatBytes(new TextEncoder().encode(fileContent.value).byteLength) : '—';
             fileMeta.textContent = hasFile
-                ? (selectedFile.extension || I18n.t('ws.editor.noExtension')) + ' · ' + Utils.formatBytes(new TextEncoder().encode(fileContent.value).byteLength)
+                ? (selectedFile.extension || I18n.t('ws.editor.noExtension')) + ' · ' + fileSize
                 : '';
+            inspectorFilePath.textContent = hasFile ? selectedFile.path : I18n.t('ws.access.noFile');
+            inspectorFileType.textContent = hasFile ? (selectedFile.extension || I18n.t('ws.editor.noExtension')) : '—';
+            inspectorFileSize.textContent = fileSize;
+            inspectorFilePermission.textContent = hasFile
+                ? (effectiveMode === 'all' ? I18n.t('ws.access.all')
+                    : effectiveMode === 'none' ? I18n.t('ws.access.none')
+                    : (selectedFile.aiAccess || 'denied') === 'allowed' ? I18n.t('ws.access.allowed') : I18n.t('ws.access.denied'))
+                : '—';
             if (effectiveMode === 'none') accessHint.textContent = I18n.t('ws.access.overriddenNone');
             else if (effectiveMode === 'all') accessHint.textContent = I18n.t('ws.access.overriddenAll');
             else accessHint.textContent = I18n.t('ws.access.selectedHint');
@@ -357,9 +387,10 @@ const WorkspaceUI = (() => {
 
         function updateProjectControls() {
             const hasProject = !!currentProject;
-            projectSettings.hidden = !hasProject;
+            overviewView.hidden = activeView !== 'overview';
             filesView.hidden = !hasProject || activeView !== 'files';
-            accessView.hidden = !hasProject;
+            accessView.hidden = !hasProject || activeView !== 'access';
+            projectSettings.hidden = !hasProject || activeView !== 'settings';
             for (const [view] of viewDefinitions) viewButtons[view].disabled = view !== 'overview' && !hasProject;
             if (!hasProject && activeView !== 'overview') setActiveView('overview');
             updateOverview();
@@ -810,11 +841,11 @@ const WorkspaceUI = (() => {
 
         projectSelect.addEventListener('change', () => changeProject(projectSelect.value));
         navigation.addEventListener('keydown', async event => {
-            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+            if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
             const available = viewDefinitions.map(([key]) => key).filter(key => key === 'overview' || !!currentProject);
             const current = available.indexOf(activeView);
             const next = event.key === 'Home' ? 0 : event.key === 'End' ? available.length - 1
-                : (current + (event.key === 'ArrowRight' ? 1 : -1) + available.length) % available.length;
+                : (current + (event.key === 'ArrowDown' ? 1 : -1) + available.length) % available.length;
             event.preventDefault();
             if (available[next] !== activeView && !await confirmLeave()) return;
             setActiveView(available[next]);
