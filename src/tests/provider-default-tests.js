@@ -247,7 +247,7 @@ test('URL com hostname Unicode é normalizada pelo parser nativo', () => {
 
 
 test('catálogo estático usa hosts declarados nas permissões @connect', async () => {
-    const bannerSource = await readFile(new URL('../banner.js', sourceDir), 'utf8');
+    const bannerSource = await readFile(new URL('banner.js', sourceDir), 'utf8');
     const catalogSource = await readFile(new URL('../provider-catalog.js', sourceDir), 'utf8');
     const declaredHosts = new Set(
         [...bannerSource.matchAll(/^\s*\/\/ @connect\s+([^\s]+)\s*$/gm)]
