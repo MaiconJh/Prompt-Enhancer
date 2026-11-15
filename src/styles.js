@@ -4383,6 +4383,7 @@ function injectStyles() {
         .pe-workspace.is-focus-mode .pe-workspace__layout { grid-template-columns: minmax(0, 1fr); }
         .pe-workspace.is-focus-mode .pe-workspace__explorer { display: none; }
         .pe-workspace.is-focus-mode .pe-workspace__inspector { display: none; }
+        .pe-workspace.is-focus-mode .pe-workspace__inspector-toggle { display: none; }
         .pe-workspace__layout {
             position: relative;
             display: grid;
