@@ -39,6 +39,7 @@ function createHarness(responses = []) {
     const events = [];
     let uid = 0;
     const context = vm.createContext({
+        URL,
         GM_getValue: (key, fallback) => values.has(key) ? values.get(key) : fallback,
         GM_setValue: (key, value) => values.set(key, value),
         GM_deleteValue: (key) => values.delete(key),
