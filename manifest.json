@@ -691,12 +691,14 @@
           "migrateLegacy",
           "migrateHistoryRuns",
           "EnhancementHistory",
-          "Theme"
+          "Theme",
+          "Workspace"
         ]
       },
       "interactions": [
-        "Runs after all modules are concatenated and initializes the shared application interfaces."
+        "Runs after all modules are concatenated and initializes the shared application interfaces.",
+        "Initializes the persistent workspace subsystem without blocking the existing application startup."
       ]
     }
   ]
-}\n
+}
