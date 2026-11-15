@@ -19,6 +19,29 @@
         Utils.applyText(el, text);
     }
 
+    async function _resolveWorkspaceContext(prompt, { skipContext = false } = {}) {
+        if (skipContext) return { text: '', status: 'skipped', project: null, includedFiles: [] };
+        if (typeof Workspace === 'undefined' || typeof ContextResolver === 'undefined' || typeof ContextComposer === 'undefined') {
+            return { text: '', status: 'workspace-unavailable', project: null, includedFiles: [] };
+        }
+        if (!Workspace.isInitialized()) {
+            try { await Workspace.init(); }
+            catch (error) {
+                console.warn('[PE Workspace] Falha ao inicializar Workspace:', error);
+                return { text: '', status: 'workspace-not-initialized', project: null, includedFiles: [] };
+            }
+        }
+        const projectId = Workspace.getActiveProjectId();
+        if (!projectId) return { text: '', status: 'project-not-configured', project: null, includedFiles: [] };
+        try {
+            const resolution = await ContextResolver.resolve({ projectId, query: prompt });
+            return ContextComposer.compose({ resolution });
+        } catch (error) {
+            console.warn('[PE Workspace] Falha ao resolver contexto:', error);
+            return { text: '', status: 'resolution-error', project: { id: projectId }, includedFiles: [], error: String(error?.message || error) };
+        }
+    }
+
     async function onParams() {
         return new Promise((resolve) => {
             let settled = false, saved = null;
@@ -177,8 +200,9 @@ async function _enhanceWithValidation(original, answersOrOpts, opts = {}) {
         overlay.setState('connecting');
 
         try {
+            const workspaceContext = await _resolveWorkspaceContext(original, { skipContext });
             const { enhanced, validation, analysis } = await _enhanceWithValidation(original, {
-                params, skipContext, forceNonStream,
+                params, skipContext, workspaceContext: workspaceContext.text, forceNonStream,
                 runId: capturedRunId,
                 callKind: 'main',
                 attempt: 1,
@@ -285,7 +309,9 @@ async function _enhanceWithValidation(original, answersOrOpts, opts = {}) {
             onSubmit: async (answers, { onEvent } = {}) => {
                 wizardSubmitted = true;
                 try {
+                    const workspaceContext = await _resolveWorkspaceContext(base);
                     const { enhanced, validation, analysis } = await _enhanceWithValidation(base, answers, {
+                        workspaceContext: workspaceContext.text,
                         params,
                         runId: capturedRunId,
                         callKind: 'enhance-with-answers',

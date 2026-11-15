@@ -435,11 +435,13 @@
           "EnhancementHistory",
           "Atoms",
           "Molecules",
-          "Theme"
+          "Theme",
+          "Workspace"
         ]
       },
       "interactions": [
-        "Molecules exposes the modal; orchestration receives saved values and applies them to runtime state."
+        "Molecules exposes the modal; orchestration receives saved values and applies them to runtime state.",
+        "Allows the user to create a project and select which Workspace project is active."
       ]
     },
     {
@@ -517,7 +519,8 @@
         ]
       },
       "interactions": [
-        "Orchestration supplies user input and settings; ApiClient records nested calls and emits progress events."
+        "Orchestration supplies user input and settings; ApiClient records nested calls and emits progress events.",
+        "Receives pre-composed read-only Workspace context from orchestration and adds it to the system prompt."
       ]
     },
     {
@@ -557,11 +560,15 @@
           "EnhancementHistory",
           "ErrorIndexer",
           "wireOverlayToEvents",
-          "Utils"
+          "Utils",
+          "Workspace",
+          "ContextResolver",
+          "ContextComposer"
         ]
       },
       "interactions": [
-        "Receives Composer actions and coordinates ApiClient, history, settings, and result interfaces."
+        "Receives Composer actions and coordinates ApiClient, history, settings, and result interfaces.",
+        "Resolves evidence from the selected project for direct and guided enhancement before calling ApiClient."
       ]
     },
     {
@@ -659,19 +666,23 @@
     },
     {
       "file": "workspace/workspace.js",
-      "description": "Provides the public facade and initialization lifecycle for the workspace subsystem.",
+      "description": "Provides the public Workspace facade, initialization lifecycle, and UI-controlled active project selection.",
       "interfaces": {
         "provides": [
-          "Workspace"
+          "Workspace",
+          "active project selection"
         ],
         "consumes": [
           "WorkspaceStorage",
           "ProjectManager",
-          "FileRegistry"
+          "FileRegistry",
+          "GM_getValue",
+          "GM_setValue"
         ]
       },
       "interactions": [
-        "Future workspace UI, project context, and AI tools consume this stable facade."
+        "Future workspace UI, project context, and AI tools consume this stable facade.",
+        "Settings UI selects the active project; ContextResolver reads project content through the facade."
       ]
     },
     {

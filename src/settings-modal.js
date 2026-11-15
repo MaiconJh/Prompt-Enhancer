@@ -995,6 +995,92 @@
             const form = document.createElement('div');
             form.className = 'pe-param-body';
 
+            const workspaceSection = document.createElement('div');
+            workspaceSection.className = 'pe-context-info';
+            const workspaceTitle = document.createElement('div');
+            workspaceTitle.className = 'pe-context-info__title';
+            workspaceTitle.textContent = I18n.t('sm.workspace.title');
+            const workspaceDescription = document.createElement('div');
+            workspaceDescription.className = 'pe-context-info__text';
+            workspaceDescription.textContent = I18n.t('sm.workspace.description');
+            const projectSelect = document.createElement('select');
+            projectSelect.className = 'pe-param-input';
+            projectSelect.setAttribute('aria-label', I18n.t('sm.workspace.title'));
+            projectSelect.innerHTML = '<option value="">' + Utils.escapeHtml(I18n.t('sm.workspace.loading')) + '</option>';
+            const createRow = document.createElement('div');
+            createRow.className = 'pe-param-row';
+            const createInput = document.createElement('input');
+            createInput.type = 'text';
+            createInput.className = 'pe-param-input';
+            createInput.maxLength = 100;
+            createInput.placeholder = I18n.t('sm.workspace.createPlaceholder');
+            const createButton = document.createElement('button');
+            createButton.type = 'button';
+            createButton.className = 'pe-context-manage';
+            createButton.textContent = I18n.t('sm.workspace.create');
+            createRow.append(createInput, createButton);
+            workspaceSection.append(workspaceTitle, workspaceDescription, projectSelect, createRow);
+            form.appendChild(workspaceSection);
+
+            const refreshWorkspaceProjects = async () => {
+                try {
+                    if (!Workspace.isInitialized()) await Workspace.init();
+                    const projects = await Workspace.projects.list();
+                    const activeId = Workspace.getActiveProjectId();
+                    projectSelect.innerHTML = '';
+                    const none = document.createElement('option');
+                    none.value = '';
+                    none.textContent = I18n.t('sm.workspace.none');
+                    projectSelect.appendChild(none);
+                    projects.forEach(project => {
+                        const option = document.createElement('option');
+                        option.value = project.id;
+                        option.textContent = project.name;
+                        projectSelect.appendChild(option);
+                    });
+                    if (activeId && !projects.some(project => project.id === activeId)) {
+                        const missing = document.createElement('option');
+                        missing.value = activeId;
+                        missing.textContent = activeId + ' (' + I18n.t('sm.workspace.selectError') + ')';
+                        projectSelect.appendChild(missing);
+                    }
+                    projectSelect.value = activeId || '';
+                    projectSelect.disabled = false;
+                    createButton.disabled = false;
+                    if (!projects.length) none.textContent = I18n.t('sm.workspace.empty');
+                } catch (error) {
+                    projectSelect.innerHTML = '<option value="">' + Utils.escapeHtml(I18n.t('sm.workspace.selectError')) + '</option>';
+                    projectSelect.disabled = true;
+                    console.warn('[PE Workspace] Falha ao listar projetos:', error);
+                }
+            };
+            projectSelect.addEventListener('change', async () => {
+                try {
+                    await Workspace.setActiveProjectId(projectSelect.value || null);
+                    Molecules.toast(I18n.t('sm.saved'), 'success');
+                } catch (error) {
+                    Molecules.toast(I18n.t('sm.workspace.selectError'), 'error', { details: error.message });
+                    refreshWorkspaceProjects();
+                }
+            });
+            createButton.addEventListener('click', async () => {
+                const name = createInput.value.trim();
+                if (!name) { createInput.focus(); return; }
+                createButton.disabled = true;
+                try {
+                    const project = await Workspace.projects.create({ name });
+                    await Workspace.setActiveProjectId(project.id);
+                    createInput.value = '';
+                    await refreshWorkspaceProjects();
+                    Molecules.toast(I18n.t('sm.workspace.created'), 'success');
+                } catch (error) {
+                    Molecules.toast(I18n.t('sm.workspace.selectError'), 'error', { details: error.message });
+                } finally {
+                    createButton.disabled = false;
+                }
+            });
+            refreshWorkspaceProjects();
+
             const infoBox = document.createElement('div');
             infoBox.className = 'pe-context-info';
             const activeFiles = ProjectContext.list().filter(f => f.enabled);
