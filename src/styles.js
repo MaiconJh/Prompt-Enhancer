@@ -3065,19 +3065,28 @@ function injectStyles() {
             position: relative;
             margin: 0;
             min-width: 0;
-            width: min(1040px, 100%);
-            height: min(820px, calc(100dvh - 56px));
-            max-height: min(820px, calc(100dvh - 56px));
+            width: min(920px, 100%);
+            height: min(760px, calc(100dvh - 56px));
+            max-height: min(760px, calc(100dvh - 56px));
             border: 1px solid var(--pe-glass-modal-border);
             border-radius: 18px;
             background: var(--pe-glass-modal-bg);
             box-shadow: var(--pe-glass-modal-shadow);
             transform: translate3d(0, 8px, 0);
-            transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms ease;
+            transition: width 300ms cubic-bezier(0.16, 1, 0.3, 1), height 300ms cubic-bezier(0.16, 1, 0.3, 1), max-height 300ms cubic-bezier(0.16, 1, 0.3, 1), transform 220ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms ease;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
+        .pe-scope .pe-modal.is-workspace-expanded {
+            width: min(1280px, calc(100vw - 48px));
+            height: min(900px, calc(100dvh - 48px));
+            max-height: min(900px, calc(100dvh - 48px));
+        }
+        .pe-scope .pe-modal.is-workspace-expanded .pe-panel__body {
+            padding: 18px 22px 28px;
+        }
+
         .pe-scope .pe-modal::before {
             content: "";
             position: absolute;
@@ -3136,54 +3145,61 @@ function injectStyles() {
         .pe-modal-layout {
             display: flex;
             flex: 1 1 0;
+            flex-direction: column;
             min-height: 0;
             min-width: 0;
             position: relative;
             overflow: hidden;
         }
         .pe-scope .pe-modal .pe-modal-tabs {
-            flex: 0 0 224px;
-            width: 224px;
+            flex: 0 0 auto;
+            width: 100%;
             min-width: 0;
-            padding: 20px 12px;
+            min-height: 60px;
+            padding: 8px 16px;
             display: flex;
-            flex-direction: column;
-            align-items: stretch;
-            gap: 5px;
-            overflow-x: hidden;
-            overflow-y: auto;
-            border-bottom: 0;
-            border-right: 1px solid var(--pe-glass-sidebar-border);
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            border-right: 0;
+            border-bottom: 1px solid var(--pe-glass-sidebar-border);
             background: var(--pe-glass-sidebar-bg);
+            scrollbar-width: none;
         }
-        .pe-scope .pe-modal .pe-modal-tabs::before {
-            content: attr(data-section-label);
-            padding: 0 10px 9px;
-            color: var(--pe-text-faint);
-            font-size: var(--pe-fs-3xs);
-            line-height: 1.2;
-            font-weight: 700;
-            letter-spacing: .12em;
-        }
+        .pe-scope .pe-modal .pe-modal-tabs::-webkit-scrollbar { display: none; }
+        .pe-scope .pe-modal .pe-modal-tabs::before { display: none; }
         .pe-scope .pe-modal .pe-modal-tab {
             position: relative;
-            display: flex;
+            display: inline-flex;
+            flex: 0 0 44px;
             align-items: center;
-            gap: var(--pe-space-2);
-            width: 100%;
-            min-height: 40px;
+            justify-content: center;
+            gap: 0;
+            width: 44px;
+            min-width: 44px;
+            min-height: 44px;
             margin: 0;
-            padding: 8px 10px;
+            padding: 8px;
             border: 1px solid transparent;
             border-radius: var(--pe-radius-sm);
             color: var(--pe-text-muted);
-            text-align: left;
-            white-space: normal;
+            text-align: center;
+            white-space: nowrap;
             font-size: var(--pe-fs-sm);
             font-weight: var(--pe-fw-medium);
             background: transparent;
             cursor: pointer;
-            transition: background-color var(--pe-dur-fast) ease, color var(--pe-dur-fast) ease, border-color var(--pe-dur-fast) ease;
+            transition: flex-basis 220ms cubic-bezier(0.16, 1, 0.3, 1), width 220ms cubic-bezier(0.16, 1, 0.3, 1), padding 220ms ease, background-color var(--pe-dur-fast) ease, color var(--pe-dur-fast) ease, border-color var(--pe-dur-fast) ease;
+        }
+        .pe-scope .pe-modal .pe-modal-tab.is-active {
+            flex: 0 0 auto;
+            width: auto;
+            gap: 8px;
+            padding-right: 14px;
+            padding-left: 14px;
         }
         .pe-scope .pe-modal .pe-modal-tab:hover {
             color: var(--pe-text);
@@ -3206,9 +3222,21 @@ function injectStyles() {
             color: currentColor;
         }
         .pe-modal-tab__label {
+            display: inline-block;
+            max-width: 0;
+            overflow: hidden;
+            opacity: 0;
+            white-space: nowrap;
+            transform: translateX(-4px);
             font-size: var(--pe-fs-sm);
             line-height: 1.35;
             font-weight: inherit;
+            transition: max-width 220ms cubic-bezier(0.16, 1, 0.3, 1), opacity 160ms ease, transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .pe-scope .pe-modal .pe-modal-tab.is-active .pe-modal-tab__label {
+            max-width: 180px;
+            opacity: 1;
+            transform: translateX(0);
         }
         .pe-modal-main {
             display: flex;
@@ -4155,13 +4183,20 @@ function injectStyles() {
                 height: min(820px, calc(100dvh - 20px));
                 max-height: min(820px, calc(100dvh - 20px));
             }
+            .pe-scope .pe-modal.is-workspace-expanded {
+                width: 100%;
+                height: calc(100dvh - 20px);
+                max-height: calc(100dvh - 20px);
+            }
             .pe-modal-layout { flex-direction: column; border-bottom: 0; }
             .pe-scope .pe-modal .pe-modal-tabs {
                 flex: 0 0 auto;
                 width: 100%;
-                padding: 8px 10px;
+                min-height: 56px;
+                padding: 6px 10px;
                 flex-direction: row;
-                align-items: stretch;
+                align-items: center;
+                justify-content: flex-start;
                 gap: 5px;
                 overflow-x: auto;
                 overflow-y: hidden;
@@ -4172,13 +4207,19 @@ function injectStyles() {
             .pe-scope .pe-modal .pe-modal-tabs::-webkit-scrollbar { display: none; }
             .pe-scope .pe-modal .pe-modal-tabs::before { display: none; }
             .pe-scope .pe-modal .pe-modal-tab {
-                flex: 1 0 auto;
-                width: auto;
-                min-height: 40px;
+                flex: 0 0 42px;
+                width: 42px;
+                min-width: 42px;
+                min-height: 42px;
                 justify-content: center;
-                gap: var(--pe-space-2);
-                padding: 8px 10px;
-                white-space: nowrap;
+                gap: 0;
+                padding: 8px;
+            }
+            .pe-scope .pe-modal .pe-modal-tab.is-active {
+                flex: 0 0 auto;
+                width: auto;
+                gap: 7px;
+                padding: 8px 12px;
             }
             .pe-modal-tab .pe-ico { width: 15px; height: 15px; }
             .pe-scope .pe-modal .pe-panel__body { padding: 20px clamp(14px, 4vw, 26px) 32px; }
@@ -4237,7 +4278,8 @@ function injectStyles() {
             .pe-scope .pe-modal .pe-panel__header { min-height: 64px; padding: 12px 15px; }
             .pe-scope .pe-modal .pe-panel__header h4 { font-size: var(--pe-fs-title); }
             .pe-modal-heading p { font-size: var(--pe-fs-2xs); }
-            .pe-scope .pe-modal .pe-modal-tab { gap: 4px; min-width: 42px; padding: 8px; }
+            .pe-scope .pe-modal .pe-modal-tab { min-width: 42px; padding: 8px; }
+            .pe-scope .pe-modal .pe-modal-tab.is-active { padding: 8px 10px; gap: 6px; }
             .pe-scope .pe-modal .pe-modal-tab__label { font-size: var(--pe-fs-2xs); }
             .pe-scope .pe-modal .pe-panel__body { padding: 17px 12px 32px; }
             .pe-scope .pe-modal .pe-panel__body:has(> .pe-provider-settings) { padding: 14px 12px 20px; }
