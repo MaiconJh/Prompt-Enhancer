@@ -4424,6 +4424,16 @@ function injectStyles() {
             scrollbar-width: thin;
         }
         .pe-workspace__tree-search { width: 100%; }
+        .pe-workspace__batch-composer {
+            display: flex; flex-direction: column; gap: var(--pe-space-2);
+            padding: 10px; border: 1px solid var(--pe-border); border-radius: var(--pe-radius-md);
+            background: var(--pe-surface-1);
+        }
+        .pe-workspace__batch-title { color: var(--pe-text); font-size: var(--pe-fs-sm); }
+        .pe-workspace__batch-paths { min-height: 112px; resize: vertical; font-family: var(--pe-font-mono, monospace); }
+        .pe-workspace__batch-actions { display: flex; justify-content: flex-end; gap: var(--pe-space-2); }
+        .pe-workspace__file-actions { flex-wrap: wrap; }
+        .pe-workspace__file-actions > .pe-param-input { flex: 1 1 100%; min-width: 0; }
         .pe-workspace__folder { min-width: 0; }
         .pe-workspace__folder-row {
             display: flex; align-items: center; gap: 7px; width: 100%; min-width: 0;
