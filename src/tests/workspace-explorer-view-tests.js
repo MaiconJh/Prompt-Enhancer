@@ -79,3 +79,42 @@ test('recolher pasta remove descendentes sem descartar os arquivos do índice', 
     assert.equal(container.querySelectorAll('[data-row-kind="file"]').length, 0);
     view.destroy(container);
 });
+
+
+test('árvore expõe estado vazio e estado sem resultados de busca', () => {
+    const { view, container } = createHarness();
+    view.render(container, { files: [] });
+    assert.equal(container.querySelector('[role="treeitem"]'), null);
+    assert.equal(container.querySelector('.pe-workspace__empty').textContent, 'ws.files.empty');
+
+    view.render(container, { files: [{ id: 'a', name: 'alpha.js', path: 'src/alpha.js' }], searchQuery: 'missing' });
+    assert.equal(container.querySelector('[role="treeitem"]'), null);
+    assert.equal(container.querySelector('.pe-workspace__empty').textContent, 'ws.files.noMatches');
+    view.destroy(container);
+});
+
+test('árvore oferece navegação por setas, expansão, recolhimento, ativação e limites', () => {
+    const { dom, view, container } = createHarness();
+    const files = [
+        { id: 'a', name: 'alpha.js', path: 'src/alpha.js', aiAccess: 'allowed' },
+        { id: 'b', name: 'beta.js', path: 'src/lib/beta.js', aiAccess: 'denied' }
+    ];
+    const selected = [];
+    view.render(container, { files, onSelect: id => selected.push(id) });
+    const folder = container.querySelector('[data-row-path="src"]');
+    assert.equal(folder.getAttribute('role'), 'treeitem');
+    assert.equal(folder.getAttribute('aria-expanded'), 'false');
+    folder.focus();
+    folder.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    assert.equal(container.querySelector('[data-row-path="src"]').getAttribute('aria-expanded'), 'true');
+    assert.ok(container.querySelector('[data-file-id="a"]'));
+    const file = container.querySelector('[data-file-id="a"]');
+    file.focus();
+    file.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    assert.deepEqual(selected, ['a']);
+    file.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+    assert.equal(dom.window.document.activeElement.dataset.rowPath, 'src');
+    container.querySelector('[data-row-path="src"]').dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+    assert.equal(container.querySelector('[data-row-path="src"]').getAttribute('aria-expanded'), 'false');
+    view.destroy(container);
+});
