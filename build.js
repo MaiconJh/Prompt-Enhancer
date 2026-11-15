@@ -39,6 +39,55 @@ async function readSource(name) {
 }
 
 const banner = await readSource('banner.js');
+
+/**
+ * Minifica cirurgicamente o objeto DICTS de src/i18n.js no bundle de build.
+ * Mantém o source do repo legível (multilinha) e deixa o dist com o dicionário
+ * em uma única linha (JSON compacto), sem dependências externas.
+ * Usa o próprio parser V8 (new Function) para validar a sintaxe e JSON.stringify
+ * para serializar de volta com segurança, evitando quebras de string por regex.
+ */
+function minifyDictionaries(source) {
+    const marker = 'const DICTS = {';
+    const startIndex = source.indexOf(marker);
+    if (startIndex === -1) return source;
+
+    let openBraces = 0;
+    let endIndex = -1;
+
+    // Encontra o fechamento exato do objeto DICTS contando as chaves
+    for (let i = startIndex + marker.length - 1; i < source.length; i++) {
+        if (source[i] === '{') openBraces++;
+        else if (source[i] === '}') {
+            openBraces--;
+            if (openBraces === 0) {
+                endIndex = i + 1;
+                if (source[endIndex] === ';') endIndex++;
+                break;
+            }
+        }
+    }
+
+    if (endIndex === -1) return source;
+
+    // Extrai apenas o objeto literal { ... }
+    const dictCode = source.substring(startIndex + 'const DICTS ='.length, endIndex - 1).trim();
+
+    try {
+        // Parser do próprio Node valida a sintaxe do objeto multilinha
+        const dictObj = new Function(`return (${dictCode})`)();
+
+        // JSON.stringify compacta tudo em uma linha e normaliza aspas/acentos
+        const minifiedDict = `const DICTS = ${JSON.stringify(dictObj)};`;
+
+        // Substitui o bloco original no source
+        return source.substring(0, startIndex) + minifiedDict + source.substring(endIndex);
+    } catch (e) {
+        console.warn('[build] Falha ao minificar dicionários i18n:', e.message);
+        return source;
+    }
+}
+
 const open = await readSource('open.js');
 const modules = await Promise.all(manifest.modules.map(async (module) => {
     let source = await readSource(module.file);
@@ -62,6 +111,12 @@ const modules = await Promise.all(manifest.modules.map(async (module) => {
             });
             source = source.replace(match[1], css.trim());
         }
+    }
+
+    // Minifica o bloco DICTS do i18n.js no build de produção.
+    // Ativado por --minify-css, PE_MINIFY_CSS=1, --minify-i18n ou PE_MINIFY_I18N=1.
+    if (module.file === 'i18n.js' && (minifyCss || process.argv.includes('--minify-i18n') || process.env.PE_MINIFY_I18N === '1')) {
+        source = minifyDictionaries(source);
     }
 
     return `${renderModuleMetadata(module)}\n${source}`;
