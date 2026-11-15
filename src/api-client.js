@@ -170,7 +170,7 @@
             return run();
         },
 
-        _postOnce(systemPrompt, userContent, { params = {}, skipContext = false, timeoutOverride = null, timeoutContextBytes = 0, onEvent = null, forceNonStream = false, mainCall = false, providerOverride = null, runId = null, callKind = 'main', attempt = 1, retryOf = null, continuation = null, repairPrevious = null } = {}) {
+        _postOnce(systemPrompt, userContent, { params = {}, skipContext = false, timeoutOverride = null, timeoutContextBytes = 0, onEvent = null, forceNonStream = false, mainCall = false, providerOverride = null, runId = null, callKind = 'main', attempt = 1, retryOf = null, continuation = null, repairPrevious = null, workspaceContext = '' } = {}) {
             return new Promise((resolve, reject) => {
                 const startedAt = Date.now();
                 const emitHistoryEarly = (partial) => {
@@ -202,6 +202,10 @@
                 }
                 const projectContextSuffix = ProjectContext.buildSystemSuffix({ skip: skipContext });
                 fullSystem += projectContextSuffix;
+                const workspaceContextSuffix = !skipContext && typeof workspaceContext === 'string' && workspaceContext.trim()
+                    ? '\n\n' + workspaceContext.trim()
+                    : '';
+                fullSystem += workspaceContextSuffix;
                 const API_KEYS = new Set(['temperature', 'max_tokens', 'top_p', 'frequency_penalty', 'presence_penalty', 'seed']);
                 const apiParams = {};
                 for (const k of Object.keys(finalParams)) { if (API_KEYS.has(k)) apiParams[k] = finalParams[k]; }
@@ -224,8 +228,9 @@
                 const payloadForSize = JSON.stringify(payload);
                 const payloadKB = Utils.byteSize(payloadForSize) / 1024;
                 const projectContextBytes = projectContextSuffix ? Utils.byteSize(projectContextSuffix) : 0;
+                const workspaceContextBytes = workspaceContextSuffix ? Utils.byteSize(workspaceContextSuffix) : 0;
                 const attachedCodeBytes = Number.isFinite(timeoutContextBytes) ? Math.max(0, timeoutContextBytes) : 0;
-                const timeoutContextKB = (projectContextBytes + attachedCodeBytes) / 1024;
+                const timeoutContextKB = (projectContextBytes + workspaceContextBytes + attachedCodeBytes) / 1024;
                 const adaptiveTimeout = Math.min(CONFIG.TIMEOUT_MAX_MS, Math.max(CONFIG.TIMEOUT_BASE_MS, CONFIG.TIMEOUT_BASE_MS + (payloadKB + timeoutContextKB) * CONFIG.TIMEOUT_PER_KB_MS));
                 const baseTimeout = forceNonStream ? adaptiveTimeout * CONFIG.FALLBACK_TIMEOUT_MULTIPLIER : adaptiveTimeout;
                 const timeoutMs = timeoutOverride != null ? timeoutOverride : baseTimeout;
