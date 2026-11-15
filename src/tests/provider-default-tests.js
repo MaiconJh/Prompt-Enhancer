@@ -9,7 +9,7 @@ const configSource = await readFile(new URL('config.js', sourceDir), 'utf8');
 const i18nSource = await readFile(new URL('i18n.js', sourceDir), 'utf8');
 const managerSource = await readFile(new URL('provider-manager.js', sourceDir), 'utf8');
 
-function createProviderHarness(initialValues = {}) {
+function createProviderHarness(initialValues = {}, confirmResult = true) {
     // Força locale pt-BR por padrão para asserções determinísticas neste suite.
     // Testes que precisem de outro locale podem passar `pe_ui_language: 'en'|'auto'`.
     const merged = { pe_ui_language: 'pt-BR', ...initialValues };
@@ -26,7 +26,7 @@ function createProviderHarness(initialValues = {}) {
             dispatchEvent: () => {},
             addEventListener: () => {},
             removeEventListener: () => {},
-            confirm: () => { confirmCalls++; return true; }
+            confirm: () => { confirmCalls++; return confirmResult; }
         }
     });
 
@@ -239,4 +239,59 @@ test('URL com hostname Unicode é normalizada pelo parser nativo', () => {
     const { providerManager } = createProviderHarness();
     const provider = providerManager.add({ url: 'https://münich.example/v1', model: 'unicode-host' });
     assert.match(provider.url, /^https:\/\/xn--mnich-kva\.example\/v1\/chat\/completions$/);
+});
+
+
+test('catálogo estático usa hosts declarados nas permissões @connect', async () => {
+    const bannerSource = await readFile(new URL('../banner.js', sourceDir), 'utf8');
+    const catalogSource = await readFile(new URL('../provider-catalog.js', sourceDir), 'utf8');
+    const declaredHosts = new Set(
+        [...bannerSource.matchAll(/^\\s*\/\/ @connect\\s+([^\\s]+)\\s*$/gm)]
+            .map((match) => match[1].toLowerCase())
+    );
+    const catalogUrls = [...catalogSource.matchAll(/baseUrl:\\s*'([^']+)'/g)]
+        .map((match) => match[1])
+        .filter((value) => value.startsWith('http://') || value.startsWith('https://'));
+
+    assert.ok(catalogUrls.length > 0, 'Catálogo precisa conter endpoints HTTP(S).');
+    for (const value of catalogUrls) {
+        const hostname = new URL(value.replace(/\\{[^}]+\\}/g, 'placeholder')).hostname.toLowerCase();
+        assert.ok(
+            declaredHosts.has(hostname),
+            `Host do catálogo sem @connect correspondente: ${hostname}`
+        );
+    }
+});
+
+test('atualizar endpoint aplica a mesma validação e confirmação de add', () => {
+    const harness = createProviderHarness();
+    const provider = harness.providerManager.add({
+        url: 'https://api.initial.test/v1',
+        model: 'initial-model'
+    });
+    assert.equal(harness.confirmCalls, 1);
+
+    const updated = harness.providerManager.update(provider.id, {
+        url: 'https://api.updated.test/v1'
+    });
+    assert.equal(harness.confirmCalls, 2);
+    assert.equal(updated.url, 'https://api.updated.test/v1/chat/completions');
+
+    assert.throws(
+        () => harness.providerManager.update(provider.id, { url: 'http://api.updated.test/v1' }),
+        (error) => error?.name === 'Error' && /Protocolo não suportado/.test(error.message)
+    );
+});
+
+test('recusa de endpoint personalizado impede salvar provider', () => {
+    const harness = createProviderHarness({}, false);
+    assert.throws(
+        () => harness.providerManager.add({
+            url: 'https://untrusted.example.test/v1',
+            model: 'untrusted-model'
+        }),
+        (error) => error?.name === 'Error' && /negada/.test(error.message)
+    );
+    assert.equal(harness.providerManager.list().length, 1);
+    assert.equal(harness.confirmCalls, 1);
 });
