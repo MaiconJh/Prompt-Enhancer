@@ -21,7 +21,7 @@
             fallback: false
         };
 
-        const URL_CUSTOM_CONFIRM_MSG = 'Atenção: Você está configurando um endpoint personalizado.\\n\\nURL: {url}\\n\\nSeus prompts, contexto e chaves de API serão enviados para este servidor. Confirme apenas se você confia totalmente no proprietário deste endpoint.\\n\\nO gerenciador de userscripts também pedirá autorização de rede para este host.';
+        const URL_CUSTOM_CONFIRM_MSG = 'Atenção: Você está configurando um endpoint personalizado.\n\nURL: {url}\n\nSeus prompts, contexto e chaves de API serão enviados para este servidor. Confirme apenas se você confia totalmente no proprietário deste endpoint.\n\nO gerenciador de userscripts também pedirá autorização de rede para este host.';
         const BUILTIN_HOSTS = [
             'ai-gateway.kilo.ai',
             'oai.endpoints.kepler.ai.cloud.ovh.net',
