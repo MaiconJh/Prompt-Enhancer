@@ -1,10 +1,15 @@
 // ===== src/workspace/workspace.js =====
 const Workspace = (() => {
     let initialized = false;
+    let initialization = null;
     async function init() {
-        await WorkspaceStorage.open();
-        initialized = true;
-        return { initialized };
+        if (initialized) return { initialized: true };
+        if (initialization) return initialization;
+        initialization = WorkspaceStorage.open().then(() => {
+            initialized = true;
+            return { initialized: true };
+        }).finally(() => { initialization = null; });
+        return initialization;
     }
     function assertInitialized() {
         if (!initialized) throw new Error('Workspace ainda não foi inicializado. Execute Workspace.init() primeiro.');
