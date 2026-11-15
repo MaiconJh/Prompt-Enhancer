@@ -25,13 +25,12 @@ test('mantém compatibilidade com a chave legada context', () => {
     assert.ok(settings.includes("initialTab === 'context' ? 'manualContext' : initialTab"));
 });
 
-test('preserva seleção e criação de projetos na aba Workspace', () => {
+test('aba Workspace delega o gerenciamento à view dedicada', () => {
     const start = settings.indexOf('function renderWorkspace()');
     const end = settings.indexOf('function renderManualContext()', start);
     const view = settings.slice(start, end);
-    assert.ok(view.includes('Workspace.projects.list()'));
-    assert.ok(view.includes('Workspace.projects.create({ name })'));
-    assert.ok(view.includes('Workspace.setActiveProjectId('));
+    assert.ok(view.includes('WorkspaceUI.render(bodyEl)'));
+    assert.equal(view.includes('Workspace.projects.create('), false);
 });
 
 test('mantém o gerenciador ProjectContext separado do Workspace', () => {
