@@ -122,37 +122,23 @@ const WorkspaceUI = (() => {
         explorer.append(explorerHeader, fileActions, treeSearch, tree);
         workspaceLayout.appendChild(explorer);
 
-        const editorPanel = element('section', 'pe-workspace__editor');
-        const editorHeading = element('div', 'pe-workspace__section-heading', I18n.t('ws.editor.title'));
-        const editorEmpty = element('div', 'pe-workspace__empty', I18n.t('ws.editor.empty'));
-        const editor = element('div', 'pe-workspace__editor-content');
-        const filePath = element('input', 'pe-param-input');
-        filePath.type = 'text';
-        const fileContent = element('textarea', 'pe-workspace__code');
-        fileContent.spellcheck = false;
-        fileContent.setAttribute('aria-label', I18n.t('ws.editor.content'));
-        const fileMeta = element('div', 'pe-workspace__meta');
-        const editorActions = element('div', 'pe-workspace__editor-actions');
-        const fileDeleteButton = Atoms.buttonNode({
-            label: I18n.t('ws.files.delete'),
-            ariaLabel: I18n.t('ws.files.delete'),
-            variant: 'outline',
-            onClick: deleteFile
+        const editorView = WorkspaceEditorView.create({
+            labeledField,
+            onSave: saveFile,
+            onDelete: deleteFile,
+            onToggleExplorer: toggleExplorer,
+            onToggleFocus: toggleFocusMode
         });
-        const fileSaveButton = Atoms.buttonNode({
-            label: I18n.t('ws.editor.save'),
-            ariaLabel: I18n.t('ws.editor.save'),
-            variant: 'primary',
-            onClick: saveFile
-        });
-        editorActions.append(fileDeleteButton, fileSaveButton);
-        editor.append(
-            labeledField('ws.editor.path', filePath),
-            fileContent,
-            fileMeta,
-            editorActions
-        );
-        editorPanel.append(editorHeading, editorEmpty, editor);
+        const {
+            panel: editorPanel,
+            empty: editorEmpty,
+            content: editor,
+            path: filePath,
+            contentInput: fileContent,
+            meta: fileMeta,
+            saveButton: fileSaveButton,
+            deleteButton: fileDeleteButton
+        } = editorView;
         workspaceLayout.appendChild(editorPanel);
         filesView.appendChild(workspaceLayout);
 
