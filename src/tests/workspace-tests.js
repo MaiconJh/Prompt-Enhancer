@@ -84,7 +84,7 @@ test('normaliza Unicode e rejeita caminhos absolutos, traversal e separadores am
     const { model } = createHarness();
     assert.equal(model.normalizeFilePath('src/cafe\u0301.js'), 'src/café.js');
     for (const path of ['', '/etc/passwd', 'C:/secret.txt', '../outside.js', 'src/../outside.js', 'src\\file.js', 'src/file.js:stream', 'src/name.']) {
-        assert.throws(() => model.normalizeFilePath(path), path);
+        assert.throws(() => model.normalizeFilePath(path));
     }
 });
 
