@@ -240,6 +240,11 @@ const WorkspaceUI = (() => {
         const projectSettings = element('section', 'pe-workspace__view pe-workspace__project-settings');
         projectSettings.dataset.viewPanel = 'settings';
         const settingsHeading = element('div', 'pe-workspace__view-heading', I18n.t('ws.nav.settings'));
+        const projectDirtyIndicator = element('span', 'pe-workspace__dirty-indicator', I18n.t('ws.project.unsavedChanges'));
+        projectDirtyIndicator.hidden = true;
+        projectDirtyIndicator.setAttribute('role', 'status');
+        projectDirtyIndicator.setAttribute('aria-live', 'polite');
+        settingsHeading.appendChild(projectDirtyIndicator);
         const projectName = element('input', 'pe-param-input');
         projectName.type = 'text';
         projectName.maxLength = 100;
@@ -251,15 +256,23 @@ const WorkspaceUI = (() => {
         const projectSave = Atoms.buttonNode({
             label: I18n.t('ws.project.saveSettings'),
             ariaLabel: I18n.t('ws.project.saveSettings'),
-            variant: 'outline',
+            variant: 'primary',
             onClick: async () => { try { await saveProjectSettings(); } catch (error) { notify(error.message || I18n.t('ws.errors.operationFailed'), 'error'); } }
         });
+        const projectCancel = Atoms.buttonNode({
+            label: I18n.t('ws.project.cancelSettings'),
+            ariaLabel: I18n.t('ws.project.cancelSettings'),
+            variant: 'ghost',
+            onClick: resetProjectSettings
+        });
+        const projectSettingsActions = element('div', 'pe-workspace__settings-actions');
+        projectSettingsActions.append(projectSave, projectCancel);
         projectSettings.append(
             settingsHeading,
             labeledField('ws.project.name', projectName),
             labeledField('ws.project.description', projectDescription),
             labeledField('ws.project.instructions', instructions),
-            projectSave
+            projectSettingsActions
         );
 
         const inspectorDetails = element('section', 'pe-workspace__file-details');
@@ -431,7 +444,10 @@ const WorkspaceUI = (() => {
             importDirectoryButton.disabled = !hasProject || loading;
             batchButton.disabled = !hasProject || loading;
             folderButton.disabled = !hasProject || loading;
-            projectSave.disabled = !hasProject || !projectDirty() || loading;
+            const hasUnsavedProjectChanges = projectDirty();
+            projectDirtyIndicator.hidden = !hasUnsavedProjectChanges;
+            projectSave.disabled = !hasProject || !hasUnsavedProjectChanges || loading;
+            projectCancel.disabled = !hasProject || !hasUnsavedProjectChanges || loading;
             updateEditorState();
         }
 
@@ -443,6 +459,11 @@ const WorkspaceUI = (() => {
                 searchQuery: treeSearch.value,
                 onSelect: selectFile
             });
+        }
+
+        function resetProjectSettings() {
+            if (!currentProject || loading) return;
+            fillProject(currentProject);
         }
 
         function fillProject(project) {
