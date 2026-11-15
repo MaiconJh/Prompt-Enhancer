@@ -4379,15 +4379,44 @@ function injectStyles() {
         .pe-workspace__project-settings > .pe-btn { justify-self: start; }
         .pe-workspace.is-explorer-collapsed .pe-workspace__layout { grid-template-columns: minmax(0, 1fr); }
         .pe-workspace.is-explorer-collapsed .pe-workspace__explorer { display: none; }
+        .pe-workspace.is-explorer-collapsed .pe-workspace__splitter { display: none; }
         .pe-workspace.is-focus-mode .pe-workspace__navigation { display: none; }
         .pe-workspace.is-focus-mode .pe-workspace__layout { grid-template-columns: minmax(0, 1fr); }
         .pe-workspace.is-focus-mode .pe-workspace__explorer { display: none; }
-        .pe-workspace.is-focus-mode .pe-workspace__inspector { display: none; }
+        .pe-workspace.is-focus-mode .pe-workspace__splitter { display: none; }
+        .pe-workspace.is-focus-mode         .pe-workspace__splitter {
+            position: relative;
+            z-index: 1;
+            width: 6px;
+            min-width: 6px;
+            margin-inline: -3px;
+            border: 0;
+            border-radius: 6px;
+            background: transparent;
+            cursor: col-resize;
+            touch-action: none;
+            outline: none;
+        }
+        .pe-workspace__splitter::after {
+            content: "";
+            position: absolute;
+            inset-block: 12px;
+            inset-inline-start: 2px;
+            width: 2px;
+            border-radius: 2px;
+            background: var(--pe-border);
+            transition: background var(--pe-transition-fast);
+        }
+        .pe-workspace__splitter:hover::after,
+        .pe-workspace__splitter:focus-visible::after,
+        .pe-workspace__splitter.is-resizing::after { background: var(--pe-accent); }
+        .pe-workspace__splitter:focus-visible { box-shadow: var(--pe-focus-ring); }
+.pe-workspace__inspector { display: none; }
         .pe-workspace.is-focus-mode .pe-workspace__inspector-toggle { display: none; }
         .pe-workspace__layout {
             position: relative;
             display: grid;
-            grid-template-columns: minmax(220px, 0.28fr) minmax(0, 1fr);
+            grid-template-columns: minmax(180px, var(--pe-workspace-explorer-width, 240px)) 6px minmax(0, 1fr);
             gap: var(--pe-space-3);
             min-width: 0;
             min-height: min(68vh, 680px);
