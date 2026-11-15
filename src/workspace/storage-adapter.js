@@ -63,6 +63,38 @@ const WorkspaceStorage = (() => {
     const add = (storeName, value) => transaction([storeName], 'readwrite', tx => tx.objectStore(storeName).add(value));
     const remove = (storeName, key) => transaction([storeName], 'readwrite', tx => tx.objectStore(storeName).delete(key));
 
+    function updateProject(projectId, changes) {
+        return open().then(db => new Promise((resolve, reject) => {
+            const tx = db.transaction('projects', 'readwrite');
+            const store = tx.objectStore('projects');
+            const request = store.get(projectId);
+            let updated = null;
+            let failure = null;
+            request.onsuccess = () => {
+                if (!request.result) {
+                    failure = new Error('Projeto não encontrado.');
+                    failure.code = 'project-not-found';
+                    try { tx.abort(); } catch (_) { reject(failure); }
+                    return;
+                }
+                try {
+                    updated = changes(request.result);
+                    store.put(updated);
+                } catch (error) {
+                    failure = error;
+                    try { tx.abort(); } catch (_) { reject(error); }
+                }
+            };
+            request.onerror = () => {
+                failure = request.error || new Error('Não foi possível consultar o projeto.');
+                try { tx.abort(); } catch (_) { reject(failure); }
+            };
+            tx.oncomplete = () => resolve(updated);
+            tx.onerror = () => reject(failure || tx.error || new Error('Não foi possível atualizar o projeto.'));
+            tx.onabort = () => reject(failure || tx.error || new Error('A atualização do projeto foi cancelada.'));
+        }));
+    }
+
     function saveFile(file, { maxFiles, maxBytes, expectedVersion = null } = {}) {
         return open().then(db => new Promise((resolve, reject) => {
             const tx = db.transaction(['projects', 'files'], 'readwrite');
@@ -190,7 +222,7 @@ const WorkspaceStorage = (() => {
         },
         getProject: id => read('projects', id),
         listProjects: () => readAll('projects'),
-        putProject: value => write('projects', value),
+        putProject: value => write('projects', value),\n        addProject: value => add('projects', value),\n        updateProject,
         addProject: value => add('projects', value),
         deleteProject,
         getFile: id => read('files', id),
