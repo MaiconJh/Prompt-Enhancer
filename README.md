@@ -326,9 +326,12 @@ Unit/integration-style Node tests under `src/tests/`:
 
 - **Local-first** — settings, context, presets, and history are stored locally via userscript storage APIs.
 - **No telemetry** — no analytics/tracking is built in.
-- **API calls** — prompt/context/system data is sent only to the configured provider endpoint when you trigger enhancement flows.
-- **API keys** — stored locally in userscript manager storage; sent only to the configured provider as required.
-- **Sensitive data** — avoid placing secrets/tokens in prompts or context files.
+- **API calls and data transfer** — when you trigger an enhancement, the original prompt, enabled project context, composed system instructions, and request parameters are sent to the selected provider endpoint. The provider receives and processes that data under its own privacy policy and retention practices.
+- **API keys** — stored locally in userscript manager storage and sent to the selected endpoint when required for authentication. They are not encrypted by Prompt-Enhancer.
+- **Custom endpoints** — adding or changing an unrecognized endpoint requires confirmation. Only use endpoints operated by parties you trust. A custom endpoint can inspect, retain, or forward prompts, context, and authentication data.
+- **Built-in providers** — the native-host allowlist avoids repeated confirmation; it does not certify a provider's privacy, security, availability, or terms. Review each provider's policies independently.
+- **Local providers** — Ollama at `localhost:11434` is supported over HTTP. Locality reduces third-party transfer but does not protect against other software or users with access to the same machine.
+- **Sensitive data** — do not place passwords, access tokens, private keys, personal records, or confidential material in prompts or context unless you accept the selected provider's handling of that data.
 - **Host isolation** — `HostShield` reduces interference from host-page event handling.
 
 ---
