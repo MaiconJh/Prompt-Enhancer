@@ -597,6 +597,84 @@
       ]
     },
     {
+      "file": "workspace/workspace-model.js",
+      "description": "Defines workspace project and file identifiers, defaults, and safe relative path normalization.",
+      "interfaces": {
+        "provides": [
+          "WorkspaceModel"
+        ],
+        "consumes": []
+      },
+      "interactions": [
+        "ProjectManager and FileRegistry use the shared models and path rules."
+      ]
+    },
+    {
+      "file": "workspace/storage-adapter.js",
+      "description": "Persists workspace projects and project files in IndexedDB with transactional project deletion.",
+      "interfaces": {
+        "provides": [
+          "WorkspaceStorage"
+        ],
+        "consumes": [
+          "IndexedDB"
+        ]
+      },
+      "interactions": [
+        "ProjectManager and FileRegistry use this adapter without depending on IndexedDB details."
+      ]
+    },
+    {
+      "file": "workspace/project-manager.js",
+      "description": "Creates, lists, retrieves, updates, and deletes persistent workspace projects.",
+      "interfaces": {
+        "provides": [
+          "ProjectManager"
+        ],
+        "consumes": [
+          "WorkspaceModel",
+          "WorkspaceStorage"
+        ]
+      },
+      "interactions": [
+        "Workspace facade exposes project lifecycle operations to future UI and AI services."
+      ]
+    },
+    {
+      "file": "workspace/file-registry.js",
+      "description": "Validates and manages text files belonging to a project, including metadata and content.",
+      "interfaces": {
+        "provides": [
+          "FileRegistry"
+        ],
+        "consumes": [
+          "WorkspaceModel",
+          "WorkspaceStorage",
+          "ProjectManager"
+        ]
+      },
+      "interactions": [
+        "Workspace facade exposes project-scoped file operations; content remains outside prompt composition until explicitly requested."
+      ]
+    },
+    {
+      "file": "workspace/workspace.js",
+      "description": "Provides the public facade and initialization lifecycle for the workspace subsystem.",
+      "interfaces": {
+        "provides": [
+          "Workspace"
+        ],
+        "consumes": [
+          "WorkspaceStorage",
+          "ProjectManager",
+          "FileRegistry"
+        ]
+      },
+      "interactions": [
+        "Future workspace UI, project context, and AI tools consume this stable facade."
+      ]
+    },
+    {
       "file": "bootstrap.js",
       "description": "Starts the application, restores state, registers host observers, and wires menu commands.",
       "interfaces": {
@@ -621,4 +699,4 @@
       ]
     }
   ]
-}
+}\n
