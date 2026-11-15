@@ -68,7 +68,7 @@ function createApiHarness(responses, customPrompt = '', projectContextSuffix = '
         EnhancementHistory: { recordCall: () => null },
         navigator: { onLine: true },
         location: { hostname: 'test.local' },
-        window: { matchMedia: () => ({ matches: false }) },
+        window: { matchMedia: () => ({ matches: false }), confirm: () => true },
         setInterval,
         clearInterval
     });
