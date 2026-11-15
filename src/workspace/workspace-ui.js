@@ -112,10 +112,14 @@ const WorkspaceUI = (() => {
         });
         const fileActions = element('div', 'pe-workspace__file-actions');
         fileActions.append(newPath, createFileButton, importButton, importInput);
+        const treeSearch = element('input', 'pe-param-input pe-workspace__tree-search');
+        treeSearch.type = 'search';
+        treeSearch.placeholder = I18n.t('ws.files.search');
+        treeSearch.setAttribute('aria-label', I18n.t('ws.files.search'));
         const tree = element('div', 'pe-workspace__tree');
         tree.setAttribute('role', 'tree');
         tree.setAttribute('aria-label', I18n.t('ws.files.title'));
-        explorer.append(explorerHeader, fileActions, tree);
+        explorer.append(explorerHeader, fileActions, treeSearch, tree);
         workspaceLayout.appendChild(explorer);
 
         const editorPanel = element('section', 'pe-workspace__editor');
@@ -306,54 +310,13 @@ const WorkspaceUI = (() => {
         }
 
         function buildTree() {
-            tree.replaceChildren();
-            if (!currentProject) return;
-            if (!files.length) {
-                tree.appendChild(element('div', 'pe-workspace__empty', I18n.t('ws.files.empty')));
-                return;
-            }
-            const rootNode = { folders: new Map(), files: [] };
-            for (const file of files) {
-                const parts = file.path.split('/');
-                let node = rootNode;
-                for (const part of parts.slice(0, -1)) {
-                    if (!node.folders.has(part)) node.folders.set(part, { folders: new Map(), files: [] });
-                    node = node.folders.get(part);
-                }
-                node.files.push(file);
-            }
-            const renderNode = (node, depth) => {
-                const fragment = document.createDocumentFragment();
-                const folders = [...node.folders.entries()].sort(([a], [b]) => a.localeCompare(b));
-                for (const [name, child] of folders) {
-                    const details = element('details', 'pe-workspace__folder');
-                    details.open = true;
-                    const summary = element('summary', 'pe-workspace__folder-name', name);
-                    summary.style.paddingInlineStart = (depth * 14 + 8) + 'px';
-                    details.appendChild(summary);
-                    details.appendChild(renderNode(child, depth + 1));
-                    fragment.appendChild(details);
-                }
-                const sortedFiles = node.files.slice().sort((a, b) => a.name.localeCompare(b.name));
-                for (const file of sortedFiles) {
-                    const row = element('button', 'pe-workspace__file', file.name);
-                    row.type = 'button';
-                    row.setAttribute('role', 'treeitem');
-                    row.setAttribute('aria-level', String(depth + 1));
-                    row.setAttribute('aria-selected', String(selectedFile?.id === file.id));
-                    row.title = file.path;
-                    row.style.paddingInlineStart = (depth * 14 + 8) + 'px';
-                    const mode = currentProject?.settings?.aiAccessMode || 'selected';
-                    const effectiveAllowed = mode === 'all' || (mode === 'selected' && file.aiAccess === 'allowed');
-                    const access = element('span', 'pe-workspace__file-access ' + (effectiveAllowed ? 'is-allowed' : 'is-denied'),
-                        effectiveAllowed ? I18n.t('ws.access.allowedShort') : I18n.t('ws.access.deniedShort'));
-                    row.appendChild(access);
-                    row.addEventListener('click', () => selectFile(file.id));
-                    fragment.appendChild(row);
-                }
-                return fragment;
-            };
-            tree.appendChild(renderNode(rootNode, 0));
+            WorkspaceExplorerView.render(tree, {
+                files,
+                project: currentProject,
+                selectedFileId: selectedFile?.id || null,
+                searchQuery: treeSearch.value,
+                onSelect: selectFile
+            });
         }
 
         function fillProject(project) {
@@ -766,6 +729,7 @@ const WorkspaceUI = (() => {
         filePath.addEventListener('input', updateEditorState);
         fileContent.addEventListener('input', updateEditorState);
         fileAccess.addEventListener('change', changeFileAccess);
+        treeSearch.addEventListener('input', buildTree);
         importInput.addEventListener('change', async () => {
             await importFiles(importInput.files);
             importInput.value = '';
