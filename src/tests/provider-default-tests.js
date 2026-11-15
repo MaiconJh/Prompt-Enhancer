@@ -231,7 +231,11 @@ test('validação de URL rejeita protocolos inseguros e credenciais embutidas', 
         'http://api.example.test/v1',
         'https://user:password@api.example.test/v1'
     ]) {
-        assert.throws(() => providerManager.add({ url, model: 'invalid-model' }), Error, url);
+        assert.throws(
+            () => providerManager.add({ url, model: 'invalid-model' }),
+            (error) => error?.name === 'Error',
+            url
+        );
     }
 });
 
