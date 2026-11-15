@@ -1,9 +1,19 @@
 # Workspace UI Architecture & Settings Refactor
 
-**Status:** Proposed specification  
+**Status:** Architecture specification with implementation in progress  
 **Scope:** UI information architecture, interaction model, module boundaries and acceptance criteria  
-**Baseline:** `main` after PR #14 (`73f4a78`)  
+**Baseline:** `main` after PR #18 (atomic batch file creation)  
 **Decision:** The Workspace is a first-class project knowledge manager. It is not another manual context source and must not be embedded as a small form inside the existing Context & Language view.
+
+## Implementation status
+
+The implementation is being delivered in reviewable stages:
+
+- **PR #18, merged:** atomic `Workspace.files.createMany()` backed by one IndexedDB transaction.
+- **PR #19, draft:** editor-first Files surface, modular tree model and explorer, row virtualization, batch/folder/directory-import workflows, editor toolbar, contextual inspector and a focused batch/import controller.
+- **Still pending:** full project/file state-transition controller, Monaco ESM runtime and local workers, resizable panel boundaries, bulk selection/actions, and manual verification in the userscript manager.
+
+The current editor view still uses the existing textarea. It is intentionally not described as Monaco until the local build and worker integration are implemented and verified. The controller currently coordinates batch creation and import validation; the broader UI state transitions remain in the composition root for now.
 
 ## 1. Goals
 
@@ -276,10 +286,11 @@ The repository remains a manifest-driven JavaScript userscript. Every runtime so
 
 Use pragmatic separation by responsibility:
 - workspace/workspace-ui.js: composition root, project bar, panel layout and lifecycle.
-- workspace/workspace-controller.js: state transitions, project/file operations, draft decisions, batch workflows and calls to the public Workspace facade.
-- workspace/workspace-explorer-view.js: tree index, flattened visible rows, search, virtualization, selection and explorer actions.
-- workspace/workspace-editor-view.js: Monaco lifecycle, editor options, model synchronization, focus mode and editor events.
-- workspace/workspace-inspector-view.js: file metadata, file-level AI access and contextual project details.
+- workspace/workspace-controller.js: currently coordinates batch file creation, folder initialization, text import validation and calls to the public Workspace facade. Project/file state transitions and draft decisions remain in workspace-ui.js and are a remaining extraction task.
+- workspace/workspace-tree-model.js: normalized directory index and flattened visible-row model; directories remain derived from file paths.
+- workspace/workspace-explorer-view.js: tree rendering, search, threshold-based virtualization, selection and keyboard navigation.
+- workspace/workspace-editor-view.js: editor surface, save/delete controls, explorer/inspector toggles and focus mode. The current input is a textarea; Monaco lifecycle and model synchronization are future work.
+- workspace/workspace-inspector-view.js: composes AI-access and project-settings sections into an optional contextual panel. File metadata can be added here when the editor integration is completed.
 - workspace/workspace-dialogs.js: batch creation/import preflight and destructive confirmations, only if shared dialog behavior warrants a separate module.
 
 Do not split every button, dialog or helper into a module. Overview, project settings and AI access do not need permanent full-page views if they fit naturally into the inspector or project menu.
