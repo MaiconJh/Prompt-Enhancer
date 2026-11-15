@@ -60,7 +60,7 @@ const ContextResolver = (() => {
             const broadMatches = body.split(term).length - 1;
             const occurrences = Math.min(identifierMatches + Math.max(0, broadMatches - identifierMatches), 8);
             if (occurrences) {
-                score += Math.min(occurrences, 5);
+                score += identifierMatches ? 3 : Math.min(occurrences, 5);
                 reasons.push('content:' + term);
             }
         }
@@ -155,7 +155,7 @@ const ContextResolver = (() => {
         candidates.sort((a, b) => b.score - a.score || a.file.path.localeCompare(b.file.path));
         diagnostics.matchedFiles = candidates.length;
         if (!candidates.length) {
-            return { status: 'no-relevant-files', project: projectSummary(project), context: emptyContext(), diagnostics };
+            return { status: 'no-relevant-files', project: projectSummary(project), context: emptyContext(project), diagnostics };
         }
 
         let remainingBytes = options.maxContextBytes;
@@ -223,8 +223,8 @@ const ContextResolver = (() => {
         return { id: project.id, name: project.name, updatedAt: project.updatedAt };
     }
 
-    function emptyContext() {
-        return { projectInstructions: '', files: [], totalBytes: 0, truncated: false };
+    function emptyContext(project = null) {
+        return { projectInstructions: project?.settings?.instructions || '', files: [], totalBytes: 0, truncated: false };
     }
 
     function emptyDiagnostics() {
