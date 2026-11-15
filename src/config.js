@@ -198,7 +198,7 @@
 
         // Limites de Persistência de Histórico
         HISTORY_MAX: 5,
-        HISTORY_MAX_BYTES: 32_000,
+        HISTORY_MAX_CHARS: 32_000,
         HISTORY_RUN_MAX_CHARS: 8_000,
         HISTORY_CALL_MAX_CHARS: 3_000,
         HISTORY_MAX_RUNS: 50,
