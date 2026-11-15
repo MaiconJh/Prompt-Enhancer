@@ -51,6 +51,15 @@ test('mantém as alterações de resposta ligadas ao dirty state correto', () =>
     assert.ok(settings.includes("if (tab === 'response')"));
 });
 
+test('mantém o fechamento principal no cabeçalho e oculta o rodapé sem alterações pendentes', () => {
+    const footerStart = settings.indexOf('function renderFooter(tab, dirty, saving)');
+    const footerEnd = settings.indexOf('function render()', footerStart);
+    const footer = settings.slice(footerStart, footerEnd);
+    assert.ok(footer.includes('footerEl.hidden = !editing || !dirty'));
+    assert.equal(footer.includes('sm.footer.close'), false);
+    assert.ok(settings.includes("closeBtn.addEventListener('click', close)"));
+});
+
 test('fornece labels, títulos e descrições nos dois idiomas', () => {
     for (const key of ['workspace', 'manualContext', 'response', 'interface']) {
         for (const field of ['label', 'title', 'desc']) {
