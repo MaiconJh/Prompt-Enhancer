@@ -50,7 +50,7 @@ const WorkspaceUI = (() => {
             ['access', 'ws.nav.access'],
             ['settings', 'ws.nav.settings']
         ];
-        let activeView = 'overview';
+        let activeView = 'files';
         for (const [key, labelKey] of viewDefinitions) {
             const button = element('button', 'pe-workspace__nav-button', I18n.t(labelKey));
             button.type = 'button';
@@ -386,6 +386,7 @@ const WorkspaceUI = (() => {
                 const project = await Workspace.projects.get(projectId);
                 if (!project) throw new Error(I18n.t('ws.errors.projectMissing'));
                 fillProject(project);
+                setActiveView('files');
                 selectedFile = null;
                 filePath.value = '';
                 fileContent.value = '';
@@ -754,7 +755,7 @@ const WorkspaceUI = (() => {
             }
         }
 
-        setActiveView('overview');
+        setActiveView(currentProject ? 'files' : 'overview');
         updateProjectControls();
         initialize();
         return { refresh: initialize };
