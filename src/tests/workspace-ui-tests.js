@@ -22,16 +22,20 @@ test('Workspace UI possui sintaxe válida e é registrado como módulo de produ�
     }
 });
 
-test('Workspace UI mantém Overview e Files como navegação principal e move detalhes para o inspector', () => {
+test('Workspace UI organiza quatro áreas na Activity Bar e mantém o Inspector contextual', () => {
     for (const [view, variable] of [
         ['overview', 'overviewView'],
-        ['files', 'filesView']
+        ['files', 'filesView'],
+        ['access', 'accessView'],
+        ['settings', 'projectSettings']
     ]) assert.ok(uiSource.includes(variable + ".dataset.viewPanel = '" + view + "'"));
+    assert.match(uiSource, /pe-workspace__activity-bar/);
     assert.match(uiSource, /function setActiveView\(key\)/);
-    assert.match(uiSource, /aria-selected/);
+    assert.match(uiSource, /aria-current/);
     assert.ok(uiSource.includes('WorkspaceInspectorView.create'));
-    assert.ok(uiSource.includes('sections: [accessView, projectSettings]'));
+    assert.ok(uiSource.includes('sections: [inspectorDetails]'));
     assert.match(uiSource, /function updateOverview\(\)/);
+    assert.match(uiSource, /inspectorFilePermission\.textContent/);
     assert.doesNotMatch(uiSource, /workspaceLayout\.hidden/);
 });
 
