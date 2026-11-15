@@ -9,7 +9,7 @@ const configSource = await readFile(new URL('config.js', sourceDir), 'utf8');
 const i18nSource = await readFile(new URL('i18n.js', sourceDir), 'utf8');
 const managerSource = await readFile(new URL('provider-manager.js', sourceDir), 'utf8');
 
-function createProviderHarness(initialValues = {}, confirmResult = true) {
+function createProviderHarness(initialValues = {}, confirmResult = true, confirmAvailable = true) {
     // Força locale pt-BR por padrão para asserções determinísticas neste suite.
     // Testes que precisem de outro locale podem passar `pe_ui_language: 'en'|'auto'`.
     const merged = { pe_ui_language: 'pt-BR', ...initialValues };
@@ -26,7 +26,7 @@ function createProviderHarness(initialValues = {}, confirmResult = true) {
             dispatchEvent: () => {},
             addEventListener: () => {},
             removeEventListener: () => {},
-            confirm: () => { confirmCalls++; return confirmResult; }
+            confirm: confirmAvailable ? () => { confirmCalls++; return confirmResult; } : undefined
         }
     });
 
@@ -298,4 +298,18 @@ test('recusa de endpoint personalizado impede salvar provider', () => {
     );
     assert.equal(harness.providerManager.list().length, 1);
     assert.equal(harness.confirmCalls, 1);
+});
+
+
+test('endpoint personalizado é bloqueado quando confirmação não está disponível', () => {
+    const harness = createProviderHarness({}, true, false);
+    assert.throws(
+        () => harness.providerManager.add({
+            url: 'https://no-confirm.example.test/v1',
+            model: 'no-confirm-model'
+        }),
+        (error) => error?.name === 'Error' && /negada/.test(error.message)
+    );
+    assert.equal(harness.providerManager.list().length, 1);
+    assert.equal(harness.confirmCalls, 0);
 });
