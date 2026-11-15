@@ -1047,12 +1047,7 @@
                     projectSelect.value = activeId || '';
                     projectSelect.disabled = false;
                     createButton.disabled = false;
-                    if (!projects.length) {
-                        const empty = document.createElement('option');
-                        empty.value = '';
-                        empty.textContent = I18n.t('sm.workspace.empty');
-                        projectSelect.appendChild(empty);
-                    }
+                    if (!projects.length) none.textContent = I18n.t('sm.workspace.empty');
                 } catch (error) {
                     projectSelect.innerHTML = '<option value="">' + Utils.escapeHtml(I18n.t('sm.workspace.selectError')) + '</option>';
                     projectSelect.disabled = true;
