@@ -688,6 +688,22 @@
       ]
     },
     {
+      "file": "workspace/workspace-tree-model.js",
+      "description": "Builds a normalized in-memory directory index and flattened visible rows for Workspace files.",
+      "interfaces": { "provides": ["WorkspaceTreeModel"], "consumes": [] },
+      "interactions": [
+        "Explorer view consumes sorted directory nodes and flattened visible rows; directories remain derived from file paths."
+      ]
+    },
+    {
+      "file": "workspace/workspace-explorer-view.js",
+      "description": "Renders the Workspace file explorer with persistent folder expansion, path search, keyboard navigation and threshold-based row virtualization.",
+      "interfaces": { "provides": ["WorkspaceExplorerView"], "consumes": ["WorkspaceTreeModel", "I18n"] },
+      "interactions": [
+        "Workspace UI passes file metadata, selected file ID and selection callbacks; the view never accesses persistence or mutates Workspace data."
+      ]
+    },
+    {
       "file": "workspace/workspace-ui.js",
       "description": "Provides the project and text-file management interface for the Workspace settings view.",
       "interfaces": {
