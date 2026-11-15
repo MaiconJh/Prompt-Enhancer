@@ -8,6 +8,11 @@
     "build": "node build.js",
     "build:dev": "node build.js --dev",
     "build:prod": "node build.js --minify-css",
+    "build:mocks": "node scripts/build-mocks.js",
+    "build:mocks:lean": "node scripts/build-mocks.js --lean",
+    "build:mocks:tab": "node scripts/build-mocks.js",
+    "build:screenshots": "node scripts/build-screenshots.js",
+    "validate:mocks": "node scripts/validate-mocks.js",
     "check:i18n": "bash scripts/check-i18n.sh",
     "check": "npm run check:i18n && node check.js",
     "check:dev": "node check.js --dev",
@@ -21,5 +26,8 @@
   },
   "dependencies": {
     "playwright": "^1.65.0"
+  },
+  "devDependencies": {
+    "jsdom": "^31.0.1"
   }
 }
