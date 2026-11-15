@@ -30,6 +30,10 @@ const WorkspaceEditorView = (() => {
             variant: 'ghost',
             onClick: onToggleFocus
         });
+        inspectorButton.classList.add('pe-workspace__inspector-toggle');
+        explorerToggleButton.setAttribute('aria-expanded', 'true');
+        inspectorButton.setAttribute('aria-expanded', 'false');
+        focusButton.setAttribute('aria-pressed', 'false');
         tools.append(explorerToggleButton, inspectorButton, focusButton);
         heading.append(title, tools);
 
@@ -76,14 +80,17 @@ const WorkspaceEditorView = (() => {
                     ? I18n.t('ws.editor.showExplorer')
                     : I18n.t('ws.editor.hideExplorer');
                 explorerToggleButton.setAttribute('aria-label', explorerToggleButton.textContent);
+                explorerToggleButton.setAttribute('aria-expanded', String(!collapsed));
             },
             setInspectorOpen(open) {
                 inspectorButton.textContent = open ? I18n.t('ws.inspector.hide') : I18n.t('ws.inspector.toggle');
                 inspectorButton.setAttribute('aria-label', inspectorButton.textContent);
+                inspectorButton.setAttribute('aria-expanded', String(open));
             },
             setFocusMode(active) {
                 focusButton.textContent = active ? I18n.t('ws.editor.exitFocus') : I18n.t('ws.editor.focus');
                 focusButton.setAttribute('aria-label', focusButton.textContent);
+                focusButton.setAttribute('aria-pressed', String(active));
             }
         };
     }
