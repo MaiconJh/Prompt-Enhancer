@@ -7,7 +7,7 @@ import vm from 'node:vm';
 const sourceDir = new URL('../', import.meta.url);
 const themeSource = await readFile(new URL('theme.js', sourceDir), 'utf8');
 
-function createHarness(initial = {}) {
+function createHarness(initial = {}, prefersDark = false) {
     const values = new Map(Object.entries(initial));
     const attrs = new Map();
     const events = [];
@@ -23,7 +23,7 @@ function createHarness(initial = {}) {
         },
         window: {
             dispatchEvent: (e) => events.push(e),
-            matchMedia: () => ({ matches: true })
+            matchMedia: () => ({ matches: prefersDark })
         }
     });
     vm.runInContext(themeSource, context, { filename: 'src/theme.js' });
@@ -48,7 +48,8 @@ test('dark e light forçados aplicam o atributo; auto o remove', () => {
     assert.equal(attrs.get('data-pe-theme'), 'dark');
     assert.equal(values.get('pe_theme'), 'dark');
     Theme.set('light');
-    assert.equal(attrs.get('data-pe-theme'), 'light');
+    assert.equal(attrs.has('data-pe-theme'), false);
+    assert.equal(values.get('pe_theme'), 'light');
     Theme.set('auto');
     assert.equal(attrs.has('data-pe-theme'), false);
 });
@@ -66,7 +67,7 @@ test('cycle percorre auto → light → dark → auto e emite evento', () => {
 });
 
 test('resolved() usa o sistema quando auto', () => {
-    const { Theme } = createHarness();
+    const { Theme } = createHarness({}, true);
     assert.equal(Theme.resolved(), 'dark');
     Theme.set('light');
     assert.equal(Theme.resolved(), 'light');
