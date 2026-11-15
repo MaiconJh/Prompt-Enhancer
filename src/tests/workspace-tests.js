@@ -14,9 +14,10 @@ function createHarness() {
         ['project_b', { id: 'project_b', name: 'Project B', updatedAt: 1 }]
     ]);
     const files = new Map();
+    let idCounter = 0;
     const context = vm.createContext({
         TextEncoder,
-        crypto: { randomUUID: () => 'test-id' },
+        crypto: { randomUUID: () => `test-id-${++idCounter}` },
         WorkspaceStorage: {
             async getProject(id) { return projects.get(id) || null; },
             async listFiles(projectId) { return [...files.values()].filter(file => file.projectId === projectId); },
