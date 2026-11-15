@@ -95,7 +95,7 @@ const WorkspaceStorage = (() => {
         }));
     }
 
-    function saveFile(file, { maxFiles, maxBytes, expectedVersion = null } = {}) {
+    function saveFile(file, { maxFiles, maxBytes, mode = 'create' } = {}) {
         return open().then(db => new Promise((resolve, reject) => {
             const tx = db.transaction(['projects', 'files'], 'readwrite');
             const projects = tx.objectStore('projects');
@@ -119,18 +119,23 @@ const WorkspaceStorage = (() => {
                 if (!projectReady || !filesReady || failure) return;
                 if (!project) return abort(new Error('Projeto não encontrado.'));
                 const existing = projectFiles || [];
-                const current = expectedVersion === null ? null : existing.find(item => item.id === file.id);
-                if (expectedVersion !== null && (!current || current.version !== expectedVersion)) {
-                    const error = new Error('O arquivo foi alterado por outra operação. Atualize os dados e tente novamente.');
-                    error.code = 'file-conflict';
+                const current = existing.find(item => item.id === file.id) || null;
+                if (mode === 'create' && current) {
+                    const error = new Error('O identificador do arquivo já está em uso.');
+                    error.code = 'file-exists';
                     return abort(error);
                 }
-                if (expectedVersion === null && existing.some(item => item.path === file.path)) {
+                if (mode === 'update' && !current) {
+                    const error = new Error('O arquivo não existe mais neste projeto.');
+                    error.code = 'file-not-found';
+                    return abort(error);
+                }
+                if (mode === 'create' && existing.some(item => item.path === file.path)) {
                     const error = new Error('Já existe um arquivo com esse caminho no projeto.');
                     error.code = 'file-exists';
                     return abort(error);
                 }
-                if (expectedVersion === null && existing.length >= maxFiles) {
+                if (mode === 'create' && existing.length >= maxFiles) {
                     const error = new Error(`O projeto atingiu o limite de ${maxFiles} arquivos.`);
                     error.code = 'project-file-limit';
                     return abort(error);
@@ -173,7 +178,7 @@ const WorkspaceStorage = (() => {
         });
     }
 
-    function deleteProjectFile(projectId, fileId, expectedVersion) {
+    function deleteProjectFile(projectId, fileId) {
         return open().then(db => new Promise((resolve, reject) => {
             const tx = db.transaction(['projects', 'files'], 'readwrite');
             const projects = tx.objectStore('projects');
@@ -194,11 +199,6 @@ const WorkspaceStorage = (() => {
             const commit = () => {
                 if (!projectReady || !fileReady || failure) return;
                 if (!file || file.projectId !== projectId) return;
-                if (expectedVersion !== undefined && file.version !== expectedVersion) {
-                    const error = new Error('O arquivo foi alterado por outra operação. Atualize os dados e tente novamente.');
-                    error.code = 'file-conflict';
-                    return abort(error);
-                }
                 files.delete(fileId);
                 if (project) projects.put({ ...project, updatedAt: Date.now() });
                 removed = true;
