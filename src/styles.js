@@ -4461,6 +4461,24 @@ function injectStyles() {
         .pe-workspace__dialog-actions { justify-content: flex-end; flex-wrap: wrap; }
         .pe-workspace [hidden] { display: none !important; }
 
+        @media (max-width: 768px) {
+            .pe-workspace__header { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
+            .pe-workspace__header > .pe-btn { grid-column: 1 / -1; justify-self: start; }
+            .pe-workspace__layout { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+            .pe-workspace__tree { max-height: 220px; }
+            .pe-workspace__project-settings { grid-template-columns: minmax(0, 1fr); }
+            .pe-workspace__project-settings .pe-workspace__field:nth-child(4) { grid-column: auto; }
+        }
+        @media (max-width: 520px) {
+            .pe-workspace__header { grid-template-columns: minmax(0, 1fr); }
+            .pe-workspace__create-project { flex-wrap: wrap; }
+            .pe-workspace__create-project > * { flex: 1 1 100%; }
+            .pe-workspace__file-actions { align-items: stretch; }
+            .pe-workspace__file-actions > * { flex: 1 1 100%; }
+            .pe-workspace__editor-actions { align-items: stretch; }
+            .pe-workspace__editor-actions > .pe-btn { flex: 1 1 100%; }
+        }
+
         /* Preferência de Movimento Reduzido (Acessibilidade WCAG 2.3.3) */
         @media (prefers-reduced-motion: reduce) {
             .pe-scope *,
