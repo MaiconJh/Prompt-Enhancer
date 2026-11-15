@@ -252,12 +252,17 @@ const WorkspaceUI = (() => {
         const inspectorFileType = element('div', 'pe-workspace__detail-value', '—');
         const inspectorFileSize = element('div', 'pe-workspace__detail-value', '—');
         const inspectorFilePermission = element('div', 'pe-workspace__detail-value', '—');
+        const inspectorDetailField = (key, value) => {
+            const field = element('div', 'pe-workspace__field');
+            field.append(element('span', 'pe-workspace__label', I18n.t(key)), value);
+            return field;
+        };
         inspectorDetails.append(
             element('div', 'pe-workspace__view-heading', I18n.t('ws.inspector.fileDetails')),
-            labeledField('ws.editor.path', inspectorFilePath),
-            labeledField('ws.editor.noExtension', inspectorFileType),
-            labeledField('ws.overview.storage', inspectorFileSize),
-            labeledField('ws.access.filePermission', inspectorFilePermission)
+            inspectorDetailField('ws.editor.path', inspectorFilePath),
+            inspectorDetailField('ws.inspector.fileType', inspectorFileType),
+            inspectorDetailField('ws.inspector.fileSize', inspectorFileSize),
+            inspectorDetailField('ws.access.filePermission', inspectorFilePermission)
         );
         const inspectorView = WorkspaceInspectorView.create({
             sections: [inspectorDetails],
