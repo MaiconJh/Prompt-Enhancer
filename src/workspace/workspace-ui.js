@@ -188,6 +188,8 @@ const WorkspaceUI = (() => {
             editor.hidden = !hasFile;
             fileSaveButton.disabled = !hasFile || !fileDirty() || loading;
             fileDeleteButton.disabled = !hasFile || loading;
+            filePath.disabled = loading;
+            fileContent.disabled = loading;
             const effectiveMode = currentProject?.settings?.aiAccessMode || 'selected';
             fileAccess.disabled = !hasFile || loading || effectiveMode !== 'selected';
             fileMeta.textContent = hasFile
@@ -202,6 +204,13 @@ const WorkspaceUI = (() => {
             const hasProject = !!currentProject;
             projectSettings.hidden = !hasProject;
             workspaceLayout.hidden = !hasProject;
+            projectSelect.disabled = loading;
+            createName.disabled = loading;
+            projectName.disabled = loading;
+            projectDescription.disabled = loading;
+            accessMode.disabled = loading;
+            instructions.disabled = loading;
+            newPath.disabled = loading;
             projectDeleteButton.disabled = !hasProject || loading;
             createFileButton.disabled = !hasProject || loading;
             importButton.disabled = !hasProject || loading;
@@ -552,33 +561,41 @@ const WorkspaceUI = (() => {
 
         async function importFiles(fileList) {
             if (!currentProject || !fileList?.length || !await confirmLeave()) return;
+            const targetProjectId = currentProject.id;
+            loading = true;
+            updateProjectControls();
             let imported = 0;
             const existing = new Set(files.map(file => file.path));
-            for (const incoming of Array.from(fileList)) {
-                try {
-                    if (incoming.size > 1024 * 1024) throw new Error(I18n.t('ws.errors.fileTooLarge'));
-                    const mime = (incoming.type || '').toLowerCase();
-                    const textMime = !mime || mime.startsWith('text/')
-                        || ['application/json', 'application/xml', 'application/javascript', 'application/x-yaml'].includes(mime);
-                    if (!textMime) throw new Error(I18n.t('ws.errors.textOnly'));
-                    const content = new TextDecoder('utf-8', { fatal: true }).decode(await incoming.arrayBuffer());
-                    const validation = Workspace.files.validate({ path: incoming.name, content });
-                    if (!validation.valid) throw new Error(validation.message);
-                    if (existing.has(validation.path)) throw new Error(I18n.t('ws.errors.duplicatePath', { path: validation.path }));
-                    await Workspace.files.create(currentProject.id, {
-                        path: validation.path,
-                        content,
-                        mimeType: incoming.type || 'text/plain'
-                    });
-                    existing.add(validation.path);
-                    imported++;
-                } catch (error) {
-                    notify(incoming.name + ': ' + (error.message || I18n.t('ws.errors.importFailed')), 'error');
+            try {
+                for (const incoming of Array.from(fileList)) {
+                    try {
+                        if (incoming.size > 1024 * 1024) throw new Error(I18n.t('ws.errors.fileTooLarge'));
+                        const mime = (incoming.type || '').toLowerCase();
+                        const textMime = !mime || mime.startsWith('text/')
+                            || ['application/json', 'application/xml', 'application/javascript', 'application/x-yaml'].includes(mime);
+                        if (!textMime) throw new Error(I18n.t('ws.errors.textOnly'));
+                        const content = new TextDecoder('utf-8', { fatal: true }).decode(await incoming.arrayBuffer());
+                        const validation = Workspace.files.validate({ path: incoming.name, content });
+                        if (!validation.valid) throw new Error(validation.message);
+                        if (existing.has(validation.path)) throw new Error(I18n.t('ws.errors.duplicatePath', { path: validation.path }));
+                        await Workspace.files.create(targetProjectId, {
+                            path: validation.path,
+                            content,
+                            mimeType: incoming.type || 'text/plain'
+                        });
+                        existing.add(validation.path);
+                        imported++;
+                    } catch (error) {
+                        notify(incoming.name + ': ' + (error.message || I18n.t('ws.errors.importFailed')), 'error');
+                    }
                 }
+                await refreshFiles();
+                showStatus(I18n.t('ws.files.importSummary', { count: imported }));
+                if (imported) notify(I18n.t('ws.files.importSummary', { count: imported }), 'success');
+            } finally {
+                loading = false;
+                updateProjectControls();
             }
-            await refreshFiles();
-            showStatus(I18n.t('ws.files.importSummary', { count: imported }));
-            if (imported) notify(I18n.t('ws.files.importSummary', { count: imported }), 'success');
         }
 
         async function deleteFile() {
@@ -616,8 +633,12 @@ const WorkspaceUI = (() => {
         async function changeFileAccess() {
             if (!selectedFile || (currentProject?.settings?.aiAccessMode || 'selected') !== 'selected') return;
             const previous = selectedFile.aiAccess || 'denied';
+            const projectId = currentProject.id;
+            const fileId = selectedFile.id;
+            loading = true;
+            updateProjectControls();
             try {
-                const updated = await Workspace.files.setAccess(currentProject.id, selectedFile.id, fileAccess.value);
+                const updated = await Workspace.files.setAccess(projectId, fileId, fileAccess.value);
                 selectedFile = { ...selectedFile, ...updated };
                 await refreshFiles();
                 buildTree();
@@ -626,6 +647,9 @@ const WorkspaceUI = (() => {
             } catch (error) {
                 fileAccess.value = previous;
                 notify(error.message || I18n.t('ws.errors.permissionFailed'), 'error');
+            } finally {
+                loading = false;
+                updateProjectControls();
             }
         }
 
