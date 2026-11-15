@@ -21,14 +21,21 @@
             fallback: false
         };
 
-        const URL_CUSTOM_CONFIRM_MSG = 'Deseja permitir conexão com este endpoint externo?\n\n{url}\n\nSomente confirme se confiar no destino.\n\nO gerenciador de userscripts também pedirá autorização de rede para este host.';
+        const URL_CUSTOM_CONFIRM_MSG = 'Atenção: Você está configurando um endpoint personalizado.\\n\\nURL: {url}\\n\\nSeus prompts, contexto e chaves de API serão enviados para este servidor. Confirme apenas se você confia totalmente no proprietário deste endpoint.\\n\\nO gerenciador de userscripts também pedirá autorização de rede para este host.';
         const BUILTIN_HOSTS = [
             'ai-gateway.kilo.ai',
-            'api.groq.com',
+            'oai.endpoints.kepler.ai.cloud.ovh.net',
+            'text.pollinations.ai',
             'gen.pollinations.ai',
-            'keylessai.thryx.workers.dev',
-            'oai.endpoints.kepler.ai.cloud.ovh.net'
+            'api.groq.com',
+            'generativelanguage.googleapis.com',
+            'api.mistral.ai',
+            'api.cloudflare.com',
+            'openrouter.ai',
+            'keylessai.thryx.workers.dev'
         ];
+        const LOCAL_BUILTIN_HOSTS = ['localhost', '127.0.0.1'];
+        const LOCAL_BUILTIN_PORT = '11434';
 
         const safeGet = (key, fallback) => {
             try { return GM_getValue(key, fallback); } catch (_) { return fallback; }
@@ -186,10 +193,8 @@
             migrate();
             const list = _load() || [];
             const entryUrl = _chatUrl(input.url || '');
-            if (!_isValidUrl(entryUrl)) throw new Error(`URL inválida: ${entryUrl}. Use https://`);
-            if (!_isCustomUrl(entryUrl) && !options.skipConfirm) {
-                // builtin/known URL: no confirmation needed
-            } else if (_isCustomUrl(entryUrl) && !options.skipConfirm) {
+            const parsedUrl = _parseAndValidateUrl(entryUrl);
+            if (_isCustomUrl(parsedUrl) && !options.skipConfirm) {
                 if (!_confirmCustomHost(entryUrl)) throw new Error(`Conexão com host customizado negada: ${entryUrl}`);
             }
             const entry = {
@@ -215,8 +220,8 @@
             if (idx === -1) return null;
             const cur = list[idx];
             const nextUrl = patch.url !== undefined ? _chatUrl(patch.url) : cur.url;
-            if (!_isValidUrl(nextUrl)) throw new Error(`URL inválida: ${nextUrl}. Use https://`);
-            if (_isCustomUrl(nextUrl) && !options.skipConfirm && !_confirmCustomHost(nextUrl)) {
+            const parsedUrl = _parseAndValidateUrl(nextUrl);
+            if (patch.url !== undefined && _isCustomUrl(parsedUrl) && !options.skipConfirm && !_confirmCustomHost(nextUrl)) {
                 throw new Error(`Conexão com host customizado negada: ${nextUrl}`);
             }
             const next = {
@@ -260,21 +265,57 @@
             return seeded[0];
         }
 
+        function _parseAndValidateUrl(url) {
+            const value = String(url || '').trim();
+            if (!value) throw new Error('URL vazia.');
+
+            let parsed;
+            try {
+                parsed = new URL(value);
+            } catch (_) {
+                throw new Error(`URL inválida: ${value}`);
+            }
+
+            const hostname = parsed.hostname.toLowerCase();
+            const isLocalHttp = parsed.protocol === 'http:' && LOCAL_BUILTIN_HOSTS.includes(hostname);
+            if (parsed.protocol !== 'https:' && !isLocalHttp) {
+                throw new Error(`Protocolo não suportado (${parsed.protocol || 'ausente'}). Use HTTPS (ou HTTP para localhost).`);
+            }
+
+            if (parsed.username || parsed.password) {
+                throw new Error('A URL não deve conter credenciais embutidas (usuário/senha).');
+            }
+
+            if (!hostname) throw new Error('A URL precisa conter um hostname válido.');
+            return parsed;
+        }
+
+        function _isCustomUrl(parsedUrl) {
+            if (!(parsedUrl instanceof URL)) return true;
+
+            const hostname = parsedUrl.hostname.toLowerCase();
+            if (BUILTIN_HOSTS.includes(hostname)) {
+                // Hosts nativos só são confiáveis na porta HTTPS padrão.
+                return parsedUrl.protocol !== 'https:' || !!parsedUrl.port;
+            }
+
+            if (LOCAL_BUILTIN_HOSTS.includes(hostname)) {
+                // A única exceção HTTP sem confirmação é o endpoint padrão do Ollama.
+                return parsedUrl.protocol !== 'http:' || parsedUrl.port !== LOCAL_BUILTIN_PORT;
+            }
+
+            return true;
+        }
+
         function _chatUrl(baseUrl) {
-            const base = String(baseUrl || '').trim().replace(/\/+$/, '');
-            return base.endsWith('/chat/completions') ? base : `${base}/chat/completions`;
-        }
-
-        function _isValidUrl(url) {
-            const u = String(url || '').trim();
-            return /^https:\/\/[^\s/?#]+/.test(u);
-        }
-
-        function _isCustomUrl(url) {
-            const u = String(url || '').trim();
-            if (!u || u === DEFAULT_PROVIDER.url || u === LEGACY_DEFAULT_URL) return false;
-            const hostname = u.match(/^https:\/\/([^\s/?#]+)/);
-            return !hostname || !BUILTIN_HOSTS.includes(hostname[1]);
+            const parsed = _parseAndValidateUrl(baseUrl);
+            const path = parsed.pathname.replace(/\\/+$/, '');
+            if (!path.endsWith('/chat/completions')) {
+                parsed.pathname = `${path}/chat/completions`;
+            } else {
+                parsed.pathname = path;
+            }
+            return parsed.toString();
         }
 
         function _confirmCustomHost(url) {
