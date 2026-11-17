@@ -125,6 +125,7 @@ test('inspeção, foco, seleção e exclusão são callbacks distintos', () => {
     const events = [];
     view.render(container, {
         files: [{ id: 'a', name: 'alpha.js', path: 'src/alpha.js' }],
+        expandedPaths: new Set(['src']),
         onFocus: row => events.push('focus:' + row.id),
         onInspect: row => events.push('inspect:' + row.id),
         onSelect: id => events.push('select:' + id),
@@ -133,7 +134,7 @@ test('inspeção, foco, seleção e exclusão são callbacks distintos', () => {
     const file = container.querySelector('[data-file-id="a"]');
     file.click();
     assert.deepEqual(events.slice(0, 3), ['focus:a', 'inspect:a', 'select:a']);
-    container.querySelector('.pe-icon-btn--delete').click();
+    container.querySelector('[data-file-id="a"] .pe-icon-btn--delete').click();
     assert.equal(events.at(-1), 'delete:a');
     view.destroy(container);
 });
@@ -144,14 +145,15 @@ test('renomeação inline aceita texto, Enter e Escape sem executar seleção', 
     const files = [{ id: 'a', name: 'alpha.js', path: 'src/alpha.js' }];
     view.render(container, {
         files,
+        expandedPaths: new Set(['src']),
         onStartRename: row => events.push('start:' + row.id),
         onRenameInput: value => events.push('input:' + value),
         onCommitRename: () => events.push('commit'),
         onCancelRename: () => events.push('cancel')
     });
-    container.querySelector('.pe-file-name').dispatchEvent(new dom.window.MouseEvent('dblclick', { bubbles: true }));
+    container.querySelector('[data-file-id="a"] .pe-file-name').dispatchEvent(new dom.window.MouseEvent('dblclick', { bubbles: true }));
     assert.deepEqual(events, ['start:a']);
-    view.render(container, { files, editingNodeId: 'a', renameValue: 'renamed.js',
+    view.render(container, { files, expandedPaths: new Set(['src']), editingNodeId: 'a', renameValue: 'renamed.js',
         onRenameInput: value => events.push('input:' + value),
         onCommitRename: () => events.push('commit'),
         onCancelRename: () => events.push('cancel')
