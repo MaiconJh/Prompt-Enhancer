@@ -27,7 +27,7 @@ const WorkspaceUI = (() => {
             }
         });
         backButton.classList.add('pe-workspace__back');
-        backButton.prepend(Atoms.icon('arrow-left'));
+        backButton.prepend(Atoms.icon('chevron'));
         const projectTitle = element('strong', 'pe-workspace__project-title', 'Workspace');
         const projectSelect = element('select', 'pe-param-input');
         projectSelect.setAttribute('aria-label', I18n.t('ws.project.select'));
