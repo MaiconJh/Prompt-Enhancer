@@ -10,3 +10,13 @@ test('expõe deleteProject na API pública do WorkspaceStorage', () => {
     assert.match(publicApi[1], /^\s*deleteProject\s*,?\s*$/m);
     assert.match(source, /function deleteProject\(projectId\)/);
 });
+
+
+test('persiste pastas em object store versionado e expõe mutações atômicas', () => {
+    assert.match(source, /const DB_VERSION = 2/);
+    assert.match(source, /createObjectStore\('folders'/);
+    for (const method of ['listFolders', 'createProjectFolder', 'renameProjectFolder', 'deleteProjectFolder', 'setFileAccessMany']) {
+        assert.match(source, new RegExp('^\\s*' + method + '\\s*,?\\s*$', 'm'));
+    }
+    assert.match(source, /transaction\(\['projects', 'files', 'folders'\], 'readwrite'\)/);
+});
