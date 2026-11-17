@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-pe-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meus projetos — Mock conceitual</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <style>
+    :root {
+      --pe-font: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      --pe-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --pe-surface: #17181c;
+      --pe-surface-2: #1f2127;
+      --pe-surface-3: #2a2d34;
+      --pe-surface-code: #1b1d22;
+      --pe-border: #2a2d34;
+      --pe-border-soft: #22252b;
+      --pe-border-strong: #3d414a;
+      --pe-control-border: #525866;
+      --pe-text: #f2f3f5;
+      --pe-text-muted: #a3a8b3;
+      --pe-text-faint: #8d94a2;
+      --pe-text-secondary: #c5cad3;
+      --pe-accent: #8fa3ff;
+      --pe-accent-soft: #232945;
+      --pe-accent-border: #38427a;
+      --pe-accent-text: #b8c5ff;
+      --pe-success: #2ecc9b;
+      --pe-success-soft: #16332b;
+      --pe-error: #ff6b6b;
+      --pe-error-soft: #3a1a1a;
+      --pe-warning: #f5b94c;
+      --pe-warning-soft: #3a2b0f;
+      --pe-radius-sm: 6px;
+      --pe-radius: 10px;
+      --pe-radius-lg: 14px;
+      --pe-space-1: 4px;
+      --pe-space-2: 8px;
+      --pe-space-3: 12px;
+      --pe-space-4: 16px;
+      --pe-space-5: 20px;
+      --pe-space-6: 24px;
+      --pe-fs-3xs: 10px;
+      --pe-fs-2xs: 11px;
+      --pe-fs-xs: 11.5px;
+      --pe-fs-sub: 12px;
+      --pe-fs-sm: 12.5px;
+      --pe-fs-base: 13px;
+      --pe-fs-md: 13.5px;
+      --pe-fs-lg: 14.5px;
+      --pe-fs-title: 15px;
+      --pe-fs-xl: 16px;
+      --pe-fs-2xl: 20px;
+      --pe-fs-3xl: 26px;
+      --pe-fw-regular: 400;
+      --pe-fw-medium: 500;
+      --pe-fw-semi: 600;
+      --pe-fw-bold: 650;
+      --pe-shadow-1: 0 1px 2px rgba(0,0,0,.28);
+      --pe-shadow-2: 0 4px 12px rgba(0,0,0,.25), 0 1px 3px rgba(0,0,0,.18);
+      --pe-shadow-3: 0 12px 28px rgba(0,0,0,.38), 0 2px 8px rgba(0,0,0,.2);
+      --pe-focus-ring: 0 0 0 3px rgba(143,163,255,.22);
+      --pe-disabled-opacity: 0.48;
+      --pe-dur-instant: 90ms;
+      --pe-dur-fast: 160ms;
+      --pe-dur-base: 240ms;
+      --pe-ease-standard: cubic-bezier(.2,0,0,1);
+    }
+    [data-pe-theme="light"] {
+      --pe-surface: #ffffff;
+      --pe-surface-2: #f7f8fa;
+      --pe-surface-3: #eef0f3;
+      --pe-surface-code: #f9fafb;
+      --pe-border: #e6e8ec;
+      --pe-border-soft: #eef0f3;
+      --pe-border-strong: #c9cdd4;
+      --pe-control-border: #8c93a0;
+      --pe-text: #0f1115;
+      --pe-text-muted: #4b5563;
+      --pe-text-faint: #575e6d;
+      --pe-text-secondary: #3a4150;
+      --pe-accent: #4d6bfe;
+      --pe-accent-soft: #eef1ff;
+      --pe-accent-border: #d6ddff;
+      --pe-accent-text: #3d4dc4;
+      --pe-success: #0b755b;
+      --pe-success-soft: #e7f6f1;
+      --pe-error: #cf2e2e;
+      --pe-error-soft: #fdecec;
+      --pe-warning: #b45309;
+      --pe-warning-soft: #fef3c7;
+      --pe-shadow-1: 0 1px 2px rgba(16,18,24,.07);
+      --pe-shadow-2: 0 4px 12px rgba(16,18,24,.08), 0 1px 3px rgba(16,18,24,.04);
+      --pe-shadow-3: 0 12px 28px rgba(16,18,24,.12), 0 2px 8px rgba(16,18,24,.06);
+      --pe-focus-ring: 0 0 0 3px rgba(77,107,254,.18);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: var(--pe-font);
+      background: var(--pe-surface-2);
+      color: var(--pe-text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      -webkit-font-smoothing: antialiased;
+    }
+    [v-cloak] { display: none !important; }
+    button { font-family: inherit; }
+
+    /* ══════════════════════════════════════════════════════════════
+       SHELL DO MODAL
+       Mesmo contrato visual do Workspace: backdrop + modal com
+       header próprio. Sem Activity Bar e sem Status Bar.
+       ══════════════════════════════════════════════════════════════ */
+    .pe-modal-backdrop {
+      position: fixed; inset: 0; z-index: 2147483644;
+      display: flex; align-items: center; justify-content: center;
+      padding: clamp(10px, 3vw, 28px);
+      background: rgba(2,6,23,.48);
+      backdrop-filter: blur(16px) saturate(1.4);
+      -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    }
+    .pe-modal {
+      position: relative;
+      width: min(1180px, calc(100vw - 48px));
+      height: min(860px, calc(100dvh - 48px));
+      max-height: min(860px, calc(100dvh - 48px));
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 18px;
+      background: rgba(15,17,22,.62);
+      box-shadow: 0 18px 44px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.1);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    [data-pe-theme="light"] .pe-modal {
+      background: rgba(255,255,255,.86);
+      border-color: rgba(16,18,24,.1);
+      box-shadow: 0 18px 44px rgba(16,18,24,.16), inset 0 1px 0 rgba(255,255,255,.6);
+    }
+    .pe-modal__body {
+      flex: 1 1 auto; min-height: 0;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── HEADER ── */
+    .pe-projects__header {
+      display: flex; align-items: center; gap: var(--pe-space-4);
+      min-height: 64px; padding: 10px 22px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      flex-shrink: 0;
+    }
+    [data-pe-theme="light"] .pe-projects__header { border-bottom-color: var(--pe-border-soft); }
+    .pe-brand {
+      display: flex; align-items: center; gap: var(--pe-space-3);
+      min-width: 0;
+    }
+    .pe-brand__mark {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px; flex-shrink: 0;
+      border-radius: 9px;
+      background: var(--pe-accent-soft);
+      border: 1px solid var(--pe-accent-border);
+      color: var(--pe-accent-text);
+    }
+    .pe-brand__mark svg { width: 18px; height: 18px; }
+    .pe-brand__name {
+      font-size: var(--pe-fs-lg); font-weight: var(--pe-fw-bold);
+      letter-spacing: -.01em; white-space: nowrap;
+    }
+    .pe-header__spacer { flex: 1 1 auto; }
+    .pe-header__divider {
+      width: 1px; height: 18px; flex-shrink: 0;
+      background: var(--pe-border-strong);
+    }
+    .pe-header__crumb {
+      font-size: var(--pe-fs-sm); font-weight: var(--pe-fw-medium);
+      color: var(--pe-text-muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .pe-header__actions { display: flex; align-items: center; gap: var(--pe-space-2); }
+
+    .pe-icon-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px; flex-shrink: 0;
+      border: 1px solid transparent; border-radius: var(--pe-radius-sm);
+      background: transparent; color: var(--pe-text-muted); cursor: pointer;
+      transition: background var(--pe-dur-fast), color var(--pe-dur-fast), border-color var(--pe-dur-fast);
+    }
+    .pe-icon-btn:hover { background: var(--pe-surface-3); color: var(--pe-text); border-color: var(--pe-border); }
+    .pe-icon-btn:focus-visible { outline: none; box-shadow: var(--pe-focus-ring); }
+    .pe-icon-btn svg { width: 16px; height: 16px; }
+
+    .pe-avatar {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px; flex-shrink: 0;
+      border-radius: 50%;
+      background: var(--pe-surface-3);
+      border: 1px solid var(--pe-border-strong);
+      color: var(--pe-text-secondary);
+      font-size: var(--pe-fs-2xs); font-weight: var(--pe-fw-semi);
+      letter-spacing: .02em;
+      cursor: pointer;
+      transition: border-color var(--pe-dur-fast), background var(--pe-dur-fast);
+    }
+    .pe-avatar:hover { border-color: var(--pe-control-border); background: var(--pe-surface-3); }
+    .pe-avatar:focus-visible { outline: none; box-shadow: var(--pe-focus-ring); }
+
+    /* ── ÁREA ROLÁVEL ── */
+    .pe-projects__scroll {
+      flex: 1 1 auto; min-height: 0;
+      display: flex; flex-direction: column;
+      overflow-y: auto; overflow-x: hidden;
+      padding: 0 var(--pe-space-6);
+      scrollbar-width: thin;
+      scrollbar-color: var(--pe-border-strong) transparent;
+    }
+    .pe-projects__scroll::-webkit-scrollbar { width: 10px; }
+    .pe-projects__scroll::-webkit-scrollbar-thumb {
+      background: var(--pe-border-strong); border-radius: 5px;
+      border: 2px solid transparent; background-clip: padding-box;
+    }
+    .pe-projects__scroll::-webkit-scrollbar-thumb:hover {
+      background: var(--pe-text-faint); background-clip: padding-box; border: 2px solid transparent;
+    }
+
+    /* ── INTRO ── */
+    .pe-projects__intro {
+      display: flex; flex-wrap: wrap; align-items: flex-end;
+      gap: var(--pe-space-4);
+      padding: var(--pe-space-6) 0 var(--pe-space-5);
+    }
+    .pe-projects__intro-text { flex: 1 1 320px; min-width: 0; }
+    .pe-projects__intro h1 {
+      font-size: var(--pe-fs-3xl); font-weight: var(--pe-fw-bold);
+      letter-spacing: -.022em; line-height: 1.15;
+    }
+    .pe-projects__intro p {
+      margin-top: var(--pe-space-2);
+      font-size: var(--pe-fs-base); color: var(--pe-text-muted);
+      line-height: 1.5;
+    }
+
+    /* ── BUSCA + NOVO PROJETO ── */
+    .pe-toolbar {
+      display: flex; align-items: center; gap: var(--pe-space-3);
+      padding-bottom: var(--pe-space-5);
+    }
+    .pe-search {
+      position: relative;
+      flex: 1 1 auto; min-width: 0;
+    }
+    .pe-search__icon {
+      position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+      display: inline-flex; width: 14px; height: 14px;
+      color: var(--pe-text-faint); pointer-events: none;
+    }
+    .pe-search__icon svg { width: 14px; height: 14px; }
+    .pe-input {
+      width: 100%; height: 36px;
+      padding: 0 34px 0 34px;
+      font-size: var(--pe-fs-sm); color: var(--pe-text);
+      background: var(--pe-surface);
+      border: 1px solid var(--pe-control-border);
+      border-radius: var(--pe-radius);
+      outline: none;
+      transition: border-color var(--pe-dur-fast), box-shadow var(--pe-dur-fast), background var(--pe-dur-fast);
+    }
+    .pe-input::placeholder { color: var(--pe-text-faint); }
+    .pe-input:hover { border-color: var(--pe-border-strong); }
+    .pe-input:focus { border-color: var(--pe-accent); box-shadow: var(--pe-focus-ring); }
+    .pe-search__clear {
+      position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 24px; height: 24px;
+      border: none; border-radius: var(--pe-radius-sm);
+      background: transparent; color: var(--pe-text-faint); cursor: pointer;
+    }
+    .pe-search__clear:hover { background: var(--pe-surface-3); color: var(--pe-text); }
+    .pe-search__clear svg { width: 13px; height: 13px; }
+
+    .pe-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      height: 36px; padding: 0 14px;
+      font-size: var(--pe-fs-sm); font-weight: var(--pe-fw-medium);
+      border-radius: var(--pe-radius); border: 1px solid transparent;
+      cursor: pointer; white-space: nowrap;
+      transition: background var(--pe-dur-fast), color var(--pe-dur-fast), border-color var(--pe-dur-fast), box-shadow var(--pe-dur-fast);
+    }
+    .pe-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .pe-btn--primary {
+      color: #fff; background: var(--pe-accent); border-color: var(--pe-accent);
+    }
+    .pe-btn--primary:hover { background: #7d93ff; border-color: #7d93ff; }
+    [data-pe-theme="light"] .pe-btn--primary:hover { background: #3d5ce6; border-color: #3d5ce6; }
+    .pe-btn--primary:focus-visible { outline: none; box-shadow: var(--pe-focus-ring); }
+    .pe-btn--outline {
+      color: var(--pe-text-muted); background: var(--pe-surface); border-color: var(--pe-border);
+    }
+    .pe-btn--outline:hover { background: var(--pe-surface-3); color: var(--pe-text); border-color: var(--pe-border-strong); }
+    .pe-btn--outline:focus-visible { outline: none; box-shadow: var(--pe-focus-ring); }
+    .pe-btn--danger { color: var(--pe-error); background: transparent; border-color: transparent; }
+    .pe-btn--danger:hover { background: var(--pe-error-soft); }
+    .pe-btn--danger:focus-visible { outline: none; box-shadow: var(--pe-focus-ring); }
+
+    /* ── SEÇÃO ── */
+    .pe-section { flex: 1 1 auto; padding-bottom: var(--pe-space-6); }
+    .pe-section__head {
+      display: flex; align-items: center; gap: var(--pe-space-2);
+      padding: var(--pe-space-4) 0 var(--pe-space-3);
+      border-top: 1px solid var(--pe-border-soft);
+    }
+    .pe-section__title {
+      font-size: var(--pe-fs-2xs); font-weight: var(--pe-fw-semi);
+      text-transform: uppercase; letter-spacing: .08em;
+      color: var(--pe-text-muted);
+    }
+    .pe-section__count {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 18px; height: 18px; padding: 0 6px;
+      font-size: var(--pe-fs-3xs); font-weight: var(--pe-fw-semi);
+      color: var(--pe-text-faint);
+      background: var(--pe-surface-3); border-radius: 999px;
+    }
+    .pe-section__spacer { flex: 1 1 auto; }
+    .pe-select {
+      height: 30px; padding: 0 26px 0 10px;
+      font-size: var(--pe-fs-2xs); font-weight: var(--pe-fw-medium);
+      color: var(--pe-text-secondary);
+      background: var(--pe-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%238d94a2' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='3 4.5 6 7.5 9 4.5'/%3E%3C/svg%3E") no-repeat right 8px center / 12px 12px;
+      border: 1px solid var(--pe-border);
+      border-radius: var(--pe-radius-sm);
+      appearance: none; -webkit-appearance: none;
+      cursor: pointer; outline: none;
+    }
+    .pe-select:hover { border-color: var(--pe-border-strong); color: var(--pe-text); }
+    .pe-select:focus-visible { border-color: var(--pe-accent); box-shadow: var(--pe-focus-ring); }
+
+    /* ── GRID DE CARDS ── */
+    .pe-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+      gap: var(--pe-space-4);
+    }
+
+    .pe-card {
+      position: relative;
+      display: flex; flex-direction: column;
+      min-width: 0;
+      background: var(--pe-surface);
+      border: 1px solid var(--pe-border);
+      border-radius: var(--pe-radius-lg);
+      box-shadow: var(--pe-shadow-1);
+      transition: transform var(--pe-dur-fast) var(--pe-ease-standard),
+                  border-color var(--pe-dur-fast),
+                  box-shadow var(--pe-dur-fast),
+                  background var(--pe-dur-fast);
+    }
+    .pe-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--pe-border-strong);
+      box-shadow: var(--pe-shadow-3);
+    }
+    .pe-card:focus-within {
+      border-color: var(--pe-border-strong);
+      box-shadow: var(--pe-shadow-2);
+    }
+    .pe-card:active { transform: translateY(0); box-shadow: var(--pe-shadow-1); }
+
+    .pe-card__open {
+      display: flex; flex-direction: column;
+      flex: 1 1 auto; min-width: 0;
+      padding: var(--pe-space-4);
+      text-align: left;
+      background: transparent; border: none;
+      color: inherit; font: inherit;
+      cursor: pointer;
+      border-radius: var(--pe-radius-lg);
+      outline: none;
+    }
+    .pe-card__open:focus-visible {
+      box-shadow: inset 0 0 0 2px var(--pe-accent);
+      outline: none;
+    }
+
+    .pe-card__top {
+      display: flex; align-items: flex-start; gap: var(--pe-space-3);
+      padding-right: var(--pe-space-6);
+    }
+    .pe-card__icon {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 38px; height: 38px; flex-shrink: 0;
+      border-radius: var(--pe-radius);
+      background: var(--pe-surface-3);
+      border: 1px solid var(--pe-border-soft);
+      color: var(--pe-text-secondary);
+    }
+    .pe-card__icon svg { width: 19px; height: 19px; }
+    .pe-card__icon.is-illustrative {
+      background: transparent;
+      border-style: dashed;
+      border-color: var(--pe-border-strong);
+      color: var(--pe-text-faint);
+    }
+
+    .pe-card__body { display: block; flex: 1 1 auto; min-width: 0; }
+    .pe-card__name {
+      display: block;
+      font-size: var(--pe-fs-lg); font-weight: var(--pe-fw-semi);
+      line-height: 1.35; color: var(--pe-text);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      transition: color var(--pe-dur-fast);
+    }
+    .pe-card__desc {
+      display: -webkit-box; margin-top: 3px;
+      font-size: var(--pe-fs-sm); line-height: 1.5;
+      color: var(--pe-text-muted);
+      -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .pe-card__menu {
+      position: absolute;
+      top: 8px; right: 8px;
+      display: inline-flex;
+      z-index: 2;
+      opacity: .55;
+      transition: opacity var(--pe-dur-fast);
+    }
+    .pe-card__menu .pe-icon-btn {
+      width: 28px; height: 28px; color: var(--pe-text-faint);
+      background: var(--pe-surface);
+      border-color: transparent;
+    }
+    .pe-card__menu .pe-icon-btn svg { width: 15px; height: 15px; }
+    .pe-card__menu .pe-icon-btn:hover { color: var(--pe-text); background: var(--pe-surface-3); border-color: var(--pe-border); }
+    .pe-card:hover .pe-card__menu,
+    .pe-card:focus-within .pe-card__menu { opacity: 1; }
+    .pe-card__menu:focus-within .pe-icon-btn { border-color: var(--pe-accent); }
+
+    .pe-card__footer {
+      display: flex; align-items: center; gap: var(--pe-space-2);
+      margin-top: var(--pe-space-4); padding-top: var(--pe-space-3);
+      border-top: 1px solid var(--pe-border-soft);
+      font-size: var(--pe-fs-3xs);
+      color: var(--pe-text-faint);
+    }
+    .pe-card__dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--pe-text-faint); flex-shrink: 0; opacity: .7;
+    }
+    .pe-card__dot--recent {
+      width: 6px; height: 6px; opacity: 1;
+      background: var(--pe-success);
+      box-shadow: 0 0 0 2px var(--pe-success-soft);
+    }
+    .pe-card__footer .sep { opacity: .4; }
+    .pe-card__arrow {
+      margin-left: auto; display: inline-flex; flex-shrink: 0;
+      color: var(--pe-text-faint); opacity: 0;
+      transform: translateX(-4px);
+      transition: opacity var(--pe-dur-fast), transform var(--pe-dur-fast), color var(--pe-dur-fast);
+    }
+    .pe-card__arrow svg { width: 14px; height: 14px; }
+    .pe-card:hover .pe-card__arrow,
+    .pe-card:focus-within .pe-card__arrow { opacity: 1; transform: translateX(0); color: var(--pe-accent-text); }
+
+    /* Card ilustrativo: sugestão de criação, exibida junto aos projetos */
+    .pe-card--new {
+      flex-direction: row;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: var(--pe-space-3);
+      padding: var(--pe-space-4);
+      text-align: left;
+      font: inherit;
+      color: inherit;
+      background: transparent;
+      border: 1px dashed var(--pe-border-strong);
+      box-shadow: none;
+      cursor: pointer;
+      outline: none;
+    }
+    .pe-card--new:hover { background: var(--pe-surface); border-color: var(--pe-control-border); transform: translateY(-2px); }
+    .pe-card--new:focus-visible { border-color: var(--pe-accent); box-shadow: var(--pe-focus-ring); }
+    .pe-card--new .pe-card__name { color: var(--pe-text-secondary); }
+    .pe-card--new .pe-card__desc { color: var(--pe-text-faint); }
+    .pe-card--new .pe-card__footer {
+      flex: 1 1 100%;
+      margin-top: 0;
+      padding-top: var(--pe-space-3);
+    }
+
+    .pe-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      height: 19px; padding: 0 7px;
+      font-size: var(--pe-fs-3xs); font-weight: var(--pe-fw-medium);
+      border-radius: 999px;
+      color: var(--pe-text-faint);
+      border: 1px solid var(--pe-border);
+      white-space: nowrap;
+    }
+    .pe-badge svg { width: 10px; height: 10px; }
+
+    /* ── ESTADOS ── */
+    .pe-empty {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: var(--pe-space-2);
+      padding: 56px var(--pe-space-4);
+      text-align: center;
+      border: 1px dashed var(--pe-border-strong);
+      border-radius: var(--pe-radius-lg);
+      color: var(--pe-text-faint);
+    }
+    .pe-empty svg { width: 34px; height: 34px; opacity: .5; }
+    .pe-empty strong { font-size: var(--pe-fs-md); font-weight: var(--pe-fw-medium); color: var(--pe-text-secondary); }
+    .pe-empty span { font-size: var(--pe-fs-sm); line-height: 1.5; max-width: 340px; }
+
+    /* ── RODAPÉ ── */
+    .pe-projects__footer {
+      display: flex; align-items: center; gap: var(--pe-space-3);
+      flex-shrink: 0;
+      padding: 10px 22px;
+      border-top: 1px solid rgba(255,255,255,.06);
+      font-size: var(--pe-fs-3xs);
+      color: var(--pe-text-faint);
+      line-height: 1.6;
+    }
+    [data-pe-theme="light"] .pe-projects__footer { border-top-color: var(--pe-border-soft); }
+    .pe-projects__footer .sep { opacity: .4; flex-shrink: 0; }
+    .pe-projects__footer .pe-footer-spacer { flex: 1 1 auto; }
+    .pe-projects__footer strong { color: var(--pe-text-muted); font-weight: var(--pe-fw-medium); }
+    .pe-projects__footer .is-illustrative {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 8px;
+      border: 1px dashed var(--pe-border-strong);
+      border-radius: 999px;
+      color: var(--pe-text-muted);
+    }
+    .pe-projects__footer .is-illustrative svg { width: 10px; height: 10px; flex-shrink: 0; }
+
+    /* ══════════════════════════════════════════════════════════════
+       MODAL INTERNO — novo projeto
+       ══════════════════════════════════════════════════════════════ */
+    .pe-dialog-backdrop {
+      position: fixed; inset: 0; z-index: 2147483645;
+      display: flex; align-items: center; justify-content: center;
+      padding: var(--pe-space-4);
+      background: rgba(2,6,23,.55);
+      backdrop-filter: blur(8px) saturate(1.2);
+      -webkit-backdrop-filter: blur(8px) saturate(1.2);
+    }
+    [data-pe-theme="light"] .pe-dialog-backdrop { background: rgba(16,18,24,.28); }
+    .pe-dialog {
+      position: relative;
+      display: flex; flex-direction: column;
+      width: min(460px, 100%);
+      max-height: calc(100dvh - 32px);
+      border: 1px solid var(--pe-border-strong);
+      border-radius: var(--pe-radius-lg);
+      background: var(--pe-surface);
+      box-shadow: 0 24px 56px rgba(0,0,0,.5);
+      overflow: hidden;
+    }
+    .pe-dialog__header {
+      display: flex; align-items: flex-start; gap: var(--pe-space-3);
+      padding: var(--pe-space-5) var(--pe-space-5) var(--pe-space-3);
+    }
+    .pe-dialog__header h2 {
+      font-size: var(--pe-fs-xl); font-weight: var(--pe-fw-bold);
+      letter-spacing: -.01em;
+    }
+    .pe-dialog__header p {
+      margin-top: 3px; font-size: var(--pe-fs-sm); color: var(--pe-text-muted); line-height: 1.5;
+    }
+    .pe-dialog__close { margin-left: auto; margin-top: -4px; margin-right: -4px; }
+    .pe-dialog__body {
+      display: flex; flex-direction: column; gap: var(--pe-space-4);
+      padding: var(--pe-space-3) var(--pe-space-5) var(--pe-space-5);
+      overflow-y: auto;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       MENU CONTEXTUAL
+       Acima do modal de projetos, abaixo do diálogo de criação.
+       ══════════════════════════════════════════════════════════════ */
+    .pe-menu {
+      position: fixed; z-index: 2147483646;
+      min-width: 208px;
+      padding: 5px;
+      background: var(--pe-surface);
+      border: 1px solid var(--pe-border-strong);
+      border-radius: var(--pe-radius);
+      box-shadow: var(--pe-shadow-3);
+    }
+    .pe-menu__label {
+      padding: 5px 8px 6px;
+      font-size: var(--pe-fs-3xs); font-weight: var(--pe-fw-semi);
+      text-transform: uppercase; letter-spacing: .07em;
+      color: var(--pe-text-faint);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .pe-menu__sep { height: 1px; margin: 5px 4px; background: var(--pe-border-soft); }
+    .pe-menu__item {
+      display: flex; align-items: center; gap: var(--pe-space-2);
+      width: 100%; padding: 7px 8px;
+      font-size: var(--pe-fs-sm); color: var(--pe-text-secondary);
+      text-align: left;
+      background: transparent; border: none; border-radius: var(--pe-radius-sm);
+      cursor: pointer;
+      transition: background var(--pe-dur-fast), color var(--pe-dur-fast);
+    }
+    .pe-menu__item svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--pe-text-faint); }
+    .pe-menu__item:hover,
+    .pe-menu__item:focus-visible { background: var(--pe-surface-3); color: var(--pe-text); outline: none; }
+    .pe-menu__item:hover svg { color: var(--pe-text); }
+    .pe-menu__item--danger { color: var(--pe-error); }
+    .pe-menu__item--danger svg { color: var(--pe-error); }
+    .pe-menu__item--danger:hover,
+    .pe-menu__item--danger:focus-visible { background: var(--pe-error-soft); color: var(--pe-error); }
+
+    /* ══════════════════════════════════════════════════════════════
+       FORMULÁRIO — novo projeto
+       ══════════════════════════════════════════════════════════════ */
+    .pe-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .pe-field__label {
+      font-size: var(--pe-fs-2xs); font-weight: var(--pe-fw-medium);
+      color: var(--pe-text-secondary);
+    }
+    .pe-field__hint { font-size: var(--pe-fs-3xs); color: var(--pe-text-faint); }
+    .pe-textarea {
+      width: 100%; min-height: 68px; resize: vertical;
+      padding: 8px 10px;
+      font-family: inherit; font-size: var(--pe-fs-sm); line-height: 1.5;
+      color: var(--pe-text);
+      background: var(--pe-surface-2);
+      border: 1px solid var(--pe-control-border);
+      border-radius: var(--pe-radius-sm);
+      outline: none;
+      transition: border-color var(--pe-dur-fast), box-shadow var(--pe-dur-fast);
+    }
+    .pe-textarea::placeholder { color: var(--pe-text-faint); }
+    .pe-textarea:focus { border-color: var(--pe-accent); box-shadow: var(--pe-focus-ring); }
+    .pe-field__error {
+      display: flex; align-items: center; gap: 5px;
+      font-size: var(--pe-fs-3xs); color: var(--pe-error);
+    }
+    .pe-field__error svg { width: 11px; height: 11px; flex-shrink: 0; }
+    .pe-input.is-invalid { border-color: var(--pe-error); }
+    .pe-input.is-invalid:focus { box-shadow: 0 0 0 3px rgba(255,107,107,.2); }
+    .pe-dialog__footer {
+      display: flex; align-items: center; justify-content: flex-end; gap: var(--pe-space-2);
+      padding: var(--pe-space-4) var(--pe-space-5);
+      border-top: 1px solid var(--pe-border-soft);
+      background: var(--pe-surface-2);
+    }
+
+    /* ── TOASTS ── */
+    .pe-toasts {
+      position: fixed; bottom: var(--pe-space-5); right: var(--pe-space-5);
+      z-index: 2147483647;
+      display: flex; flex-direction: column; gap: var(--pe-space-2);
+      pointer-events: none;
+    }
+    .pe-toast {
+      display: flex; align-items: center; gap: var(--pe-space-2);
+      padding: 9px 14px;
+      font-size: var(--pe-fs-sm); color: var(--pe-text);
+      background: var(--pe-surface);
+      border: 1px solid var(--pe-border-strong);
+      border-left: 3px solid var(--pe-accent);
+      border-radius: var(--pe-radius-sm);
+      box-shadow: var(--pe-shadow-2);
+      pointer-events: auto;
+    }
+    .pe-toast--success { border-left-color: var(--pe-success); }
+    .pe-toast--error { border-left-color: var(--pe-error); }
+    .pe-toast svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--pe-text-muted); }
+    .pe-toast--success svg { color: var(--pe-success); }
+    .pe-toast--error svg { color: var(--pe-error); }
+
+    /* ══════════════════════════════════════════════════════════════
+       RESPONSIVO
+       ══════════════════════════════════════════════════════════════ */
+    /* Desktop amplo: 4 colunas */
+    @media (min-width: 1600px) {
+      .pe-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+    /* Desktop: 3 colunas */
+    @media (min-width: 1240px) and (max-width: 1599px) {
+      .pe-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    /* Desktop estreito / tablet: 2 colunas */
+    @media (min-width: 768px) and (max-width: 1239px) {
+      .pe-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 1023px) {
+      .pe-modal {
+        width: calc(100vw - 24px);
+        height: calc(100dvh - 24px);
+        max-height: calc(100dvh - 24px);
+      }
+    }
+    /* Mobile: 1 coluna, modal em tela cheia, criação acessível */
+    @media (max-width: 767px) {
+      body { padding: 0; }
+      .pe-modal-backdrop { padding: 0; }
+      .pe-modal {
+        width: 100vw;
+        height: 100dvh;
+        max-height: 100dvh;
+        border: none;
+        border-radius: 0;
+      }
+      .pe-projects__scroll { padding: 0 var(--pe-space-4); }
+      .pe-projects__header { padding: 10px var(--pe-space-4); }
+      .pe-projects__intro { padding: var(--pe-space-5) 0 var(--pe-space-4); }
+      .pe-projects__intro h1 { font-size: var(--pe-fs-2xl); }
+      .pe-toolbar { flex-direction: column; align-items: stretch; gap: var(--pe-space-3); }
+      .pe-toolbar .pe-btn { width: 100%; }
+      .pe-grid { grid-template-columns: minmax(0, 1fr); gap: var(--pe-space-3); }
+      .pe-card__menu { opacity: 1; }
+      .pe-section__head { flex-wrap: wrap; }
+      .pe-projects__footer { padding: 10px var(--pe-space-4); flex-wrap: wrap; gap: 6px; }
+      .pe-projects__footer .pe-footer-spacer { display: none; }
+      .pe-toasts { left: var(--pe-space-4); right: var(--pe-space-4); bottom: var(--pe-space-4); }
+    }
+
+    /* ── MOTION ── */
+    @media (prefers-reduced-motion: no-preference) {
+      @keyframes pe-toast-in {
+        from { opacity: 0; transform: translateY(6px) scale(.98); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      @keyframes pe-modal-in {
+        from { opacity: 0; transform: translateY(8px) scale(.98); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      @keyframes pe-menu-in {
+        from { opacity: 0; transform: translateY(-4px) scale(.99); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      .pe-toast { animation: pe-toast-in var(--pe-dur-base) var(--pe-ease-standard); }
+      .pe-dialog { animation: pe-modal-in var(--pe-dur-base) var(--pe-ease-standard); }
+      .pe-menu { animation: pe-menu-in var(--pe-dur-fast) var(--pe-ease-standard); transform-origin: top left; }
+      .pe-card { animation: pe-card-in var(--pe-dur-base) var(--pe-ease-standard) both; }
+      @keyframes pe-card-in {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .pe-card,
+      .pe-card__arrow,
+      .pe-card__menu,
+      .pe-btn,
+      .pe-icon-btn,
+      .pe-input,
+      .pe-menu__item,
+      .pe-avatar { transition: none !important; animation: none !important; }
+      .pe-card:hover { transform: none; }
+      .pe-card:hover .pe-card__arrow { transform: none; }
+      .pe-card__menu { opacity: 1; }
+      .pe-dialog { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app" v-cloak>
+    <div class="pe-modal-backdrop">
+      <div class="pe-modal" role="dialog" aria-modal="true" aria-labelledby="pe-projects-heading">
+        <header class="pe-projects__header">
+          <div class="pe-brand">
+            <span class="pe-brand__mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M18 15l.9 2.1L21 18l-2.1.9L18 21l-.9-2.1L15 18l2.1-.9z"/></svg>
+            </span>
+            <span class="pe-brand__name">Prompt Enhancer</span>
+          </div>
+          <span class="pe-header__divider" aria-hidden="true"></span>
+          <span class="pe-header__crumb">Gerenciamento de projetos</span>
+          <div class="pe-header__spacer"></div>
+          <div class="pe-header__actions">
+            <button class="pe-icon-btn" @click="toggleTheme" :aria-label="theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'" :title="theme === 'dark' ? 'Tema claro' : 'Tema escuro'">
+              <svg v-if="theme === 'dark'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2.5 12h2M19.5 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>
+              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+            </button>
+            <button class="pe-avatar" type="button" aria-label="Abrir conta de Maicon" title="Maicon" @click="showToast('Conta e preferências estarão disponíveis aqui.', 'info')">MC</button>
+          </div>
+        </header>
+
+        <div class="pe-modal__body" :inert="createModal ? '' : null">
+          <div class="pe-projects__scroll">
+            <div class="pe-projects__intro">
+              <div class="pe-projects__intro-text">
+                <h1 id="pe-projects-heading">Meus projetos</h1>
+                <p>Organize suas ideias e continue de onde parou.</p>
+              </div>
+            </div>
+
+            <div class="pe-toolbar">
+              <div class="pe-search">
+                <span class="pe-search__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                </span>
+                <input ref="searchInputRef"
+                       v-model="searchQuery"
+                       type="text"
+                       class="pe-input"
+                       placeholder="Pesquisar projetos..."
+                       aria-label="Pesquisar projetos"
+                       autocomplete="off"
+                       spellcheck="false"
+                       @keydown.esc="searchQuery = ''" />
+                <button v-if="searchQuery" class="pe-search__clear" type="button" aria-label="Limpar pesquisa" @click="clearSearch">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+              </div>
+              <button class="pe-btn pe-btn--primary" type="button" @click="openCreateModal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                Novo projeto
+              </button>
+            </div>
+
+            <main class="pe-section" aria-label="Projetos">
+              <div class="pe-section__head">
+          <span class="pe-section__title">Projetos</span>
+          <span class="pe-section__count" aria-hidden="true">{{ filteredProjects.length }}</span>
+          <span class="pe-section__spacer"></span>
+          <label class="pe-select-label">
+            <span class="pe-visually-hidden" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;">Ordenar projetos</span>
+            <select v-model="sortMode" class="pe-select" aria-label="Ordenar projetos">
+              <option value="recent">Mais recentes</option>
+              <option value="name">Nome (A–Z)</option>
+              <option value="created">Data de criação</option>
+            </select>
+          </label>
+        </div>
+
+        <div v-if="filteredProjects.length" class="pe-grid" role="list" aria-label="Lista de projetos">
+          <div v-for="(project, index) in filteredProjects"
+               :key="project.id"
+               class="pe-card"
+               role="listitem"
+               :style="{ animationDelay: Math.min(index * 28, 200) + 'ms' }">
+            <button class="pe-card__open"
+                    type="button"
+                    :aria-label="'Abrir projeto ' + project.name"
+                    @click="openProject(project)">
+              <span class="pe-card__top">
+                <span class="pe-card__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                </span>
+                <span class="pe-card__body">
+                  <span class="pe-card__name" :title="project.name">{{ project.name }}</span>
+                  <span class="pe-card__desc">{{ project.description }}</span>
+                </span>
+              </span>
+              <span class="pe-card__footer">
+                <span class="pe-card__dot" :class="{ 'pe-card__dot--recent': project.isRecent }" aria-hidden="true"></span>
+                <span>{{ project.modifiedLabel }}</span>
+                <span v-if="project.isRecent" class="sep" aria-hidden="true">·</span>
+                <span v-if="project.isRecent">Modificado recentemente</span>
+                <span class="pe-card__arrow" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                </span>
+              </span>
+            </button>
+            <span class="pe-card__menu">
+              <button class="pe-icon-btn"
+                      type="button"
+                      :aria-label="'Ações do projeto ' + project.name"
+                      aria-haspopup="menu"
+                      :aria-expanded="menuOpenId === project.id ? 'true' : 'false'"
+                      title="Ações do projeto"
+                      @click.stop="openContextMenu($event, project)"
+                      @keydown.esc.stop="closeContextMenu">
+                <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
+              </button>
+            </span>
+          </div>
+
+          <button v-if="showNewCard"
+                  class="pe-card pe-card--new"
+                  type="button"
+                  role="listitem"
+                  @click="openCreateModal">
+            <span class="pe-card__icon is-illustrative" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            </span>
+            <span class="pe-card__body">
+              <span class="pe-card__name">Novo projeto</span>
+              <span class="pe-card__desc">Um espaço para uma nova ideia.</span>
+            </span>
+            <span class="pe-card__footer">
+              <span class="pe-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                Atalho de criação
+              </span>
+              <span class="pe-card__arrow" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </span>
+            </span>
+          </button>
+        </div>
+
+        <div v-else class="pe-empty" role="status">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <strong>Nenhum projeto encontrado</strong>
+          <span>{{ searchQuery ? 'Revise os termos da pesquisa ou crie um novo projeto para começar.' : 'Crie seu primeiro projeto para começar.' }}</span>
+          <button class="pe-btn pe-btn--outline" type="button" style="margin-top: 6px;" @click="searchQuery ? clearSearch() : openCreateModal()">
+            {{ searchQuery ? 'Limpar pesquisa' : 'Criar projeto' }}
+          </button>
+        </div>
+            </main>
+          </div>
+
+          <footer class="pe-projects__footer">
+            <strong>Prompt Enhancer</strong>
+            <span aria-hidden="true">·</span>
+            <span>Gerenciamento de projetos</span>
+            <span class="sep" aria-hidden="true">·</span>
+            <span>{{ projects.length }} {{ projects.length === 1 ? 'projeto' : 'projetos' }}</span>
+            <span class="pe-footer-spacer"></span>
+            <span class="is-illustrative">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+              Mock conceitual · dados fictícios
+            </span>
+          </footer>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="menu" class="pe-menu" :style="menuStyle" role="menu" :aria-label="'Ações do projeto ' + menu.project.name" @click.stop @keydown="handleMenuKeydown">
+      <div class="pe-menu__label">{{ menu.project.name }}</div>
+      <div class="pe-menu__sep" role="separator"></div>
+      <button class="pe-menu__item" type="button" role="menuitem" @click="openProject(menu.project)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M10 14L21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+        Abrir projeto
+      </button>
+      <button class="pe-menu__item" type="button" role="menuitem" @click="startRename(menu.project)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+        Renomear
+      </button>
+      <div class="pe-menu__sep" role="separator"></div>
+      <button class="pe-menu__item pe-menu__item--danger" type="button" role="menuitem" @click="startDelete(menu.project)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        Excluir projeto
+      </button>
+    </div>
+
+    <div v-if="createModal" class="pe-dialog-backdrop" @click.self="closeCreateModal" @keydown="trapModalFocus">
+      <div class="pe-dialog" role="dialog" aria-modal="true" aria-labelledby="pe-create-title" aria-describedby="pe-create-desc">
+        <header class="pe-dialog__header">
+          <div>
+            <h2 id="pe-create-title">Novo projeto</h2>
+            <p id="pe-create-desc">Dê um nome ao seu projeto. Você poderá ajustar os detalhes depois.</p>
+          </div>
+          <button class="pe-icon-btn pe-dialog__close" type="button" aria-label="Fechar" @click="closeCreateModal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </header>
+        <form @submit.prevent="submitCreate">
+          <div class="pe-dialog__body">
+            <div class="pe-field">
+              <label class="pe-field__label" for="pe-project-name">Nome do projeto</label>
+              <input ref="nameInputRef"
+                     id="pe-project-name"
+                     v-model="createForm.name"
+                     type="text"
+                     class="pe-input"
+                     :class="{ 'is-invalid': createError.name }"
+                     placeholder="Ex.: Prompt Enhancer"
+                     maxlength="100"
+                     autocomplete="off"
+                     :aria-invalid="createError.name ? 'true' : 'false'"
+                     :aria-describedby="createError.name ? 'pe-create-name-error' : 'pe-create-name-hint'" />
+              <span v-if="createError.name" id="pe-create-name-error" class="pe-field__error">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.01"/></svg>
+                {{ createError.name }}
+              </span>
+              <span v-else id="pe-create-name-hint" class="pe-field__hint">Até 100 caracteres.</span>
+            </div>
+            <div class="pe-field">
+              <label class="pe-field__label" for="pe-project-desc">Descrição <span style="color: var(--pe-text-faint); font-weight: 400;">(opcional)</span></label>
+              <textarea id="pe-project-desc"
+                        v-model="createForm.description"
+                        class="pe-textarea"
+                        maxlength="500"
+                        placeholder="O que você pretende construir?"></textarea>
+            </div>
+          </div>
+          <footer class="pe-dialog__footer">
+            <button class="pe-btn pe-btn--outline" type="button" @click="closeCreateModal">Cancelar</button>
+            <button class="pe-btn pe-btn--primary" type="submit" :disabled="!createForm.name.trim()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+              Criar projeto
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
+
+    <div class="pe-toasts" role="status" aria-live="polite">
+      <div v-for="toast in toasts" :key="toast.id" class="pe-toast" :class="'pe-toast--' + toast.type">
+        <svg v-if="toast.type === 'success'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <svg v-else-if="toast.type === 'error'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.01"/></svg>
+        <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+        {{ toast.message }}
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+      const { createApp, ref, reactive, computed, nextTick, onMounted, onBeforeUnmount } = Vue;
+
+      createApp({
+        setup() {
+          const theme = ref(document.documentElement.getAttribute('data-pe-theme') || 'dark');
+          function toggleTheme() {
+            theme.value = theme.value === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-pe-theme', theme.value);
+          }
+
+          const now = Date.now();
+          const HOUR = 60 * 60 * 1000;
+          const DAY = 24 * HOUR;
+
+          const projects = ref([
+            {
+              id: 'project_2f8c41d9',
+              name: 'Prompt Enhancer',
+              description: 'Ferramentas de aprimoramento de prompts.',
+              createdAt: now - 220 * DAY,
+              updatedAt: now - 3 * HOUR,
+            },
+            {
+              id: 'project_7a1e93b4',
+              name: 'PluginForge',
+              description: 'Plataforma de criação de plugins Minecraft.',
+              createdAt: now - 190 * DAY,
+              updatedAt: now - 30 * DAY,
+            },
+            {
+              id: 'project_4d6b27f0',
+              name: 'MiningPoint',
+              description: 'Projeto de comunidade e sistemas Minecraft.',
+              createdAt: now - 150 * DAY,
+              updatedAt: now - 64 * DAY,
+            },
+          ]);
+
+          const searchQuery = ref('');
+          const searchInputRef = ref(null);
+          const sortMode = ref('recent');
+          const RECENT_WINDOW = 7 * DAY;
+
+          const normalizedQuery = computed(() => searchQuery.value.trim().toLocaleLowerCase('pt-BR'));
+
+          const filteredProjects = computed(() => {
+            const q = normalizedQuery.value;
+            const now = Date.now();
+            let list = projects.value.filter(project => {
+              if (!q) return true;
+              return project.name.toLocaleLowerCase('pt-BR').includes(q)
+                || project.description.toLocaleLowerCase('pt-BR').includes(q);
+            });
+            list = list.slice();
+            if (sortMode.value === 'name') {
+              list.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+            } else if (sortMode.value === 'created') {
+              list.sort((a, b) => b.createdAt - a.createdAt);
+            } else {
+              list.sort((a, b) => b.updatedAt - a.updatedAt);
+            }
+            return list.map(project => ({
+              ...project,
+              isRecent: project.updatedAt >= now - RECENT_WINDOW,
+              modifiedLabel: formatRelative(project.updatedAt),
+            }));
+          });
+
+          const showNewCard = computed(() =>
+            filteredProjects.value.length > 0 && !normalizedQuery.value
+          );
+
+          function formatRelative(timestamp) {
+            const diff = Date.now() - timestamp;
+            const minute = 60_000;
+            const hour = 60 * minute;
+            const day = 24 * hour;
+            if (diff < minute) return 'Modificado agora';
+            if (diff < hour) {
+              const m = Math.floor(diff / minute);
+              return `Modificado há ${m} ${m === 1 ? 'minuto' : 'minutos'}`;
+            }
+            if (diff < day) {
+              const h = Math.floor(diff / hour);
+              return `Modificado há ${h} ${h === 1 ? 'hora' : 'horas'}`;
+            }
+            const d = Math.floor(diff / day);
+            if (d === 1) return 'Modificado ontem';
+            if (d < 7) return `Modificado há ${d} dias`;
+            if (d < 30) {
+              const w = Math.floor(d / 7);
+              return `Modificado há ${w} ${w === 1 ? 'semana' : 'semanas'}`;
+            }
+            return 'Modificado anteriormente';
+          }
+
+          function clearSearch() {
+            searchQuery.value = '';
+            nextTick(() => searchInputRef.value?.focus());
+          }
+
+          const createModal = ref(false);
+          const createForm = reactive({ name: '', description: '' });
+          const createError = reactive({ name: '' });
+          const nameInputRef = ref(null);
+          let previousFocus = null;
+
+          function openCreateModal() {
+            closeContextMenu();
+            previousFocus = document.activeElement;
+            createForm.name = '';
+            createForm.description = '';
+            createError.name = '';
+            createModal.value = true;
+            nextTick(() => {
+              if (nameInputRef.value) nameInputRef.value.focus();
+              else document.querySelector('.pe-dialog__close')?.focus();
+            });
+          }
+
+          function closeCreateModal() {
+            if (!createModal.value) return;
+            createModal.value = false;
+            const restore = previousFocus;
+            previousFocus = null;
+            if (restore && document.contains(restore)) restore.focus();
+            else searchInputRef.value?.focus();
+          }
+
+          function submitCreate() {
+            const name = createForm.name.trim();
+            if (!name) {
+              createError.name = 'Informe um nome para o projeto.';
+              nameInputRef.value?.focus();
+              return;
+            }
+            if (name.length > 100) {
+              createError.name = 'Use no máximo 100 caracteres.';
+              nameInputRef.value?.focus();
+              return;
+            }
+            const now = Date.now();
+            const project = {
+              id: 'project_' + now.toString(36),
+              name,
+              description: createForm.description.trim() || 'Sem descrição.',
+              createdAt: now,
+              updatedAt: now,
+            };
+            projects.value = [project, ...projects.value];
+            createModal.value = false;
+            const restore = previousFocus;
+            previousFocus = null;
+            searchQuery.value = '';
+            sortMode.value = 'recent';
+            if (restore && document.contains(restore)) restore.focus();
+            showToast(`Projeto "${name}" criado.`, 'success');
+          }
+
+          const menu = ref(null);
+          const menuStyle = ref({});
+
+          let menuTrigger = null;
+
+          function openContextMenu(event, project) {
+            const trigger = event.currentTarget;
+            if (menuOpenId.value === project.id) {
+              closeContextMenu();
+              return;
+            }
+            menuTrigger = trigger && trigger.focus ? trigger : null;
+            const rect = trigger?.getBoundingClientRect?.() || { right: 0, bottom: 0, top: 0, left: 0 };
+            const menuWidth = 208;
+            const menuHeight = 150;
+            const margin = 8;
+            let left = rect.right - menuWidth;
+            let top = rect.bottom + 6;
+            if (left < margin) left = margin;
+            if (left + menuWidth > window.innerWidth - margin) left = window.innerWidth - menuWidth - margin;
+            if (top + menuHeight > window.innerHeight - margin) {
+              const above = rect.top - menuHeight - 6;
+              top = above > margin ? above : Math.max(margin, window.innerHeight - menuHeight - margin);
+            }
+            menuStyle.value = { left: `${Math.round(left)}px`, top: `${Math.round(top)}px` };
+            menu.value = { project };
+            menuOpenId.value = project.id;
+            nextTick(() => {
+              const first = document.querySelector('.pe-menu__item');
+              if (first) first.focus();
+            });
+          }
+
+          const menuOpenId = ref(null);
+
+          function getMenuItems() {
+            return Array.from(document.querySelectorAll('.pe-menu__item'));
+          }
+
+          function focusMenuItem(index) {
+            const items = getMenuItems();
+            if (!items.length) return;
+            const next = (index + items.length) % items.length;
+            items[next].focus();
+          }
+
+          function handleMenuKeydown(event) {
+            const items = getMenuItems();
+            if (!items.length) return;
+            const current = items.indexOf(document.activeElement);
+            switch (event.key) {
+              case 'ArrowDown': event.preventDefault(); focusMenuItem(current + 1); break;
+              case 'ArrowUp': event.preventDefault(); focusMenuItem(current - 1); break;
+              case 'Home': event.preventDefault(); focusMenuItem(0); break;
+              case 'End': event.preventDefault(); focusMenuItem(items.length - 1); break;
+              case 'Tab': closeContextMenu(); break;
+              default: break;
+            }
+          }
+
+          function closeContextMenu() {
+            if (!menu.value) return;
+            const restore = menuTrigger;
+            menu.value = null;
+            menuOpenId.value = null;
+            menuTrigger = null;
+            if (restore && document.contains(restore)) restore.focus();
+          }
+
+          function openProject(project) {
+            closeContextMenu();
+            showToast(`Abrir "${project.name}" no Workspace.`, 'info');
+          }
+
+          function startRename(project) {
+            closeContextMenu();
+            showToast(`Renomear "${project.name}".`, 'info');
+          }
+
+          function startDelete(project) {
+            closeContextMenu();
+            showToast(`Excluir "${project.name}".`, 'error');
+          }
+
+          const toasts = ref([]);
+          let toastId = 0;
+          function showToast(message, type) {
+            const id = ++toastId;
+            toasts.value.push({ id, message, type: type || 'info' });
+            setTimeout(() => {
+              toasts.value = toasts.value.filter(t => t.id !== id);
+            }, 3000);
+          }
+
+          function trapModalFocus(event) {
+            if (event.key !== 'Tab') return;
+            const modal = document.querySelector('.pe-dialog');
+            if (!modal) return;
+            const focusables = Array.from(modal.querySelectorAll(
+              'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [href]'
+            )).filter(el => el.offsetParent !== null);
+            if (!focusables.length) return;
+            const first = focusables[0];
+            const last = focusables[focusables.length - 1];
+            const active = document.activeElement;
+            const inside = modal.contains(active);
+            if (!inside) {
+              event.preventDefault();
+              (event.shiftKey ? last : first).focus();
+              return;
+            }
+            if (event.shiftKey && active === first) {
+              event.preventDefault();
+              last.focus();
+            } else if (!event.shiftKey && active === last) {
+              event.preventDefault();
+              first.focus();
+            }
+          }
+
+          function handleGlobalKeydown(event) {
+            if (event.key === 'Escape') {
+              if (menu.value) { closeContextMenu(); return; }
+              if (createModal.value) { closeCreateModal(); return; }
+            }
+            if (createModal.value) {
+              trapModalFocus(event);
+              return;
+            }
+            const target = event.target;
+            const typing = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+            if (typing || menu.value) return;
+            if (event.key === '/') { event.preventDefault(); searchInputRef.value?.focus(); }
+            if ((event.ctrlKey || event.metaKey) && (event.key === 'n' || event.key === 'N')) {
+              event.preventDefault();
+              openCreateModal();
+            }
+          }
+
+          function handleDocumentClick(event) {
+            if (menu.value && !event.target.closest('.pe-menu') && !event.target.closest('[aria-haspopup="menu"]')) {
+              closeContextMenu();
+            }
+          }
+
+          function handleViewportChange() {
+            closeContextMenu();
+          }
+
+          onMounted(() => {
+            document.documentElement.setAttribute('data-pe-theme', theme.value);
+            window.addEventListener('keydown', handleGlobalKeydown);
+            window.addEventListener('resize', handleViewportChange);
+            window.addEventListener('scroll', handleViewportChange, true);
+            document.addEventListener('click', handleDocumentClick, true);
+          });
+
+          onBeforeUnmount(() => {
+            window.removeEventListener('keydown', handleGlobalKeydown);
+            window.removeEventListener('resize', handleViewportChange);
+            window.removeEventListener('scroll', handleViewportChange, true);
+            document.removeEventListener('click', handleDocumentClick, true);
+          });
+
+          return {
+            theme, toggleTheme,
+            projects, filteredProjects, searchQuery, searchInputRef, sortMode,
+            showNewCard, clearSearch,
+            createModal, createForm, createError, nameInputRef,
+            openCreateModal, closeCreateModal, submitCreate, trapModalFocus,
+            menu, menuStyle, menuOpenId, openContextMenu, closeContextMenu, handleMenuKeydown,
+            openProject, startRename, startDelete,
+            toasts, showToast,
+          };
+        }
+      }).mount('#app');
+    })();
+  </script>
+</body>
+</html>
