@@ -12,6 +12,7 @@ function createHarness() {
     const dom = new JSDOM('<!doctype html><div id="tree"></div>');
     const context = vm.createContext({
         document: dom.window.document,
+        queueMicrotask: callback => Promise.resolve().then(callback),
         I18n: { t: key => key }
     });
     vm.runInContext(modelSource, context);
