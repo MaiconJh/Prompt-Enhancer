@@ -39,7 +39,7 @@ const ProjectsMain = (() => {
             variant: 'primary',
             onClick: createProject
         });
-        create.prepend(Atoms.icon('plus'));
+        create.prepend(document.createTextNode('+ '));
         actions.append(search, sort, create);
         header.append(identity, actions);
 
@@ -99,7 +99,7 @@ const ProjectsMain = (() => {
                 icon.appendChild(Atoms.icon('folder'));
                 const menu = element('div', 'pe-project-card__menu');
                 const menuButton = Atoms.buttonNode({
-                    icon: 'more-horizontal',
+                    label: '⋯',
                     ariaLabel: I18n.t('sm.projects.projectActions', { name: project.name }),
                     variant: 'ghost',
                     onClick: () => {
