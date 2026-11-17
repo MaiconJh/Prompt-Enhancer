@@ -9,6 +9,11 @@ const styles = await readFile(new URL('../styles.js', import.meta.url), 'utf8');
 const manifest = await readFile(new URL('../../manifest.json', import.meta.url), 'utf8');
 const i18n = await readFile(new URL('../i18n.js', import.meta.url), 'utf8');
 
+test('navigation modules and dictionaries have valid JavaScript syntax', () => {
+    for (const source of [projects, workspace, settings, styles, i18n]) assert.doesNotThrow(() => new Function(source));
+    assert.doesNotThrow(() => JSON.parse(manifest));
+});
+
 test('Projects Main uses the public Workspace facade for project operations', () => {
     assert.match(projects, /Workspace\.projects\.list\(\)/);
     assert.match(projects, /Workspace\.projects\.create\(/);
