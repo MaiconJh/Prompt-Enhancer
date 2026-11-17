@@ -437,7 +437,8 @@
           "Molecules",
           "Theme",
           "Workspace",
-          "WorkspaceUI"
+          "WorkspaceUI",
+          "ProjectsMain"
         ]
       },
       "interactions": [
@@ -793,7 +794,7 @@
     },
     {
       "file": "workspace/workspace-ui.js",
-      "description": "Provides the project and text-file management interface for the Workspace settings view.",
+      "description": "Provides the operational editor interface for one selected project.",
       "interfaces": {
         "provides": [
           "WorkspaceUI"
@@ -812,7 +813,7 @@
         ]
       },
       "interactions": [
-        "Settings UI mounts the manager; all project and file mutations use the public Workspace facade.",
+        "The modal mounts one project at a time; navigation back to Projects Main is guarded by the Workspace dirty-state confirmation.",
         "The interface manages local editor drafts, derived directory navigation, imports, and effective AI read access."
       ]
     },
