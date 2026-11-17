@@ -6,8 +6,10 @@
   <title>Meus projetos — Mock conceitual</title>
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
   <style>
+    /* MOCK OVERRIDES — usa os tokens reais do sistema; apenas desativa motion */
     :root {
-      --pe-font: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      color-scheme: dark;
+      --pe-font: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
       --pe-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       --pe-surface: #17181c;
       --pe-surface-2: #1f2127;
@@ -22,6 +24,7 @@
       --pe-text-faint: #8d94a2;
       --pe-text-secondary: #c5cad3;
       --pe-accent: #8fa3ff;
+      --pe-accent-hover: #a3b3ff;
       --pe-accent-soft: #232945;
       --pe-accent-border: #38427a;
       --pe-accent-text: #b8c5ff;
@@ -34,12 +37,15 @@
       --pe-radius-sm: 6px;
       --pe-radius: 10px;
       --pe-radius-lg: 14px;
+      --pe-radius-pill: 999px;
       --pe-space-1: 4px;
       --pe-space-2: 8px;
       --pe-space-3: 12px;
       --pe-space-4: 16px;
       --pe-space-5: 20px;
       --pe-space-6: 24px;
+      --pe-space-7: 32px;
+      --pe-space-8: 40px;
       --pe-fs-3xs: 10px;
       --pe-fs-2xs: 11px;
       --pe-fs-xs: 11.5px;
@@ -47,26 +53,30 @@
       --pe-fs-sm: 12.5px;
       --pe-fs-base: 13px;
       --pe-fs-md: 13.5px;
+      --pe-fs-lead: 14px;
       --pe-fs-lg: 14.5px;
       --pe-fs-title: 15px;
       --pe-fs-xl: 16px;
+      --pe-fs-h5: 17px;
       --pe-fs-2xl: 20px;
       --pe-fs-3xl: 26px;
       --pe-fw-regular: 400;
       --pe-fw-medium: 500;
       --pe-fw-semi: 600;
       --pe-fw-bold: 650;
-      --pe-shadow-1: 0 1px 2px rgba(0,0,0,.28);
+      --pe-shadow-1: 0 1px 2px rgba(0,0,0,.22), 0 0 0 1px rgba(255,255,255,.02);
       --pe-shadow-2: 0 4px 12px rgba(0,0,0,.25), 0 1px 3px rgba(0,0,0,.18);
-      --pe-shadow-3: 0 12px 28px rgba(0,0,0,.38), 0 2px 8px rgba(0,0,0,.2);
+      --pe-shadow-3: 0 24px 48px -12px rgba(0,0,0,.42), 0 4px 12px rgba(0,0,0,.2);
+      --pe-shadow-panel: 0 18px 40px rgba(0,0,0,.35), 0 6px 18px rgba(0,0,0,.22);
       --pe-focus-ring: 0 0 0 3px rgba(143,163,255,.22);
       --pe-disabled-opacity: 0.48;
-      --pe-dur-instant: 90ms;
+      --pe-dur-instant: 100ms;
       --pe-dur-fast: 160ms;
       --pe-dur-base: 240ms;
       --pe-ease-standard: cubic-bezier(.2,0,0,1);
     }
     [data-pe-theme="light"] {
+      color-scheme: light;
       --pe-surface: #ffffff;
       --pe-surface-2: #f7f8fa;
       --pe-surface-3: #eef0f3;
@@ -80,6 +90,7 @@
       --pe-text-faint: #575e6d;
       --pe-text-secondary: #3a4150;
       --pe-accent: #4d6bfe;
+      --pe-accent-hover: #3d5ce6;
       --pe-accent-soft: #eef1ff;
       --pe-accent-border: #d6ddff;
       --pe-accent-text: #3d4dc4;
@@ -89,9 +100,10 @@
       --pe-error-soft: #fdecec;
       --pe-warning: #b45309;
       --pe-warning-soft: #fef3c7;
-      --pe-shadow-1: 0 1px 2px rgba(16,18,24,.07);
+      --pe-shadow-1: 0 1px 2px rgba(16,18,24,.06), 0 0 0 1px rgba(16,18,24,.02);
       --pe-shadow-2: 0 4px 12px rgba(16,18,24,.08), 0 1px 3px rgba(16,18,24,.04);
-      --pe-shadow-3: 0 12px 28px rgba(16,18,24,.12), 0 2px 8px rgba(16,18,24,.06);
+      --pe-shadow-3: 0 24px 48px -12px rgba(16,18,24,.24), 0 4px 12px rgba(16,18,24,.08);
+      --pe-shadow-panel: 0 18px 40px rgba(16,18,24,.12), 0 6px 18px rgba(16,18,24,.08);
       --pe-focus-ring: 0 0 0 3px rgba(77,107,254,.18);
     }
 
@@ -135,9 +147,9 @@
       display: flex; flex-direction: column; overflow: hidden;
     }
     [data-pe-theme="light"] .pe-modal {
-      background: rgba(255,255,255,.86);
-      border-color: rgba(16,18,24,.1);
-      box-shadow: 0 18px 44px rgba(16,18,24,.16), inset 0 1px 0 rgba(255,255,255,.6);
+      background: linear-gradient(180deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,0) 42%), rgba(255,255,255,.64);
+      border-color: rgba(255,255,255,.72);
+      box-shadow: 0 28px 90px -24px rgba(20,24,36,.26), 0 4px 16px rgba(20,24,36,.06), inset 0 1px 0 rgba(255,255,255,.95), inset 0 0 0 1px rgba(255,255,255,.40);
     }
     .pe-modal__body {
       flex: 1 1 auto; min-height: 0;
@@ -649,6 +661,15 @@
     .pe-field__error svg { width: 11px; height: 11px; flex-shrink: 0; }
     .pe-input.is-invalid { border-color: var(--pe-error); }
     .pe-input.is-invalid:focus { box-shadow: 0 0 0 3px rgba(255,107,107,.2); }
+    .pe-delete__project {
+      padding: 10px 12px;
+      border: 1px solid var(--pe-border);
+      border-radius: var(--pe-radius-sm);
+      background: var(--pe-surface-2);
+      color: var(--pe-text);
+      font-weight: var(--pe-fw-semi);
+      overflow-wrap: anywhere;
+    }
     .pe-dialog__footer {
       display: flex; align-items: center; justify-content: flex-end; gap: var(--pe-space-2);
       padding: var(--pe-space-4) var(--pe-space-5);
@@ -769,8 +790,8 @@
 <body>
   <div id="app" v-cloak>
     <div class="pe-modal-backdrop">
-      <div class="pe-modal" role="dialog" aria-modal="true" aria-labelledby="pe-projects-heading">
-        <header class="pe-projects__header">
+      <div class="pe-modal pe-panel" role="dialog" aria-modal="true" aria-labelledby="pe-projects-heading">
+        <header class="pe-projects__header pe-panel__header">
           <div class="pe-brand">
             <span class="pe-brand__mark" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M18 15l.9 2.1L21 18l-2.1.9L18 21l-.9-2.1L15 18l2.1-.9z"/></svg>
@@ -789,7 +810,7 @@
           </div>
         </header>
 
-        <div class="pe-modal__body" :inert="createModal ? '' : null">
+        <div class="pe-modal__body pe-panel__body" :inert="dialogOpen ? '' : null">
           <div class="pe-projects__scroll">
             <div class="pe-projects__intro">
               <div class="pe-projects__intro-text">
@@ -915,7 +936,7 @@
             </main>
           </div>
 
-          <footer class="pe-projects__footer">
+          <footer class="pe-projects__footer pe-panel__footer">
             <strong>Prompt Enhancer</strong>
             <span aria-hidden="true">·</span>
             <span>Gerenciamento de projetos</span>
@@ -949,7 +970,7 @@
       </button>
     </div>
 
-    <div v-if="createModal" class="pe-dialog-backdrop" @click.self="closeCreateModal" @keydown="trapModalFocus">
+    <div v-if="createModal" class="pe-dialog-backdrop" @click.self="closeCreateModal">
       <div class="pe-dialog" role="dialog" aria-modal="true" aria-labelledby="pe-create-title" aria-describedby="pe-create-desc">
         <header class="pe-dialog__header">
           <div>
@@ -998,6 +1019,68 @@
             </button>
           </footer>
         </form>
+      </div>
+    </div>
+
+    <div v-if="renameModal" class="pe-dialog-backdrop" @click.self="closeRenameModal">
+      <div class="pe-dialog" role="dialog" aria-modal="true" aria-labelledby="pe-rename-title" aria-describedby="pe-rename-desc">
+        <header class="pe-dialog__header">
+          <div>
+            <h2 id="pe-rename-title">Renomear projeto</h2>
+            <p id="pe-rename-desc">Escolha um novo nome. O identificador do projeto não muda.</p>
+          </div>
+          <button class="pe-icon-btn pe-dialog__close" type="button" aria-label="Fechar" @click="closeRenameModal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </header>
+        <form @submit.prevent="submitRename">
+          <div class="pe-dialog__body">
+            <div class="pe-field">
+              <label class="pe-field__label" for="pe-rename-name">Nome do projeto</label>
+              <input ref="renameInputRef"
+                     id="pe-rename-name"
+                     v-model="renameForm.name"
+                     type="text"
+                     class="pe-input"
+                     :class="{ 'is-invalid': renameError.name }"
+                     placeholder="Ex.: Prompt Enhancer"
+                     maxlength="100"
+                     autocomplete="off"
+                     :aria-invalid="renameError.name ? 'true' : 'false'"
+                     :aria-describedby="renameError.name ? 'pe-rename-error' : 'pe-rename-hint'" />
+              <span v-if="renameError.name" id="pe-rename-error" class="pe-field__error">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.01"/></svg>
+                {{ renameError.name }}
+              </span>
+              <span v-else id="pe-rename-hint" class="pe-field__hint">Até 100 caracteres.</span>
+            </div>
+          </div>
+          <footer class="pe-dialog__footer">
+            <button class="pe-btn pe-btn--outline" type="button" @click="closeRenameModal">Cancelar</button>
+            <button class="pe-btn pe-btn--primary" type="submit" :disabled="!renameForm.name.trim()">Salvar nome</button>
+          </footer>
+        </form>
+      </div>
+    </div>
+
+    <div v-if="deleteModal" class="pe-dialog-backdrop" @click.self="closeDeleteModal">
+      <div class="pe-dialog" role="alertdialog" aria-modal="true" aria-labelledby="pe-delete-title" aria-describedby="pe-delete-desc">
+        <header class="pe-dialog__header">
+          <div>
+            <h2 id="pe-delete-title">Excluir projeto</h2>
+            <p id="pe-delete-desc">Esta ação remove o projeto e seus arquivos. Não pode ser desfeita.</p>
+          </div>
+          <button class="pe-icon-btn pe-dialog__close" type="button" aria-label="Fechar" @click="closeDeleteModal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </header>
+        <div class="pe-dialog__body">
+          <p class="pe-delete__project">{{ deleteTarget ? deleteTarget.name : '' }}</p>
+        </div>
+        <footer class="pe-dialog__footer">
+          <button class="pe-btn pe-btn--outline" type="button" @click="closeDeleteModal">Cancelar</button>
+          <button class="pe-btn pe-btn--danger" type="button" @click="confirmDelete">Excluir projeto</button>
+        </footer>
       </div>
     </div>
 
@@ -1122,6 +1205,7 @@
           let previousFocus = null;
 
           function openCreateModal() {
+            if (dialogOpen.value) return;
             closeContextMenu();
             previousFocus = document.activeElement;
             createForm.name = '';
@@ -1171,6 +1255,94 @@
             sortMode.value = 'recent';
             if (restore && document.contains(restore)) restore.focus();
             showToast(`Projeto "${name}" criado.`, 'success');
+          }
+
+          const renameModal = ref(false);
+          const renameForm = reactive({ name: '' });
+          const renameError = reactive({ name: '' });
+          const renameTarget = ref(null);
+          const renameInputRef = ref(null);
+          let renamePreviousFocus = null;
+
+          const deleteModal = ref(false);
+          const deleteTarget = ref(null);
+          let deletePreviousFocus = null;
+
+          const dialogOpen = computed(() => createModal.value || renameModal.value || deleteModal.value);
+
+          function startRename(project) {
+            closeContextMenu();
+            renamePreviousFocus = document.activeElement;
+            renameTarget.value = project;
+            renameForm.name = project.name;
+            renameError.name = '';
+            renameModal.value = true;
+            nextTick(() => renameInputRef.value?.focus());
+          }
+
+          function closeRenameModal() {
+            if (!renameModal.value) return;
+            renameModal.value = false;
+            const restore = renamePreviousFocus;
+            renamePreviousFocus = null;
+            if (restore && document.contains(restore)) restore.focus();
+            else searchInputRef.value?.focus();
+          }
+
+          function submitRename() {
+            const name = renameForm.name.trim();
+            if (!name) {
+              renameError.name = 'Informe um nome para o projeto.';
+              renameInputRef.value?.focus();
+              return;
+            }
+            if (name.length > 100) {
+              renameError.name = 'Use no máximo 100 caracteres.';
+              renameInputRef.value?.focus();
+              return;
+            }
+            const target = projects.value.find(project => project.id === renameTarget.value?.id);
+            if (!target) {
+              closeRenameModal();
+              return;
+            }
+            target.name = name;
+            target.updatedAt = Date.now();
+            renameModal.value = false;
+            renamePreviousFocus = null;
+            showToast(`Projeto renomeado para "${name}".`, 'success');
+            searchInputRef.value?.focus();
+          }
+
+          function startDelete(project) {
+            closeContextMenu();
+            deletePreviousFocus = document.activeElement;
+            deleteTarget.value = project;
+            deleteModal.value = true;
+            nextTick(() => document.querySelector('.pe-dialog__footer .pe-btn--outline')?.focus());
+          }
+
+          function closeDeleteModal() {
+            if (!deleteModal.value) return;
+            deleteModal.value = false;
+            const restore = deletePreviousFocus;
+            deletePreviousFocus = null;
+            if (restore && document.contains(restore)) restore.focus();
+            else searchInputRef.value?.focus();
+          }
+
+          function confirmDelete() {
+            const target = deleteTarget.value;
+            if (!target) {
+              closeDeleteModal();
+              return;
+            }
+            projects.value = projects.value.filter(project => project.id !== target.id);
+            deleteModal.value = false;
+            deleteTarget.value = null;
+            deletePreviousFocus = null;
+            showToast(`Projeto "${target.name}" excluído.`, 'success');
+            searchInputRef.value?.focus();
           }
 
           const menu = ref(null);
@@ -1247,16 +1419,6 @@
             showToast(`Abrir "${project.name}" no Workspace.`, 'info');
           }
 
-          function startRename(project) {
-            closeContextMenu();
-            showToast(`Renomear "${project.name}".`, 'info');
-          }
-
-          function startDelete(project) {
-            closeContextMenu();
-            showToast(`Excluir "${project.name}".`, 'error');
-          }
-
           const toasts = ref([]);
           let toastId = 0;
           function showToast(message, type) {
@@ -1297,8 +1459,10 @@
             if (event.key === 'Escape') {
               if (menu.value) { closeContextMenu(); return; }
               if (createModal.value) { closeCreateModal(); return; }
+              if (renameModal.value) { closeRenameModal(); return; }
+              if (deleteModal.value) { closeDeleteModal(); return; }
             }
-            if (createModal.value) {
+            if (dialogOpen.value) {
               trapModalFocus(event);
               return;
             }
@@ -1343,8 +1507,13 @@
             showNewCard, clearSearch,
             createModal, createForm, createError, nameInputRef,
             openCreateModal, closeCreateModal, submitCreate, trapModalFocus,
+            renameModal, renameForm, renameError, renameTarget, renameInputRef,
+            startRename, closeRenameModal, submitRename,
+            deleteModal, deleteTarget,
+            startDelete, closeDeleteModal, confirmDelete,
+            dialogOpen,
             menu, menuStyle, menuOpenId, openContextMenu, closeContextMenu, handleMenuKeydown,
-            openProject, startRename, startDelete,
+            openProject,
             toasts, showToast,
           };
         }

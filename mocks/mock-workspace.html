@@ -6,7 +6,9 @@
   <title>Workspace — Mock Refinado</title>
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
   <style>
-    :root {
+    /* MOCK OVERRIDES — usa os tokens reais do sistema; apenas desativa motion */
+:root {
+      color-scheme: dark;
       --pe-font: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
       --pe-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       --pe-surface: #17181c;
@@ -22,6 +24,7 @@
       --pe-text-faint: #8d94a2;
       --pe-text-secondary: #c5cad3;
       --pe-accent: #8fa3ff;
+      --pe-accent-hover: #a3b3ff;
       --pe-accent-soft: #232945;
       --pe-accent-border: #38427a;
       --pe-accent-text: #b8c5ff;
@@ -34,6 +37,7 @@
       --pe-radius-sm: 6px;
       --pe-radius: 10px;
       --pe-radius-lg: 14px;
+      --pe-radius-pill: 999px;
       --pe-space-1: 4px;
       --pe-space-2: 8px;
       --pe-space-3: 12px;
@@ -55,16 +59,17 @@
       --pe-fw-semi: 600;
       --pe-fw-bold: 650;
       --pe-shadow-2: 0 4px 12px rgba(0,0,0,.25), 0 1px 3px rgba(0,0,0,.18);
+      --pe-shadow-panel: 0 18px 40px rgba(0,0,0,.35), 0 6px 18px rgba(0,0,0,.22);
       --pe-focus-ring: 0 0 0 3px rgba(143,163,255,.22);
       --pe-disabled-opacity: 0.48;
       --pe-dur-fast: 160ms;
       --pe-dur-base: 240ms;
-      --pe-ease-emph: cubic-bezier(.2,0,0,1);
+      --pe-ease-standard: cubic-bezier(.2,0,0,1);
       --pe-indent-guide: rgba(255,255,255,.07);
       --pe-row-height: 22px;
-      --pe-indent-size: 19px;
     }
     [data-pe-theme="light"] {
+      color-scheme: light;
       --pe-surface: #ffffff;
       --pe-surface-2: #f7f8fa;
       --pe-surface-3: #eef0f3;
@@ -78,6 +83,7 @@
       --pe-text-faint: #575e6d;
       --pe-text-secondary: #3a4150;
       --pe-accent: #4d6bfe;
+      --pe-accent-hover: #3d5ce6;
       --pe-accent-soft: #eef1ff;
       --pe-accent-border: #d6ddff;
       --pe-accent-text: #3d4dc4;
@@ -88,424 +94,332 @@
       --pe-warning: #b45309;
       --pe-warning-soft: #fef3c7;
       --pe-shadow-2: 0 4px 12px rgba(16,18,24,.08), 0 1px 3px rgba(16,18,24,.04);
+      --pe-shadow-panel: 0 18px 40px rgba(16,18,24,.12), 0 6px 18px rgba(16,18,24,.08);
       --pe-focus-ring: 0 0 0 3px rgba(77,107,254,.18);
       --pe-indent-guide: rgba(0,0,0,.07);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; overflow: hidden; }
-    body {
-      font-family: var(--pe-font);
-      background: var(--pe-surface-2);
-      color: var(--pe-text);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-    }
+    body { font-family: var(--pe-font); background: var(--pe-surface-2); color: var(--pe-text); display: flex; align-items: center; justify-content: center; padding: 16px; }
     [v-cloak] { display: none !important; }
-
-    .pe-modal-backdrop {
-      position: fixed; inset: 0; z-index: 2147483644;
-      display: flex; align-items: center; justify-content: center;
-      padding: clamp(10px, 3vw, 28px);
-      background: rgba(2,6,23,.48);
-      backdrop-filter: blur(16px) saturate(1.4);
-      -webkit-backdrop-filter: blur(16px) saturate(1.4);
-    }
-    .pe-modal {
-      position: relative;
-      width: min(1280px, calc(100vw - 48px));
-      height: min(900px, calc(100dvh - 48px));
-      max-height: min(900px, calc(100dvh - 48px));
-      border: 1px solid rgba(255,255,255,.14);
-      border-radius: 18px;
-      background: rgba(15,17,22,.62);
-      box-shadow: 0 18px 44px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.1);
-      display: flex; flex-direction: column; overflow: hidden;
-    }
-
-    /* ── HEADER ── */
-    .pe-modal__header {
-      display: flex; align-items: center; gap: var(--pe-space-4);
-      min-height: 64px; padding: 10px 22px;
-      border-bottom: 1px solid rgba(255,255,255,.06);
-      flex-shrink: 0;
-    }
-    .pe-back-link {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 12px;
-      font-size: var(--pe-fs-sub); font-weight: var(--pe-fw-medium);
-      color: var(--pe-text-muted);
-      background: var(--pe-surface-2);
-      border: 1px solid var(--pe-border);
-      border-radius: var(--pe-radius-sm);
-      cursor: pointer; font-family: inherit;
-      white-space: nowrap; flex-shrink: 0;
-      transition: background var(--pe-dur-fast), color var(--pe-dur-fast), border-color var(--pe-dur-fast);
-    }
+    button, input, select, textarea { font-family: inherit; }
+    .pe-modal-backdrop { position: fixed; inset: 0; z-index: 2147483644; display: flex; align-items: center; justify-content: center; padding: clamp(10px, 3vw, 28px); background: rgba(2,6,23,.48); backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4); }
+    .pe-modal { position: relative; width: min(1280px, calc(100vw - 48px)); height: min(900px, calc(100dvh - 48px)); max-height: min(900px, calc(100dvh - 48px)); border: 1px solid rgba(255,255,255,.14); border-radius: 18px; background: rgba(15,17,22,.62); box-shadow: 0 18px 44px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.1); display: flex; flex-direction: column; overflow: hidden; }
+    [data-pe-theme="light"] .pe-modal { background: rgba(255,255,255,.72); border-color: rgba(255,255,255,.72); }
+    .pe-panel__header { display: flex; align-items: center; gap: var(--pe-space-4); min-height: 64px; padding: 10px 22px; border-bottom: 1px solid rgba(255,255,255,.06); flex-shrink: 0; }
+    [data-pe-theme="light"] .pe-panel__header { border-bottom-color: var(--pe-border); }
+    .pe-back-link { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: var(--pe-fs-sub); font-weight: var(--pe-fw-medium); color: var(--pe-text-muted); background: var(--pe-surface-2); border: 1px solid var(--pe-border); border-radius: var(--pe-radius-sm); cursor: pointer; white-space: nowrap; flex-shrink: 0; }
     .pe-back-link:hover { background: var(--pe-surface-3); color: var(--pe-text); border-color: var(--pe-border-strong); }
     .pe-back-link:focus-visible { outline: 2px solid var(--pe-accent); outline-offset: 2px; }
     .pe-back-link svg { width: 14px; height: 14px; flex-shrink: 0; }
-
     .pe-modal__titles { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
     .pe-modal__titles h4 { font-size: var(--pe-fs-xl); font-weight: var(--pe-fw-bold); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .pe-modal__titles p { font-size: var(--pe-fs-2xs); color: var(--pe-text-faint); }
-    .pe-modal__body { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
-
-    .pe-icon-btn {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 30px; height: 30px; border: 1px solid transparent;
-      border-radius: var(--pe-radius-sm);
-      background: transparent; color: var(--pe-text-muted); cursor: pointer;
-      flex-shrink: 0;
-    }
+    .pe-modal__header-actions { display: flex; align-items: center; gap: var(--pe-space-2); flex-shrink: 0; }
+    .pe-header-dirty { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--pe-radius-pill); background: var(--pe-warning-soft); color: var(--pe-warning); font-size: var(--pe-fs-2xs); font-weight: var(--pe-fw-medium); white-space: nowrap; }
+    .pe-header-dirty::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--pe-warning); }
+    .pe-panel__body { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+    .pe-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border: 1px solid transparent; border-radius: var(--pe-radius-sm); background: transparent; color: var(--pe-text-muted); cursor: pointer; flex-shrink: 0; }
     .pe-icon-btn:hover { background: var(--pe-surface-2); color: var(--pe-text); border-color: var(--pe-border); }
+    .pe-icon-btn:focus-visible { outline: 2px solid var(--pe-accent); outline-offset: 1px; }
     .pe-icon-btn svg { width: 16px; height: 16px; }
-
-    /* ── WORKSPACE ── */
-    .pe-workspace { display: flex; flex-direction: column; height: 100%; min-height: 0; min-width: 0; position: relative; }
-    .pe-workspace__toolbar {
-      display: flex; align-items: center; justify-content: flex-end; gap: var(--pe-space-2);
-      padding: 8px var(--pe-space-4);
-      border-bottom: 1px solid var(--pe-border-soft);
-      flex-shrink: 0; background: var(--pe-surface-2);
-    }
-    .pe-workspace__toolbar .pe-tool-group { display: flex; gap: 4px; }
-
-    /* ══════════════════════════════════════════════════════════════
-       GRID DO WORKSPACE
-       ── grid-column explícito em cada filho ──
-       Sem isso, quando um elemento recebe display:none, o próximo
-       "sobe" para a primeira célula disponível e o editor colapsa.
-       ══════════════════════════════════════════════════════════════ */
-    .pe-workspace__layout {
-      display: grid;
-      grid-template-columns: 44px 260px 1fr;
-      grid-template-rows: 1fr;
-      flex: 1 1 0; min-height: 0; min-width: 0;
-      transition: grid-template-columns var(--pe-dur-base) var(--pe-ease-emph);
-    }
+.pe-workspace { display: flex; flex-direction: column; height: 100%; min-height: 0; min-width: 0; position: relative; }
+    .pe-workspace__toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--pe-space-2); padding: 8px var(--pe-space-4); border-bottom: 1px solid var(--pe-border-soft); flex-shrink: 0; background: var(--pe-surface-2); min-height: 44px; }
+    .pe-workspace__toolbar-title { display: flex; align-items: baseline; gap: var(--pe-space-2); min-width: 0; }
+    .pe-workspace__toolbar-title strong { font-size: var(--pe-fs-sm); font-weight: var(--pe-fw-semi); white-space: nowrap; }
+    .pe-workspace__toolbar-title span { font-size: var(--pe-fs-2xs); color: var(--pe-text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pe-workspace__toolbar-actions { display: flex; align-items: center; gap: var(--pe-space-2); flex-shrink: 0; }
+    .pe-workspace__layout { display: grid; grid-template-columns: 48px 264px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); flex: 1 1 0; min-height: 0; min-width: 0; position: relative; }
     .pe-activity-bar { grid-column: 1; grid-row: 1; }
-    .pe-explorer     { grid-column: 2; grid-row: 1; }
-    .pe-editor       { grid-column: 3; grid-row: 1; }
-
-    /* Explorador colapsado: coluna 2 vira 0, explorer some */
-    .pe-workspace__layout.is-explorer-collapsed { grid-template-columns: 44px 0px 1fr; }
-    .pe-workspace__layout.is-explorer-collapsed .pe-explorer { display: none; }
-
-    /* Modo foco: activity-bar e explorer somem, editor permanece na coluna 3 */
-    .pe-workspace__layout.is-focus-mode { grid-template-columns: 0px 0px 1fr; }
+    .pe-explorer { grid-column: 2; grid-row: 1; }
+    .pe-editor, .pe-viewpage { grid-column: 3; grid-row: 1; }
+    .pe-workspace__layout.is-explorer-collapsed { grid-template-columns: 48px 0px minmax(0, 1fr); }
+    .pe-workspace__layout.is-explorer-collapsed .pe-explorer { visibility: hidden; }
+    .pe-workspace__layout.is-focus-mode { grid-template-columns: 0px 0px minmax(0, 1fr); }
     .pe-workspace__layout.is-focus-mode .pe-activity-bar,
     .pe-workspace__layout.is-focus-mode .pe-explorer { display: none; }
-
-    /* ── ACTIVITY BAR ── */
-    .pe-activity-bar {
-      display: flex; flex-direction: column; align-items: stretch; gap: 0;
-      padding: 6px 4px;
-      background: var(--pe-surface-2);
-      min-width: 0; overflow-x: hidden; overflow-y: auto;
-    }
-    .pe-activity-btn {
-      position: relative;
-      display: flex; align-items: center; justify-content: center;
-      width: 100%; min-height: 38px; padding: 8px 0;
-      border: none; border-radius: 4px;
-      background: transparent; color: var(--pe-text-muted);
-      cursor: pointer;
-    }
-    .pe-activity-btn:hover { color: var(--pe-text); }
-    .pe-activity-btn.is-active { color: var(--pe-accent-text); }
-    .pe-activity-btn.is-active::before {
-      content: ''; position: absolute; left: -4px; top: 8px; bottom: 8px;
-      width: 2px; border-radius: 2px; background: var(--pe-accent);
-    }
+    .pe-workspace__layout.is-focus-mode .pe-inspector { display: none; }
+    .pe-workspace__layout.is-page-view { grid-template-columns: 48px minmax(0, 1fr); }
+    .pe-workspace__layout.is-page-view .pe-explorer { display: none; }
+    .pe-workspace__layout.is-page-view .pe-viewpage { grid-column: 2; }
+    .pe-workspace__layout.has-inspector { grid-template-columns: 48px 264px minmax(0, 1fr) 340px; }
+    .pe-workspace__layout.has-inspector .pe-inspector { grid-column: 4; grid-row: 1; }
+    .pe-workspace__layout.is-explorer-collapsed.has-inspector { grid-template-columns: 48px 0px minmax(0, 1fr) 340px; }
+    .pe-workspace__layout.is-focus-mode.has-inspector { grid-template-columns: 0px 0px minmax(0, 1fr); }
+    .pe-workspace__layout.is-focus-mode.has-inspector .pe-inspector { display: none; }
+    .pe-activity-bar { display: flex; flex-direction: column; align-items: stretch; gap: 2px; padding: 6px 4px; background: var(--pe-surface-2); border-right: 1px solid var(--pe-border-soft); min-width: 0; overflow-x: hidden; overflow-y: auto; }
+    .pe-activity-btn { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; min-height: 38px; padding: 8px 0; border: none; border-radius: 4px; background: transparent; color: var(--pe-text-muted); cursor: pointer; }
+    .pe-activity-btn:hover { color: var(--pe-text); background: var(--pe-surface-3); }
+    .pe-activity-btn.is-active { color: var(--pe-accent-text); background: var(--pe-accent-soft); }
+    .pe-activity-btn.is-active::before { content: ''; position: absolute; left: -4px; top: 8px; bottom: 8px; width: 2px; border-radius: 2px; background: var(--pe-accent); }
     .pe-activity-btn svg { width: 20px; height: 20px; }
-    .pe-activity-label {
-      position: absolute; left: 100%; top: 50%;
-      transform: translateY(-50%); margin-left: 6px; padding: 4px 8px;
-      font-size: var(--pe-fs-2xs); color: var(--pe-text);
-      background: var(--pe-surface); border: 1px solid var(--pe-border-strong);
-      border-radius: var(--pe-radius-sm); white-space: nowrap;
-      opacity: 0; pointer-events: none;
-      transition: opacity var(--pe-dur-fast); z-index: 10;
-      box-shadow: var(--pe-shadow-2);
-    }
+    .pe-activity-label { position: absolute; left: 100%; top: 50%; transform: translateY(-50%); margin-left: 6px; padding: 4px 8px; font-size: var(--pe-fs-2xs); color: var(--pe-text); background: var(--pe-surface); border: 1px solid var(--pe-border-strong); border-radius: var(--pe-radius-sm); white-space: nowrap; opacity: 0; pointer-events: none; z-index: 30; box-shadow: var(--pe-shadow-2); }
     .pe-activity-btn:hover .pe-activity-label { opacity: 1; }
-
-    /* ── EXPLORER ── */
-    .pe-explorer {
-      display: flex; flex-direction: column;
-      border-right: 1px solid var(--pe-border-soft);
-      background: var(--pe-surface);
-      min-width: 0; min-height: 0; overflow: hidden;
-    }
-    .pe-explorer__header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 8px 12px; flex-shrink: 0; gap: 4px;
-      border-bottom: 1px solid var(--pe-border-soft);
-    }
-    .pe-explorer__title {
-      font-size: 11px; font-weight: 600;
-      text-transform: uppercase; letter-spacing: .08em;
-      color: var(--pe-text-muted);
-    }
+    .pe-explorer { display: flex; flex-direction: column; border-right: 1px solid var(--pe-border-soft); background: var(--pe-surface); min-width: 0; min-height: 0; overflow: hidden; }
+    .pe-explorer__header { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; flex-shrink: 0; gap: 4px; border-bottom: 1px solid var(--pe-border-soft); }
+    .pe-explorer__title { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--pe-text-muted); }
     .pe-explorer__actions { display: flex; gap: 0; }
-    .pe-explorer__search {
-      padding: 6px 8px; flex-shrink: 0;
-      border-bottom: 1px solid var(--pe-border-soft);
-    }
-    .pe-input {
-      width: 100%; padding: 5px 8px; font-size: 12px; color: var(--pe-text);
-      background: var(--pe-surface-2); border: 1px solid var(--pe-control-border);
-      border-radius: 4px; outline: none; font-family: inherit;
-    }
+    .pe-explorer__actions .pe-icon-btn { width: 26px; height: 26px; }
+    .pe-explorer__actions .pe-icon-btn svg { width: 14px; height: 14px; }
+    .pe-explorer__search { padding: 6px 8px; flex-shrink: 0; border-bottom: 1px solid var(--pe-border-soft); }
+    .pe-input { width: 100%; padding: 6px 8px; font-size: var(--pe-fs-sub); color: var(--pe-text); background: var(--pe-surface-2); border: 1px solid var(--pe-control-border); border-radius: var(--pe-radius-sm); outline: none; }
     .pe-input:focus { border-color: var(--pe-accent); box-shadow: var(--pe-focus-ring); }
     .pe-input::placeholder { color: var(--pe-text-faint); }
-
-    /* ── ÁRVORE VIRTUALIZADA (VS CODE) ── */
-    .pe-tree-container {
-      flex: 1 1 0; min-height: 0; overflow-y: auto; overflow-x: hidden;
-      position: relative;
-      scrollbar-width: thin; scrollbar-color: var(--pe-border-strong) transparent;
-      outline: none;
-    }
+    .pe-tree-container { flex: 1 1 0; min-height: 0; overflow-y: auto; overflow-x: hidden; position: relative; outline: none; scrollbar-width: thin; scrollbar-color: var(--pe-border-strong) transparent; }
     .pe-tree-container:focus-visible { outline: 2px solid var(--pe-accent); outline-offset: -2px; }
     .pe-tree-container::-webkit-scrollbar { width: 10px; }
-    .pe-tree-container::-webkit-scrollbar-thumb {
-      background: var(--pe-border-strong); border-radius: 5px;
-      border: 2px solid transparent; background-clip: padding-box;
-    }
-    .pe-tree-container::-webkit-scrollbar-thumb:hover { background: var(--pe-text-faint); background-clip: padding-box; border: 2px solid transparent; }
-
+    .pe-tree-container::-webkit-scrollbar-thumb { background: var(--pe-border-strong); border-radius: 5px; border: 2px solid transparent; background-clip: padding-box; }
     .pe-tree-spacer { position: relative; width: 100%; }
-
-    .pe-tree-row {
-      display: flex; align-items: center;
-      height: var(--pe-row-height);
-      line-height: var(--pe-row-height);
-      padding-right: 8px;
-      font-family: var(--pe-font);
-      font-size: 13px;
-      color: var(--pe-text-secondary);
-      cursor: pointer;
-      user-select: none;
-      position: absolute;
-      left: 0; right: 0;
-      overflow: hidden;
-      white-space: nowrap;
-      transition: background var(--pe-dur-fast) ease, color var(--pe-dur-fast) ease;
-    }
-    .pe-tree-row.is-editing { padding-right: 0; }
+    .pe-tree-row { display: flex; align-items: center; height: var(--pe-row-height); padding-right: 8px; font-size: var(--pe-fs-base); color: var(--pe-text-secondary); cursor: pointer; user-select: none; position: absolute; left: 0; right: 0; overflow: hidden; white-space: nowrap; }
     .pe-tree-row:hover { background: var(--pe-surface-2); color: var(--pe-text); }
-    .pe-tree-row.is-selected { background: var(--pe-accent-soft); color: #fff; border-radius: 6px; padding-left: var(--pe-space-2); }
-    .pe-tree-container:not(:focus-within) .pe-tree-row.is-selected { background: var(--pe-accent-soft); color: #fff; }
-    .pe-tree-row.is-selected .pe-file-icon svg { fill: #fff; }
-    .pe-tree-row.is-selected .pe-chevron { color: #fff; }
+    .pe-tree-row.is-selected { background: var(--pe-accent-soft); color: var(--pe-accent-text); }
     .pe-tree-row.is-focused { box-shadow: inset 0 0 0 1px var(--pe-accent); }
-
-    .pe-indent-guide {
-      position: absolute; top: 0; bottom: 0;
-      width: 1px; background: var(--pe-indent-guide);
-      pointer-events: none;
-      left: calc(16px + (var(--guide-index) * 19px));
-    }
-
-    .pe-chevron {
-      width: 16px; height: 16px;
-      display: inline-flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-      color: var(--pe-text-muted);
-      transition: transform var(--pe-dur-fast) ease;
-    }
+    .pe-indent-guide { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--pe-indent-guide); pointer-events: none; left: calc(16px + (var(--guide-index) * 19px)); }
+    .pe-chevron { width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--pe-text-muted); }
     .pe-chevron svg { width: 16px; height: 16px; }
     .pe-chevron.is-expanded { transform: rotate(90deg); }
     .pe-chevron.is-placeholder { visibility: hidden; }
     .pe-tree-row:hover .pe-chevron { color: var(--pe-text); }
-
-    .pe-file-icon {
-      width: 16px; height: 16px;
-      display: inline-flex; align-items: center; justify-content: center;
-      flex-shrink: 0; margin-right: 6px;
-    }
+    .pe-file-icon { width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 6px; }
     .pe-file-icon svg { width: 16px; height: 16px; }
-
-    .pe-file-name {
-      flex: 1 1 auto; min-width: 0;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-      font-family: var(--pe-font); font-size: 13px;
-      font-weight: 400; line-height: var(--pe-row-height);
-      padding: 0 6px;
-    }
-
-    .pe-match {
-      background: var(--pe-accent-soft);
-      color: var(--pe-accent-text);
-      font-weight: var(--pe-fw-semi);
-      border-radius: 2px;
-      padding: 0 2px;
-    }
-
-    .pe-tree-input {
-      flex: 1 1 auto; min-width: 0;
-      height: 22px; line-height: 22px;
-      font-family: var(--pe-font); font-size: 13px;
-      color: var(--pe-text);
-      background: var(--pe-surface-3);
-      border: 1px solid var(--pe-accent-border);
-      border-radius: 6px;
-      padding: 0 6px;
-      outline: none;
-      box-shadow: none;
-    }
-    .pe-tree-input::placeholder { color: var(--pe-text-faint); }
+    .pe-file-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--pe-fs-base); padding: 0 6px; }
+    .pe-match { background: var(--pe-accent-soft); color: var(--pe-accent-text); font-weight: var(--pe-fw-semi); border-radius: 2px; padding: 0 2px; }
+    .pe-tree-input { flex: 1 1 auto; min-width: 0; height: 22px; font-size: var(--pe-fs-base); color: var(--pe-text); background: var(--pe-surface-3); border: 1px solid var(--pe-accent-border); border-radius: var(--pe-radius-sm); padding: 0 6px; outline: none; }
     .pe-tree-input:focus { border-color: var(--pe-accent); }
-
-    .pe-tree-row__actions {
-      display: flex; align-items: center; justify-content: center;
-      width: 26px; height: 22px; flex-shrink: 0;
-      opacity: 0; transition: opacity var(--pe-dur-fast);
-    }
+    .pe-tree-row__actions { display: flex; align-items: center; width: 24px; flex-shrink: 0; opacity: 0; }
     .pe-tree-row:hover .pe-tree-row__actions,
     .pe-tree-row.is-focused .pe-tree-row__actions { opacity: 1; }
-    .pe-icon-btn--delete {
-      width: 22px; height: 22px; padding: 0;
-      color: var(--pe-text-faint);
-    }
+    .pe-icon-btn--delete { width: 22px; height: 22px; padding: 0; color: var(--pe-text-faint); }
     .pe-icon-btn--delete:hover { color: var(--pe-error); background: var(--pe-error-soft); }
-
-    .pe-dirty-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: var(--pe-warning);
-      flex-shrink: 0; margin-left: 6px;
-    }
-
-    .pe-tree-empty {
-      padding: 32px 16px; text-align: center;
-      color: var(--pe-text-faint); font-size: var(--pe-fs-xs); line-height: 1.5;
-    }
-
-    /* ── EDITOR ── */
-    .pe-editor {
-      display: flex; flex-direction: column;
-      min-width: 0; min-height: 0; overflow: hidden;
-      background: var(--pe-surface-code);
-      position: relative;
-    }
-    .pe-editor__toolbar {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: var(--pe-space-2);
-      padding: 6px var(--pe-space-3);
-      border-bottom: 1px solid var(--pe-border-soft);
-      flex-shrink: 0; flex-wrap: wrap;
-      background: var(--pe-surface-2); min-height: 36px;
-    }
-    .pe-editor__path {
-      display: flex; align-items: center; gap: 6px;
-      font-family: var(--pe-mono); font-size: var(--pe-fs-2xs);
-      color: var(--pe-text-faint); min-width: 0; overflow: hidden;
-    }
-    .pe-editor__path .sep { color: var(--pe-text-faint); opacity: .6; }
-    .pe-editor__path .crumb { color: var(--pe-text-muted); cursor: default; }
+    .pe-dirty-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--pe-warning); flex-shrink: 0; margin-left: 6px; }
+    .pe-tree-empty { padding: 32px 16px; text-align: center; color: var(--pe-text-faint); font-size: var(--pe-fs-xs); line-height: 1.5; }
+.pe-editor { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; background: var(--pe-surface-code); position: relative; }
+    .pe-editor__toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--pe-space-2); padding: 6px var(--pe-space-3); border-bottom: 1px solid var(--pe-border-soft); flex-shrink: 0; flex-wrap: wrap; background: var(--pe-surface-2); min-height: 38px; }
+    .pe-editor__path { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-family: var(--pe-mono); font-size: var(--pe-fs-2xs); color: var(--pe-text-faint); min-width: 0; overflow: hidden; }
+    .pe-editor__path .sep { opacity: .6; }
+    .pe-editor__path .crumb { color: var(--pe-text-muted); }
     .pe-editor__path .crumb:not(.last) { cursor: pointer; }
     .pe-editor__path .crumb:not(.last):hover { color: var(--pe-accent-text); text-decoration: underline; }
-    .pe-editor__path .crumb.last { color: var(--pe-text); font-weight: 500; }
-
-    .pe-btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 4px;
-      padding: 5px 10px; font-size: var(--pe-fs-2xs); font-weight: var(--pe-fw-medium);
-      border-radius: var(--pe-radius-sm); border: 1px solid transparent; cursor: pointer;
-      font-family: inherit;
-      transition: background var(--pe-dur-fast), color var(--pe-dur-fast), border-color var(--pe-dur-fast);
-    }
-    .pe-btn--outline { color: var(--pe-text-muted); border-color: var(--pe-border); background: transparent; }
-    .pe-btn--outline:hover { background: var(--pe-surface-3); color: var(--pe-text); }
+    .pe-editor__path .crumb.last { color: var(--pe-text); font-weight: var(--pe-fw-medium); }
+    .pe-editor__tools { display: flex; align-items: center; gap: var(--pe-space-1); flex-shrink: 0; }
+    .pe-save-state { display: inline-flex; align-items: center; gap: 6px; font-size: var(--pe-fs-2xs); color: var(--pe-text-faint); margin-right: 4px; }
+    .pe-save-state::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--pe-text-faint); }
+    .pe-save-state.is-dirty { color: var(--pe-warning); }
+    .pe-save-state.is-dirty::before { background: var(--pe-warning); }
+    .pe-save-state.is-error { color: var(--pe-error); }
+    .pe-save-state.is-error::before { background: var(--pe-error); }
+    .pe-readonly-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--pe-radius-pill); background: var(--pe-surface-3); color: var(--pe-text-faint); font-size: var(--pe-fs-3xs); font-weight: var(--pe-fw-medium); }
+    .pe-btn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 5px 10px; font-size: var(--pe-fs-2xs); font-weight: var(--pe-fw-medium); border-radius: var(--pe-radius-sm); border: 1px solid transparent; cursor: pointer; background: transparent; color: var(--pe-text-muted); white-space: nowrap; }
+    .pe-btn:hover:not([disabled]) { background: var(--pe-surface-3); color: var(--pe-text); }
     .pe-btn--primary { color: var(--pe-accent-text); background: var(--pe-accent-soft); border-color: var(--pe-accent-border); }
-    .pe-btn--primary:hover { background: var(--pe-accent); color: #fff; border-color: var(--pe-accent); }
+    .pe-btn--primary:hover:not([disabled]) { background: var(--pe-accent); color: #fff; border-color: var(--pe-accent); }
     .pe-btn--danger { color: var(--pe-error); }
-    .pe-btn--danger:hover { background: var(--pe-error-soft); }
+    .pe-btn--danger:hover:not([disabled]) { background: var(--pe-error-soft); color: var(--pe-error); }
     .pe-btn:disabled { opacity: var(--pe-disabled-opacity); cursor: not-allowed; }
     .pe-btn svg { width: 13px; height: 13px; }
-
+    .pe-editor__error { display: flex; align-items: flex-start; gap: 8px; margin: 8px 12px 0; padding: 8px 10px; border: 1px solid var(--pe-error); border-radius: var(--pe-radius-sm); background: var(--pe-error-soft); color: var(--pe-error); font-size: var(--pe-fs-2xs); line-height: 1.45; flex-shrink: 0; }
+    .pe-editor__error svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 1px; }
     .pe-editor__area { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
-    .pe-editor__textarea {
-      flex: 1 1 0; min-height: 0; width: 100%; resize: none;
-      border: none; outline: none; background: transparent;
-      color: var(--pe-text); font-family: var(--pe-mono);
-      font-size: 13px; line-height: 1.6; padding: var(--pe-space-4); tab-size: 2;
-    }
-    .pe-editor__empty {
-      flex: 1 1 0; display: flex; flex-direction: column; align-items: center;
-      justify-content: center; text-align: center; color: var(--pe-text-faint);
-      font-size: var(--pe-fs-sm); gap: 8px; padding: 24px;
-    }
+    .pe-editor__textarea { flex: 1 1 0; min-height: 0; width: 100%; resize: none; border: none; outline: none; background: transparent; color: var(--pe-text); font-family: var(--pe-mono); font-size: var(--pe-fs-base); line-height: 1.6; padding: var(--pe-space-4); tab-size: 2; }
+    .pe-editor__empty { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--pe-text-faint); font-size: var(--pe-fs-sm); gap: 8px; padding: 24px; }
     .pe-editor__empty svg { width: 40px; height: 40px; opacity: .4; }
-
-    /* ── CARD FLUTUANTE DE ALTERAÇÕES NÃO SALVAS ── */
-    .pe-unsaved-card {
-      position: absolute;
-      top: 12px;
-      right: 16px;
-      z-index: 20;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      min-width: 260px;
-      max-width: 320px;
-      padding: 14px 16px;
-      border-radius: var(--pe-radius-lg);
-      background: rgba(23,24,28,.92);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid var(--pe-border-strong);
-      box-shadow: 0 12px 32px rgba(0,0,0,.4), 0 2px 8px rgba(0,0,0,.2);
-      animation: unsaved-in .2s cubic-bezier(.2,0,0,1);
-    }
-    [data-pe-theme="light"] .pe-unsaved-card {
-      background: rgba(255,255,255,.94);
-    }
-    @keyframes unsaved-in {
-      from { opacity: 0; transform: translateY(-6px) scale(.97); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
-    }
-    .pe-unsaved-card__msg { font-size: 12.5px; font-weight: 500; color: var(--pe-text); line-height: 1.4; }
-    .pe-unsaved-card__sub { font-size: 11px; color: var(--pe-text-faint); line-height: 1.4; }
-    .pe-unsaved-card__actions { display: flex; gap: 6px; margin-top: 2px; }
-    .pe-unsaved-card__actions .pe-btn { flex: 1; justify-content: center; padding: 7px 10px; }
-
-    .pe-placeholder {
-      flex: 1 1 0; display: flex; flex-direction: column; align-items: center;
-      justify-content: center; text-align: center; padding: 40px; gap: 8px;
-    }
-    .pe-placeholder svg { width: 48px; height: 48px; opacity: .3; }
-    .pe-placeholder h3 { font-size: var(--pe-fs-lg); font-weight: var(--pe-fw-semi); }
-    .pe-placeholder p { font-size: var(--pe-fs-sm); color: var(--pe-text-muted); max-width: 400px; }
-
-    /* ── STATUS BAR ── */
-    .pe-workspace__status {
-      display: flex; align-items: center; gap: var(--pe-space-4);
-      padding: 0 var(--pe-space-4); min-height: 26px;
-      font-size: 11px; color: var(--pe-text-faint);
-      border-top: 1px solid var(--pe-border-soft); flex-shrink: 0;
-      background: var(--pe-surface-2); font-family: var(--pe-font);
-    }
+    .pe-inspector { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; background: var(--pe-surface); border-left: 1px solid var(--pe-border); }
+    .pe-inspector__header { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--pe-border-soft); font-size: var(--pe-fs-sm); font-weight: var(--pe-fw-semi); }
+    .pe-inspector__body { flex: 1 1 0; min-height: 0; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 14px; }
+    .pe-inspector__section { display: flex; flex-direction: column; gap: 8px; }
+    .pe-inspector__section h5 { font-size: var(--pe-fs-3xs); font-weight: var(--pe-fw-semi); text-transform: uppercase; letter-spacing: .08em; color: var(--pe-text-muted); }
+    .pe-inspector__row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: var(--pe-fs-2xs); }
+    .pe-inspector__row dt { color: var(--pe-text-faint); flex-shrink: 0; }
+    .pe-inspector__row dd { color: var(--pe-text); text-align: right; overflow-wrap: anywhere; min-width: 0; font-family: var(--pe-mono); }
+    .pe-inspector__path { padding: 8px 10px; border: 1px solid var(--pe-border-soft); border-radius: var(--pe-radius-sm); background: var(--pe-surface-2); color: var(--pe-text-muted); font: var(--pe-fs-2xs)/1.5 var(--pe-mono); overflow-wrap: anywhere; }
+    .pe-inspector__empty { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 6px; color: var(--pe-text-faint); font-size: var(--pe-fs-xs); padding: 24px; }
+    .pe-access-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border: 1px solid var(--pe-border-soft); border-radius: var(--pe-radius-sm); background: var(--pe-surface-2); font-size: var(--pe-fs-2xs); }
+.pe-viewpage { background: var(--pe-surface-2); overflow-y: auto; min-width: 0; min-height: 0; }
+    .pe-viewpage__inner { max-width: 980px; margin: 0 auto; padding: 20px 24px 28px; display: flex; flex-direction: column; gap: 16px; }
+    .pe-viewpage__head { display: flex; flex-direction: column; gap: 4px; }
+    .pe-viewpage__head h3 { font-size: var(--pe-fs-xl); font-weight: var(--pe-fw-bold); }
+    .pe-viewpage__head p { color: var(--pe-text-muted); font-size: var(--pe-fs-xs); line-height: 1.5; max-width: 720px; }
+    .pe-viewpage__actions { display: flex; align-items: center; gap: var(--pe-space-2); flex-wrap: wrap; margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--pe-border-soft); }
+    .pe-viewpage__actions .pe-btn { padding: 7px 14px; font-size: var(--pe-fs-sub); }
+    .pe-viewpage__actions .spacer { flex: 1 1 auto; }
+    .pe-dirty-indicator { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px solid var(--pe-border); border-radius: var(--pe-radius-pill); background: var(--pe-surface-3); color: var(--pe-text-muted); font-size: var(--pe-fs-3xs); font-weight: var(--pe-fw-medium); }
+    .pe-dirty-indicator::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--pe-accent); }
+    .pe-ai-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--pe-space-3); }
+    .pe-card { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border: 1px solid var(--pe-border); border-radius: var(--pe-radius); background: var(--pe-surface); }
+    .pe-card--wide { grid-column: 1 / -1; }
+    .pe-card h4 { font-size: var(--pe-fs-sm); font-weight: var(--pe-fw-semi); }
+    .pe-card__hint { color: var(--pe-text-faint); font-size: var(--pe-fs-2xs); line-height: 1.5; }
+    .pe-provider-list { display: flex; flex-direction: column; gap: 6px; }
+    .pe-provider { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border: 1px solid var(--pe-border); border-radius: var(--pe-radius-sm); background: var(--pe-surface-2); color: var(--pe-text); cursor: pointer; text-align: left; }
+    .pe-provider:hover { border-color: var(--pe-border-strong); background: var(--pe-surface-3); }
+    .pe-provider.is-active { border-color: var(--pe-accent-border); background: var(--pe-accent-soft); }
+    .pe-provider__name { font-size: var(--pe-fs-sub); font-weight: var(--pe-fw-medium); }
+    .pe-provider__meta { color: var(--pe-text-faint); font-size: var(--pe-fs-3xs); }
+    .pe-badge { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: var(--pe-radius-pill); font-size: var(--pe-fs-3xs); font-weight: var(--pe-fw-medium); white-space: nowrap; }
+    .pe-badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+    .pe-badge--ok { color: var(--pe-success); background: var(--pe-success-soft); }
+    .pe-badge--warn { color: var(--pe-warning); background: var(--pe-warning-soft); }
+    .pe-badge--off { color: var(--pe-text-faint); background: var(--pe-surface-3); }
+    .pe-badge--on { color: var(--pe-accent-text); background: var(--pe-accent-soft); }
+    .pe-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+    .pe-field-label { color: var(--pe-text-muted); font-size: var(--pe-fs-2xs); font-weight: var(--pe-fw-medium); display: flex; align-items: center; gap: 6px; }
+    .pe-field-label em { color: var(--pe-text-faint); font-style: normal; font-weight: var(--pe-fw-regular); margin-left: auto; }
+    .pe-field-warning { color: var(--pe-error); font-size: var(--pe-fs-3xs); line-height: 1.4; }
+    .pe-field-hint { color: var(--pe-text-faint); font-size: var(--pe-fs-3xs); line-height: 1.45; }
+    .pe-input-row { display: flex; gap: 6px; align-items: stretch; }
+    .pe-input-row .pe-input { flex: 1 1 auto; min-width: 0; }
+    .pe-input-row .pe-icon-btn { width: 34px; height: auto; border: 1px solid var(--pe-control-border); }
+    select.pe-input { appearance: none; cursor: pointer; }
+    textarea.pe-input { resize: vertical; min-height: 84px; line-height: 1.5; }
+    .pe-code { font-family: var(--pe-mono); font-size: var(--pe-fs-2xs); min-height: 140px !important; white-space: pre; overflow: auto; }
+    .pe-segmented { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--pe-border); border-radius: var(--pe-radius-sm); background: var(--pe-surface-2); width: fit-content; }
+    .pe-segmented button { padding: 5px 12px; border: none; border-radius: 4px; background: transparent; color: var(--pe-text-muted); font-size: var(--pe-fs-2xs); cursor: pointer; }
+    .pe-segmented button:hover { color: var(--pe-text); }
+    .pe-segmented button.is-active { background: var(--pe-accent-soft); color: var(--pe-accent-text); font-weight: var(--pe-fw-medium); }
+    .pe-file-perms { display: flex; flex-direction: column; gap: 2px; max-height: 260px; overflow-y: auto; }
+    .pe-file-perm { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 6px 8px; border-radius: var(--pe-radius-sm); font-size: var(--pe-fs-2xs); }
+    .pe-file-perm:nth-child(odd) { background: var(--pe-surface-2); }
+    .pe-file-perm__path { font-family: var(--pe-mono); color: var(--pe-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pe-file-perm .pe-btn { padding: 3px 8px; }
+    .pe-file-perm.is-disabled { opacity: .55; }
+    .pe-meta { display: flex; flex-direction: column; gap: 6px; }
+    .pe-meta > div { display: flex; justify-content: space-between; gap: 12px; font-size: var(--pe-fs-2xs); }
+    .pe-meta dt { color: var(--pe-text-faint); }
+    .pe-meta dd { color: var(--pe-text); font-family: var(--pe-mono); overflow-wrap: anywhere; text-align: right; }
+    .pe-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; }
+    .pe-form-grid .pe-field--full { grid-column: 1 / -1; }
+    .pe-validation { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+    .pe-validation li { display: flex; align-items: center; gap: 8px; font-size: var(--pe-fs-2xs); color: var(--pe-text-muted); }
+    .pe-validation li::before { content: ''; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .pe-validation li.is-ok::before { background: var(--pe-success); }
+    .pe-validation li.is-warn::before { background: var(--pe-warning); }
+    .pe-validation li.is-error::before { background: var(--pe-error); }
+.pe-workspace__status { display: flex; align-items: center; gap: var(--pe-space-3); padding: 0 var(--pe-space-4); min-height: 28px; font-size: var(--pe-fs-2xs); color: var(--pe-text-faint); border-top: 1px solid var(--pe-border-soft); flex-shrink: 0; background: var(--pe-surface-2); white-space: nowrap; overflow: hidden; }
     .pe-workspace__status .status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
     .pe-workspace__status .sep { opacity: .35; }
+    .pe-workspace__status .status-main { color: var(--pe-text-muted); display: inline-flex; align-items: center; gap: 6px; }
+    .pe-workspace__status .status-pending { color: var(--pe-warning); display: inline-flex; align-items: center; gap: 6px; }
+    .pe-workspace__status .spacer { flex: 1 1 auto; }
+    .pe-dialog-backdrop { position: fixed; inset: 0; z-index: 2147483646; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(2,6,23,.55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+    .pe-dialog { width: min(440px, 100%); display: flex; flex-direction: column; gap: 12px; padding: 18px 20px; border: 1px solid var(--pe-border-strong); border-radius: var(--pe-radius-lg); background: var(--pe-surface); box-shadow: 0 24px 60px rgba(0,0,0,.5); animation: pe-dialog-in var(--pe-dur-fast) var(--pe-ease-standard); }
+    @keyframes pe-dialog-in { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: none; } }
+    .pe-dialog h4 { font-size: var(--pe-fs-lg); font-weight: var(--pe-fw-semi); }
+    .pe-dialog p { color: var(--pe-text-muted); font-size: var(--pe-fs-sub); line-height: 1.5; }
+    .pe-dialog strong { color: var(--pe-text); }
+    .pe-dialog__actions { display: flex; justify-content: flex-end; gap: var(--pe-space-2); margin-top: 4px; flex-wrap: wrap; }
+    .pe-dialog__actions .pe-btn { padding: 7px 14px; font-size: var(--pe-fs-sub); }
+    .pe-dialog textarea.pe-input { min-height: 120px; font-family: var(--pe-mono); font-size: var(--pe-fs-2xs); }
+    .pe-toasts { position: fixed; bottom: 24px; right: 24px; z-index: 2147483647; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+    .pe-toast { padding: 10px 16px; border-radius: var(--pe-radius-sm); background: var(--pe-surface); border: 1px solid var(--pe-border-strong); box-shadow: var(--pe-shadow-2); font-size: var(--pe-fs-sm); color: var(--pe-text); border-left: 3px solid var(--pe-accent); pointer-events: auto; }
+    .pe-toast--success { border-left-color: var(--pe-success); }
+    .pe-toast--error { border-left-color: var(--pe-error); }
 
+    /* BARRAS DE ROLAGEM — consistentes com o tema */
+    .pe-tree-container,
+    .pe-viewpage,
+    .pe-inspector__body,
+    .pe-file-perms,
+    .pe-editor__textarea,
+    .pe-code,
+    .pe-dialog textarea {
+      scrollbar-width: thin;
+      scrollbar-color: var(--pe-border-strong) transparent;
+    }
+    .pe-tree-container::-webkit-scrollbar,
+    .pe-viewpage::-webkit-scrollbar,
+    .pe-inspector__body::-webkit-scrollbar,
+    .pe-file-perms::-webkit-scrollbar,
+    .pe-editor__textarea::-webkit-scrollbar,
+    .pe-code::-webkit-scrollbar,
+    .pe-dialog textarea::-webkit-scrollbar { width: 10px; height: 10px; }
+    .pe-tree-container::-webkit-scrollbar-track,
+    .pe-viewpage::-webkit-scrollbar-track,
+    .pe-inspector__body::-webkit-scrollbar-track,
+    .pe-file-perms::-webkit-scrollbar-track,
+    .pe-editor__textarea::-webkit-scrollbar-track,
+    .pe-code::-webkit-scrollbar-track,
+    .pe-dialog textarea::-webkit-scrollbar-track { background: transparent; }
+    .pe-tree-container::-webkit-scrollbar-thumb,
+    .pe-viewpage::-webkit-scrollbar-thumb,
+    .pe-inspector__body::-webkit-scrollbar-thumb,
+    .pe-file-perms::-webkit-scrollbar-thumb,
+    .pe-editor__textarea::-webkit-scrollbar-thumb,
+    .pe-code::-webkit-scrollbar-thumb,
+    .pe-dialog textarea::-webkit-scrollbar-thumb {
+      background: var(--pe-border-strong);
+      border-radius: 6px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+    .pe-tree-container::-webkit-scrollbar-thumb:hover,
+    .pe-viewpage::-webkit-scrollbar-thumb:hover,
+    .pe-inspector__body::-webkit-scrollbar-thumb:hover,
+    .pe-file-perms::-webkit-scrollbar-thumb:hover,
+    .pe-editor__textarea::-webkit-scrollbar-thumb:hover,
+    .pe-code::-webkit-scrollbar-thumb:hover,
+    .pe-dialog textarea::-webkit-scrollbar-thumb:hover {
+      background: var(--pe-text-faint);
+      background-clip: padding-box;
+    }
+    .pe-tree-container::-webkit-scrollbar-corner,
+    .pe-viewpage::-webkit-scrollbar-corner,
+    .pe-inspector__body::-webkit-scrollbar-corner,
+    .pe-file-perms::-webkit-scrollbar-corner,
+    .pe-editor__textarea::-webkit-scrollbar-corner,
+    .pe-code::-webkit-scrollbar-corner,
+    .pe-dialog textarea::-webkit-scrollbar-corner { background: transparent; }
+
+    @media (max-width: 1024px) {
+      .pe-ai-grid { grid-template-columns: minmax(0, 1fr); }
+      .pe-card--wide { grid-column: auto; }
+    }
+    @media (max-width: 900px) {
+      .pe-workspace__layout,
+      .pe-workspace__layout.has-inspector { grid-template-columns: 48px 220px minmax(0, 1fr); }
+      .pe-workspace__layout.is-explorer-collapsed.has-inspector { grid-template-columns: 48px 0px minmax(0, 1fr); }
+      .pe-inspector { position: absolute; z-index: 20; top: 0; right: 0; bottom: 0; width: min(320px, 60%); min-width: 240px; box-shadow: var(--pe-shadow-panel); }
+      .pe-workspace__layout.has-inspector .pe-inspector { grid-column: auto; }
+    }
     @media (max-width: 768px) {
-      .pe-workspace__layout { grid-template-columns: 0px 0px 1fr; }
-      .pe-workspace__layout .pe-activity-bar,
-      .pe-workspace__layout .pe-explorer { display: none; }
+      body { padding: 0; }
+      .pe-modal-backdrop { padding: 0; }
+      .pe-modal { width: 100vw; height: 100dvh; max-height: 100dvh; border-radius: 0; border: none; }
+      .pe-panel__header { padding: 8px 12px; min-height: 56px; gap: 8px; }
+      .pe-back-link .back-label { display: none; }
+      .pe-back-link { padding: 6px 8px; }
+      .pe-modal__titles h4 { font-size: var(--pe-fs-lg); }
+      .pe-header-dirty { display: none; }
+      .pe-workspace__toolbar { padding: 6px 10px; min-height: 40px; }
       .pe-workspace__toolbar .btn-label { display: none; }
-      .pe-modal__header { flex-wrap: wrap; }
-      .pe-unsaved-card { right: 8px; left: 8px; max-width: none; min-width: 0; }
+      .pe-workspace__toolbar-title span { display: none; }
+      .pe-workspace__layout,
+      .pe-workspace__layout.is-page-view,
+      .pe-workspace__layout.is-explorer-collapsed,
+      .pe-workspace__layout.has-inspector,
+      .pe-workspace__layout.is-explorer-collapsed.has-inspector { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 48px; }
+      .pe-activity-bar { grid-column: 1; grid-row: 2; flex-direction: row; justify-content: space-around; border-right: none; border-top: 1px solid var(--pe-border-soft); padding: 4px 8px; }
+      .pe-activity-btn { flex: 1 1 0; min-height: 38px; }
+      .pe-activity-btn.is-active::before { left: 8px; right: 8px; top: auto; bottom: -4px; width: auto; height: 2px; }
+      .pe-activity-label { display: none; }
+      .pe-explorer, .pe-editor, .pe-viewpage { grid-column: 1; grid-row: 1; }
+      .pe-explorer { position: absolute; z-index: 15; top: 0; left: 0; bottom: 0; width: min(280px, 82%); border-right: 1px solid var(--pe-border-strong); box-shadow: var(--pe-shadow-panel); }
+      .pe-inspector { width: 100%; max-width: none; min-width: 0; }
+      .pe-viewpage__inner { padding: 14px 14px 24px; }
+      .pe-form-grid { grid-template-columns: minmax(0, 1fr); }
+      .pe-file-perm { grid-template-columns: minmax(0, 1fr) auto; }
+      .pe-file-perm .pe-btn { grid-column: 1 / -1; justify-self: start; }
+      .pe-workspace__status { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; }
     }
   </style>
 </head>
 <body>
   <div id="app" v-cloak>
-    <div class="pe-modal-backdrop">
-      <div class="pe-modal" role="dialog" aria-modal="true" aria-label="Workspace do projeto">
-        <header class="pe-modal__header">
+<div class="pe-modal-backdrop">
+      <div class="pe-panel pe-modal" role="dialog" aria-modal="true" aria-label="Workspace do projeto">
+        <header class="pe-panel__header">
           <button class="pe-back-link" @click="goBackToProjects" aria-label="Voltar aos meus projetos">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
             <span class="back-label">Voltar aos meus projetos</span>
@@ -514,751 +428,1331 @@
             <h4>{{ activeProject.name }}</h4>
             <p>Workspace do projeto · {{ activeProject.id }}</p>
           </div>
-          <button class="pe-icon-btn" @click="toggleTheme" :aria-label="theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'">
-            <svg v-if="theme === 'dark'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-          </button>
+          <div class="pe-modal__header-actions">
+            <span v-if="hasPendingChanges" class="pe-header-dirty">Alterações não salvas</span>
+            <button class="pe-icon-btn" @click="toggleTheme" :aria-label="theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'">
+              <svg v-if="theme === 'dark'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </button>
+          </div>
         </header>
-
-        <div class="pe-modal__body">
+        <div class="pe-panel__body">
           <section class="pe-workspace" aria-label="Workspace do projeto">
             <div class="pe-workspace__toolbar">
-              <div class="pe-tool-group">
-                <!-- Botão "Ocultar explorador" só aparece fora do modo foco -->
-                <button v-show="!isFocusMode" class="pe-btn pe-btn--outline"
-                        @click="toggleExplorer" :aria-pressed="!isExplorerCollapsed">
+              <div class="pe-workspace__toolbar-title">
+                <strong>{{ viewTitle }}</strong>
+                <span>{{ viewSubtitle }}</span>
+              </div>
+              <div class="pe-workspace__toolbar-actions">
+                <span v-if="activeView === 'files'" class="pe-save-state" :class="saveStateClass">{{ saveStateLabel }}</span>
+                <button v-show="activeView === 'files' && !isFocusMode" class="pe-btn" @click="toggleExplorer" :aria-pressed="!isExplorerCollapsed">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
                   <span class="btn-label">{{ isExplorerCollapsed ? 'Mostrar explorador' : 'Ocultar explorador' }}</span>
                 </button>
-                <button class="pe-btn pe-btn--outline" @click="toggleFocusMode" :aria-pressed="isFocusMode">
+                <button v-show="activeView === 'files'" class="pe-btn" @click="toggleInspector" :aria-pressed="isInspectorOpen">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+                  <span class="btn-label">Inspector</span>
+                </button>
+                <button v-show="activeView === 'files'" class="pe-btn" @click="toggleFocusMode" :aria-pressed="isFocusMode">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
                   <span class="btn-label">{{ isFocusMode ? 'Sair do foco' : 'Modo foco' }}</span>
                 </button>
               </div>
             </div>
-
-            <div class="pe-workspace__layout"
-                 :class="{ 'is-explorer-collapsed': isExplorerCollapsed, 'is-focus-mode': isFocusMode }">
-
+            <div class="pe-workspace__layout" :class="layoutClasses">
               <nav class="pe-activity-bar" aria-label="Navegação do workspace">
-                <button v-for="item in activityItems" :key="item.id"
-                        class="pe-activity-btn"
-                        :class="{ 'is-active': activeView === item.id }"
-                        @click="switchView(item.id)"
-                        :aria-label="item.label"
-                        :aria-current="activeView === item.id ? 'page' : undefined">
+                <button v-for="item in activityItems" :key="item.id" class="pe-activity-btn" :class="{ 'is-active': activeView === item.id }" @click="switchView(item.id)" :aria-label="item.label" :aria-current="activeView === item.id ? 'page' : undefined">
                   <span v-html="item.icon"></span>
                   <span class="pe-activity-label">{{ item.label }}</span>
                 </button>
               </nav>
-
-              <aside class="pe-explorer" role="complementary" aria-label="Explorador de arquivos">
+              <aside class="pe-explorer" role="complementary" aria-label="Explorador de arquivos" v-show="activeView === 'files'">
                 <div class="pe-explorer__header">
                   <span class="pe-explorer__title">Explorer</span>
                   <div class="pe-explorer__actions">
-                    <button class="pe-icon-btn" @click="startCreateFile()" aria-label="Novo arquivo">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-                    </button>
-                    <button class="pe-icon-btn" @click="startCreateFolder()" aria-label="Nova pasta">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
-                    </button>
+                    <button class="pe-icon-btn" @click="startCreateFile()" aria-label="Novo arquivo" title="Novo arquivo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg></button>
+                    <button class="pe-icon-btn" @click="startCreateFolder()" aria-label="Nova pasta" title="Nova pasta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg></button>
+                    <button class="pe-icon-btn" @click="triggerImport('file')" aria-label="Importar arquivos" title="Importar arquivos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
+                    <button class="pe-icon-btn" @click="triggerImport('dir')" aria-label="Importar diretório" title="Importar diretório"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><polyline points="12 10 12 16"/><polyline points="9 13 12 10 15 13"/></svg></button>
+                    <button class="pe-icon-btn" @click="openBatch" aria-label="Criar vários arquivos" title="Criar vários arquivos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></button>
                   </div>
                 </div>
                 <div class="pe-explorer__search">
                   <input v-model="searchQuery" type="search" class="pe-input" placeholder="Pesquisar arquivos..." aria-label="Pesquisar arquivos" />
                 </div>
-
-                <div v-if="flattenedNodes.length > 0"
-                     ref="treeContainerRef"
-                     class="pe-tree-container"
-                     role="tree"
-                     aria-label="Árvore de arquivos"
-                     tabindex="0"
-                     @keydown="handleTreeKeydown"
-                     @scroll="onTreeScroll">
+                <div v-if="flattenedNodes.length > 0" ref="treeContainerRef" class="pe-tree-container" role="tree" aria-label="Árvore de arquivos" tabindex="0" @keydown="handleTreeKeydown" @scroll="onTreeScroll">
                   <div class="pe-tree-spacer" :style="{ height: totalTreeHeight + 'px' }">
-                    <div v-for="row in visibleRows"
-                         :key="row.node.id"
-                          class="pe-tree-row"
-                          :class="{
-                            'is-selected': selectedFileId === row.node.id,
-                            'is-focused': focusedNodeId === row.node.id,
-                            'is-editing': editingNodeId === row.node.id
-                          }"
-                         :style="{ top: row.top + 'px', paddingLeft: (8 + row.node.level * 19) + 'px' }"
-                         role="treeitem"
-                         :aria-level="row.node.level + 1"
-                         :aria-setsize="row.node.setsize"
-                         :aria-posinset="row.node.posinset"
-                         :aria-expanded="row.node.type === 'folder' && row.node.hasChildren ? row.node.isExpanded : undefined"
-                         :aria-selected="selectedFileId === row.node.id"
-                         :data-tree-id="row.node.id"
-                         @click="onNodeClick(row.node)">
-
-                      <span v-for="i in row.node.level" :key="'guide-' + i"
-                            class="pe-indent-guide"
-                            :style="{ '--guide-index': i - 1 }"></span>
-
-                      <span class="pe-chevron"
-                            :class="{
-                              'is-expanded': row.node.isExpanded,
-                              'is-placeholder': row.node.type !== 'folder' || !row.node.hasChildren
-                            }"
-                            @click.stop="row.node.type === 'folder' && row.node.hasChildren && toggleFolder(row.node.id)">
-                        <svg v-if="row.node.type === 'folder'" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-                          <polyline points="6 4 10 8 6 12"/>
-                        </svg>
-                      </span>
-
+                    <div v-for="row in visibleRows" :key="row.node.id" class="pe-tree-row" :class="{ 'is-selected': inspectedNodeId === row.node.id, 'is-focused': focusedNodeId === row.node.id, 'is-editing': editingNodeId === row.node.id }" :style="{ top: row.top + 'px', paddingLeft: (8 + row.node.level * 19) + 'px' }" role="treeitem" :aria-level="row.node.level + 1" :aria-setsize="row.node.setsize" :aria-posinset="row.node.posinset" :aria-expanded="row.node.type === 'folder' && row.node.hasChildren ? row.node.isExpanded : undefined" :aria-selected="selectedFileId === row.node.id" :data-tree-id="row.node.id" @click="onNodeClick(row.node)">
+                      <span v-for="i in row.node.level" :key="'guide-' + i" class="pe-indent-guide" :style="{ '--guide-index': i - 1 }"></span>
+                      <span class="pe-chevron" :class="{ 'is-expanded': row.node.isExpanded, 'is-placeholder': row.node.type !== 'folder' || !row.node.hasChildren }" @click.stop="row.node.type === 'folder' && row.node.hasChildren && toggleFolder(row.node.id)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 4 10 8 6 12"/></svg></span>
                       <span class="pe-file-icon" v-html="getFileIcon(row.node)"></span>
-                      <div class="pe-tree-edit-wrap" style="display: flex; align-items: center; min-width: 0; flex: 1;">
-                        <span v-if="editingNodeId !== row.node.id"
-                              class="pe-file-name"
-                              v-html="renderName(row.node)"
-                              @dblclick="startRename(row.node)"
-                              title="Duplo clique para renomear" style="flex: 1; min-width: 0;"></span>
-                        <input v-else
-                               class="pe-tree-input"
-                               v-model="renameValue"
-                               @blur="commitRename"
-                               @keydown.enter.stop="commitRename"
-                               @keydown.esc.stop="cancelRename"
-                               @keydown.stop
-                               autofocus style="flex: 1; min-width: 0;" />
+                      <div style="display:flex;align-items:center;min-width:0;flex:1;">
+                        <span v-if="editingNodeId !== row.node.id" class="pe-file-name" v-html="renderName(row.node)" @dblclick="startRename(row.node)" title="Duplo clique para renomear" style="flex:1;min-width:0;"></span>
+                        <input v-else class="pe-tree-input" v-model="renameValue" @blur="commitRename" @keydown.enter.stop="commitRename" @keydown.esc.stop="cancelRename" @keydown.stop autofocus style="flex:1;min-width:0;" />
                       </div>
                       <span v-if="dirtyFiles[row.node.id]" class="pe-dirty-dot" title="Alterações não salvas"></span>
                       <div v-if="editingNodeId !== row.node.id" class="pe-tree-row__actions">
-                        <button class="pe-icon-btn pe-icon-btn--delete"
-                                @click.stop="deleteNode(row.node)"
-                                :aria-label=" 'Excluir ' + row.node.name ">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                        </button>
+                        <button class="pe-icon-btn pe-icon-btn--delete" @click.stop="prepareDelete(row.node)" :aria-label="'Excluir ' + row.node.name"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div v-else class="pe-tree-empty">Nenhum arquivo encontrado</div>
-              </aside>
-
-              <main class="pe-editor" role="main" aria-label="Conteúdo do arquivo">
-                <div v-if="pendingChangesCount > 0 && activeView === 'files' && selectedFile"
-                     class="pe-unsaved-card"
-                     role="alert"
-                     aria-live="polite">
-                  <div class="pe-unsaved-card__msg">Suas alterações não foram salvas.</div>
-                  <div class="pe-unsaved-card__sub">Escolha salvar ou descartar as alterações pendentes.</div>
-                  <div class="pe-unsaved-card__actions">
-                    <button class="pe-btn pe-btn--primary" @click="saveFile(selectedFile.id)">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                      Salvar
-                    </button>
-                    <button class="pe-btn pe-btn--danger" @click="discardChanges(selectedFile.id)">
-                      Descartar
-                    </button>
-                  </div>
+                <div v-else class="pe-tree-empty">
+                  <template v-if="searchQuery">Nenhum arquivo encontrado para "{{ searchQuery }}".</template>
+                  <template v-else>Nenhum arquivo neste projeto. Crie ou importe arquivos para começar.</template>
                 </div>
-
-                <template v-if="activeView === 'files'">
-                  <template v-if="selectedFile">
-                    <div class="pe-editor__toolbar">
+                <input ref="fileInput" type="file" multiple style="display:none" @change="onImportChange" />
+                <input ref="dirInput" type="file" webkitdirectory directory multiple style="display:none" @change="onImportChange" />
+              </aside>
+<main v-if="activeView === 'files'" class="pe-editor" role="main" aria-label="Conteúdo do arquivo">
+                <template v-if="selectedFile">
+                  <div class="pe-editor__toolbar">
                     <div class="pe-editor__path">
                       <template v-for="(crumb, idx) in breadcrumbParts" :key="crumb.id">
-                        <span class="crumb" :class="{ last: idx === breadcrumbParts.length - 1 }"
-                              @click="selectBreadcrumb(crumb.id)">{{ crumb.name }}</span>
+                        <span class="crumb" :class="{ last: idx === breadcrumbParts.length - 1 }" @click="selectBreadcrumb(crumb.id)">{{ crumb.name }}</span>
                         <span v-if="idx < breadcrumbParts.length - 1" class="sep">/</span>
                       </template>
                     </div>
+                    <div class="pe-editor__tools">
+                      <span v-if="selectedFile.readOnly" class="pe-readonly-badge">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        Somente leitura
+                      </span>
+                      <button v-if="dirtyFiles[selectedFile.id]" class="pe-btn pe-btn--primary" @click="saveFile(selectedFile.id)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Salvar
+                      </button>
+                      <button v-if="dirtyFiles[selectedFile.id]" class="pe-btn" @click="discardChanges(selectedFile.id)">Descartar</button>
                     </div>
-                    <div class="pe-editor__area">
-                      <textarea v-model="fileContents[selectedFile.id]"
-                                class="pe-editor__textarea"
-                                @input="onEditorInput(selectedFile.id)"
-                                @keydown.ctrl.s.prevent="saveFile(selectedFile.id)"
-                                @keydown.meta.s.prevent="saveFile(selectedFile.id)"
-                                spellcheck="false"
-                                aria-label="Editor de conteúdo do arquivo"></textarea>
-                    </div>
-                  </template>
-                  <div v-else class="pe-editor__empty">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    <span>Nenhum arquivo selecionado</span>
-                    <span style="font-size: var(--pe-fs-2xs);">Escolha um arquivo no explorador para começar</span>
+                  </div>
+                  <div v-if="saveError && saveError.fileId === selectedFile.id" class="pe-editor__error" role="alert">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <span>{{ saveError.message }} O conteúdo editado foi preservado.</span>
+                  </div>
+                  <div class="pe-editor__area">
+                    <textarea v-model="fileContents[selectedFile.id]" class="pe-editor__textarea" @input="onEditorInput(selectedFile.id)" @keydown.ctrl.s.prevent="saveFile(selectedFile.id)" @keydown.meta.s.prevent="saveFile(selectedFile.id)" spellcheck="false" aria-label="Editor de conteúdo do arquivo"></textarea>
                   </div>
                 </template>
-                <div v-else-if="activeView === 'ai'" class="pe-placeholder">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2a4 4 0 0 1 4 4c0 1.95-1.4 3.58-3.25 3.93L13 10h-2l.25-.07A4.001 4.001 0 0 1 12 2z"/><path d="M8 14a4 4 0 1 1 8 0"/><path d="M5 22v-3a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v3"/></svg>
-                  <h3>Acesso à IA</h3>
-                  <p>Gerencie chaves de API, modelos e integrações. Esta seção estará disponível em breve.</p>
-                  <button class="pe-btn pe-btn--primary" @click="switchView('files')">Voltar para Arquivos</button>
+                <div v-else class="pe-editor__empty">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <span>Nenhum arquivo selecionado</span>
+                  <span style="font-size: var(--pe-fs-2xs);">Escolha um arquivo no explorador para começar</span>
                 </div>
-                <div v-else-if="activeView === 'settings'" class="pe-placeholder">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                  <h3>Configurações do Projeto</h3>
-                  <p>Ajuste preferências, membros da equipe e integrações. Esta seção estará disponível em breve.</p>
-                  <button class="pe-btn pe-btn--primary" @click="switchView('files')">Voltar para Arquivos</button>
+              </main>
+              <aside v-if="activeView === 'files' && isInspectorOpen" class="pe-inspector" aria-label="Inspector">
+                <div class="pe-inspector__header">
+                  <span>Inspector</span>
+                  <button class="pe-icon-btn" @click="toggleInspector" aria-label="Fechar inspector"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                </div>
+                <div v-if="inspectedNode" class="pe-inspector__body">
+                  <div class="pe-inspector__path">{{ inspectedPath }}</div>
+                  <section class="pe-inspector__section">
+                    <h5>{{ inspectedNode.type === 'folder' ? 'Pasta' : 'Arquivo' }}</h5>
+                    <template v-if="inspectedNode.type === 'file'">
+                      <dl class="pe-inspector__row"><dt>Nome</dt><dd>{{ inspectedNode.name }}</dd></dl>
+                      <dl class="pe-inspector__row"><dt>Extensão</dt><dd>{{ inspectedExtension }}</dd></dl>
+                      <dl class="pe-inspector__row"><dt>Linguagem</dt><dd>{{ inspectedLanguage }}</dd></dl>
+                      <dl class="pe-inspector__row"><dt>Tamanho</dt><dd>{{ inspectedSize }}</dd></dl>
+                      <dl class="pe-inspector__row"><dt>Encoding</dt><dd>UTF-8</dd></dl>
+                    </template>
+                    <template v-else>
+                      <dl class="pe-inspector__row"><dt>Nome</dt><dd>{{ inspectedNode.name }}</dd></dl>
+                      <dl class="pe-inspector__row"><dt>Itens</dt><dd>{{ inspectedChildren }}</dd></dl>
+                      <dl class="pe-inspector__row"><dt>Tamanho</dt><dd>{{ inspectedSize }}</dd></dl>
+                    </template>
+                  </section>
+                  <section class="pe-inspector__section" v-if="inspectedNode.type === 'file'">
+                    <h5>Acesso à IA</h5>
+                    <div class="pe-access-row">
+                      <span>Acesso efetivo</span>
+                      <span class="pe-badge" :class="effectiveAccess(inspectedNode.id) === 'allowed' ? 'pe-badge--on' : 'pe-badge--off'">{{ effectiveAccess(inspectedNode.id) === 'allowed' ? 'Permitido' : 'Sem acesso' }}</span>
+                    </div>
+                    <p class="pe-card__hint">Modo do projeto: {{ accessModeLabel }}. A permissão por arquivo só se aplica no modo "Somente selecionados".</p>
+                    <button class="pe-btn" :disabled="aiState.accessMode !== 'selected'" @click="toggleFileAccess(inspectedNode.id)">{{ aiState.fileAccess[inspectedNode.id] === 'allowed' ? 'Negar acesso do arquivo' : 'Permitir acesso do arquivo' }}</button>
+                  </section>
+                  <section class="pe-inspector__section">
+                    <h5>Estado de edição</h5>
+                    <div class="pe-access-row">
+                      <span>Alterações pendentes</span>
+                      <span class="pe-badge" :class="dirtyFiles[inspectedNode.id] ? 'pe-badge--warn' : 'pe-badge--ok'">{{ dirtyFiles[inspectedNode.id] ? 'Não salvas' : 'Salvo' }}</span>
+                    </div>
+                  </section>
+                </div>
+                <div v-else class="pe-inspector__empty">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="32" height="32"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <span>Nenhuma seleção</span>
+                  <span style="font-size: var(--pe-fs-3xs);">Selecione um arquivo ou pasta para ver os detalhes.</span>
+                </div>
+              </aside>
+<main v-else-if="activeView === 'ai'" class="pe-viewpage" aria-label="Acesso à IA">
+                <div class="pe-viewpage__inner">
+                  <div class="pe-viewpage__head">
+                    <h3>Acesso à IA</h3>
+                    <p>Gerencie provedores, credenciais, modelos e permissões. A configuração de acesso não equivale à autorização efetiva: o acesso final é a combinação das permissões do projeto e de cada arquivo.</p>
+                  </div>
+                  <div class="pe-ai-grid">
+                    <section class="pe-card">
+                      <h4>Provedores</h4>
+                      <div class="pe-provider-list">
+                        <button v-for="p in providers" :key="p.id" class="pe-provider" :class="{ 'is-active': aiState.providerId === p.id }" @click="selectProvider(p.id)">
+                          <span>
+                            <span class="pe-provider__name">{{ p.name }}</span>
+                            <span class="pe-provider__meta" style="display:block;">{{ p.meta }}</span>
+                          </span>
+                          <span class="pe-badge" :class="p.configured ? 'pe-badge--ok' : 'pe-badge--warn'">{{ p.configured ? 'Configurado' : 'Pendente' }}</span>
+                        </button>
+                      </div>
+                      <p class="pe-card__hint">Provedores disponíveis no catálogo. Selecione um para editar credenciais e modelo.</p>
+                    </section>
+                    <section class="pe-card">
+                      <h4>Credencial e modelo</h4>
+                      <label class="pe-field">
+                        <span class="pe-field-label">Chave de API</span>
+                        <span class="pe-input-row">
+                          <input class="pe-input" :type="showKey ? 'text' : 'password'" v-model="aiState.apiKey" autocomplete="off" spellcheck="false" placeholder="sk-..." aria-label="Chave de API" />
+                          <button class="pe-icon-btn" @click="showKey = !showKey" :aria-label="showKey ? 'Ocultar chave' : 'Mostrar chave'">
+                            <svg v-if="!showKey" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                          </button>
+                        </span>
+                        <span v-if="aiErrors.key" class="pe-field-warning">{{ aiErrors.key }}</span>
+                        <span v-else class="pe-field-hint">A chave nunca é exibida integralmente depois de salva.</span>
+                      </label>
+                      <label class="pe-field">
+                        <span class="pe-field-label">Modelo</span>
+                        <select class="pe-input" v-model="aiState.model" aria-label="Modelo">
+                          <option v-for="m in selectedProvider.models" :key="m" :value="m">{{ m }}</option>
+                        </select>
+                        <span v-if="aiErrors.model" class="pe-field-warning">{{ aiErrors.model }}</span>
+                      </label>
+                    </section>
+                    <section class="pe-card">
+                      <h4>Permissões do projeto</h4>
+                      <div class="pe-segmented" role="group" aria-label="Modo de acesso do projeto">
+                        <button v-for="mode in accessModes" :key="mode.id" :class="{ 'is-active': aiState.accessMode === mode.id }" @click="aiState.accessMode = mode.id">{{ mode.label }}</button>
+                      </div>
+                      <p class="pe-card__hint">{{ accessModeHint }}</p>
+                    </section>
+                    <section class="pe-card">
+                      <h4>Validação</h4>
+                      <ul class="pe-validation">
+                        <li :class="validationClass(aiState.apiKey, selectedProvider.configured)">{{ selectedProvider.configured ? 'Credencial configurada' : 'Nenhuma credencial válida' }}</li>
+                        <li :class="validationClass(!!aiState.model, true)">{{ aiState.model ? 'Modelo selecionado: ' + aiState.model : 'Nenhum modelo selecionado' }}</li>
+                        <li :class="validationClass(true, true)">{{ aiSummary }}</li>
+                      </ul>
+                    </section>
+                    <section class="pe-card pe-card--wide">
+                      <h4>Acesso efetivo por arquivo</h4>
+                      <p class="pe-card__hint">{{ effectiveSummary }}</p>
+                      <div class="pe-file-perms">
+                        <div v-for="f in allFiles" :key="f.id" class="pe-file-perm" :class="{ 'is-disabled': aiState.accessMode !== 'selected' }">
+                          <span class="pe-file-perm__path" :title="f.path">{{ f.path }}</span>
+                          <span class="pe-badge" :class="effectiveAccess(f.id) === 'allowed' ? 'pe-badge--on' : 'pe-badge--off'">{{ effectiveAccess(f.id) === 'allowed' ? 'Permitido' : 'Sem acesso' }}</span>
+                          <button class="pe-btn" :disabled="aiState.accessMode !== 'selected'" @click="toggleFileAccess(f.id)">{{ aiState.fileAccess[f.id] === 'allowed' ? 'Negar' : 'Permitir' }}</button>
+                        </div>
+                        <div v-if="allFiles.length === 0" class="pe-tree-empty">Nenhum arquivo para configurar.</div>
+                      </div>
+                    </section>
+                  </div>
+                  <div v-if="aiDirty" class="pe-viewpage__actions">
+                    <span class="pe-dirty-indicator">Alterações não salvas</span>
+                    <span class="spacer"></span>
+                    <button class="pe-btn" @click="resetAi">Descartar</button>
+                    <button class="pe-btn pe-btn--primary" @click="saveAi(false)">Salvar</button>
+                  </div>
+                </div>
+              </main>
+<main v-else class="pe-viewpage" aria-label="Configurações do projeto">
+                <div class="pe-viewpage__inner">
+                  <div class="pe-viewpage__head">
+                    <h3>Configurações do projeto</h3>
+                    <p>Configurações específicas do projeto selecionado. As alterações possuem estado próprio e só substituem os valores salvos após confirmação explícita.</p>
+                  </div>
+                  <section class="pe-card">
+                    <h4>Geral</h4>
+                    <div class="pe-form-grid">
+                      <label class="pe-field">
+                        <span class="pe-field-label">Nome do projeto</span>
+                        <input class="pe-input" v-model="settingsState.name" aria-label="Nome do projeto" />
+                        <span v-if="settingsErrors.name" class="pe-field-warning">{{ settingsErrors.name }}</span>
+                      </label>
+                      <label class="pe-field">
+                        <span class="pe-field-label">Descrição</span>
+                        <input class="pe-input" v-model="settingsState.description" aria-label="Descrição" />
+                      </label>
+                      <label class="pe-field pe-field--full">
+                        <span class="pe-field-label">Preferência de abertura</span>
+                        <select class="pe-input" v-model="settingsState.defaultView" aria-label="Preferência de abertura">
+                          <option value="files">Arquivos</option>
+                          <option value="ai">Acesso à IA</option>
+                          <option value="settings">Configurações</option>
+                        </select>
+                      </label>
+                      <label class="pe-field pe-field--full">
+                        <span class="pe-field-label">Instruções do projeto <em>{{ settingsState.instructions.length }}/20000</em></span>
+                        <textarea class="pe-input" v-model="settingsState.instructions" aria-label="Instruções do projeto"></textarea>
+                        <span v-if="settingsErrors.instructions" class="pe-field-warning">{{ settingsErrors.instructions }}</span>
+                        <span v-else class="pe-field-hint">Limite de 20.000 caracteres.</span>
+                      </label>
+                    </div>
+                  </section>
+                  <div class="pe-ai-grid">
+                    <section class="pe-card">
+                      <h4>Metadados</h4>
+                      <dl class="pe-meta">
+                        <div><dt>ID</dt><dd>{{ activeProject.id }}</dd></div>
+                        <div><dt>Criado em</dt><dd>{{ activeProject.createdAt }}</dd></div>
+                        <div><dt>Atualizado em</dt><dd>{{ activeProject.updatedAt }}</dd></div>
+                      </dl>
+                    </section>
+                    <section class="pe-card">
+                      <h4>Preferências</h4>
+                      <dl class="pe-meta">
+                        <div><dt>Arquivos no projeto</dt><dd>{{ allFiles.length }}</dd></div>
+                        <div><dt>Tamanho total</dt><dd>{{ totalSizeLabel }}</dd></div>
+                        <div><dt>Acesso à IA</dt><dd>{{ accessModeLabel }}</dd></div>
+                      </dl>
+                      <p class="pe-card__hint">Preferências refletem o estado atual do projeto.</p>
+                    </section>
+                    <section class="pe-card pe-card--wide">
+                      <h4>Editor de configuração</h4>
+                      <textarea class="pe-input pe-code" v-model="settingsState.configText" spellcheck="false" aria-label="Editor de configuração"></textarea>
+                      <span v-if="settingsErrors.config" class="pe-field-warning">{{ settingsErrors.config }}</span>
+                      <span v-else class="pe-field-hint">JSON de configurações do projeto.</span>
+                    </section>
+                  </div>
+                  <div v-if="settingsDirty" class="pe-viewpage__actions">
+                    <span class="pe-dirty-indicator">Alterações não salvas</span>
+                    <span class="spacer"></span>
+                    <button class="pe-btn" @click="resetSettings">Restaurar</button>
+                    <button class="pe-btn pe-btn--primary" @click="saveSettings(false)">Salvar</button>
+                  </div>
                 </div>
               </main>
             </div>
-
             <div class="pe-workspace__status" role="status" aria-live="polite">
-              <span class="status-dot" :style="{ background: 'var(--pe-success)' }"></span>
-              <span>Pronto</span>
+              <span class="status-dot" :style="{ background: statusColor }"></span>
+              <span class="status-main">{{ statusText }}</span>
               <span class="sep">|</span>
-              <span>{{ flattenedNodes.length }} itens</span>
-              <span v-if="pendingChangesCount > 0">
-                <span class="sep">|</span>
-                <span class="status-dot" :style="{ background: 'var(--pe-warning)' }"></span>
+              <span>{{ allFiles.length }} arquivos</span>
+              <span class="sep">|</span>
+              <span>{{ totalSizeLabel }}</span>
+              <span class="sep">|</span>
+              <span v-if="selectedFile">{{ selectedFile.name }} · {{ languageOf(selectedFile) }} · UTF-8</span>
+              <span v-else>nenhum arquivo selecionado</span>
+              <span class="spacer"></span>
+              <span v-if="pendingChangesCount" class="status-pending">
+                <span class="status-dot" style="background: var(--pe-warning)"></span>
                 {{ pendingChangesCount }} pendência(s)
               </span>
-              <span style="flex:1;"></span>
-              <span>UTF-8</span>
               <span class="sep">|</span>
-              <span>{{ activeProject.filesLabel || 'arquivos' }}</span>
+              <span>{{ activeProject.id }}</span>
             </div>
           </section>
         </div>
       </div>
     </div>
-
-    <div style="position: fixed; bottom: 24px; right: 24px; z-index: 2147483647; display: flex; flex-direction: column; gap: 8px; pointer-events: none;">
-      <div v-for="toast in toasts" :key="toast.id"
-           :style="{
-             padding: '10px 16px', borderRadius: '8px',
-             background: 'var(--pe-surface)', border: '1px solid var(--pe-border-strong)',
-             boxShadow: 'var(--pe-shadow-2)', fontSize: 'var(--pe-fs-sm)', color: 'var(--pe-text)',
-             borderLeft: '3px solid ' + (toast.type === 'success' ? 'var(--pe-success)' : toast.type === 'error' ? 'var(--pe-error)' : 'var(--pe-accent)'),
-             pointerEvents: 'auto'
-           }" role="status">
-        {{ toast.message }}
+    <div class="pe-toasts" aria-live="polite">
+      <div v-for="toast in toasts" :key="toast.id" class="pe-toast" :class="'pe-toast--' + toast.type" role="status">{{ toast.message }}</div>
+    </div>
+    <div v-if="pendingAction" class="pe-dialog-backdrop" role="dialog" aria-modal="true" aria-label="Alterações não salvas">
+      <div class="pe-dialog">
+        <h4>Alterações não salvas</h4>
+        <p>Você tem alterações que ainda não foram salvas. Escolha como continuar antes de navegar.</p>
+        <div class="pe-dialog__actions">
+          <button class="pe-btn" @click="cancelPending">Cancelar</button>
+          <button class="pe-btn pe-btn--danger" @click="discardAndContinue">Descartar e continuar</button>
+          <button class="pe-btn pe-btn--primary" @click="saveAndContinue">Salvar e continuar</button>
+        </div>
+      </div>
+    </div>
+    <div v-if="pendingDelete" class="pe-dialog-backdrop" role="dialog" aria-modal="true" aria-label="Confirmar exclusão">
+      <div class="pe-dialog">
+        <h4>Excluir {{ pendingDelete.type === 'folder' ? 'pasta' : 'arquivo' }}</h4>
+        <p>
+          Excluir <strong>{{ pendingDelete.name }}</strong>?
+          <span v-if="pendingDelete.type === 'folder'"> Todo o conteúdo da pasta também será removido.</span>
+          Esta ação não pode ser desfeita.
+        </p>
+        <div class="pe-dialog__actions">
+          <button class="pe-btn" @click="cancelDelete">Cancelar</button>
+          <button class="pe-btn pe-btn--danger" @click="confirmDelete">Excluir</button>
+        </div>
+      </div>
+    </div>
+    <div v-if="isBatchOpen" class="pe-dialog-backdrop" role="dialog" aria-modal="true" aria-label="Criar vários arquivos">
+      <div class="pe-dialog">
+        <h4>Criar vários arquivos</h4>
+        <p>Informe um caminho relativo por linha. Os arquivos serão criados no diretório selecionado.</p>
+        <textarea class="pe-input" v-model="batchPaths" spellcheck="false" placeholder="src/app.js&#10;src/utils.js&#10;README.md"></textarea>
+        <p class="pe-field-hint">{{ batchPreview }}</p>
+        <div class="pe-dialog__actions">
+          <button class="pe-btn" @click="closeBatch">Cancelar</button>
+          <button class="pe-btn pe-btn--primary" @click="commitBatch">Criar arquivos</button>
+        </div>
       </div>
     </div>
   </div>
-
   <script>
-    (function () {
-      'use strict';
-      const { createApp, ref, computed, onMounted, onBeforeUnmount, nextTick } = Vue;
+(function () {
+    'use strict';
+    const { createApp, ref, computed, onMounted, onBeforeUnmount, nextTick } = Vue;
 
-      const ITEM_HEIGHT = 22;
-      const OVERSCAN = 10;
+    const ITEM_HEIGHT = 22;
+    const OVERSCAN = 10;
 
-      const FILE_COLORS = {
-        md: '#519aba', json: '#cbcb41', js: '#cbcb41', mjs: '#cbcb41', cjs: '#cbcb41',
-        jsx: '#cbcb41', ts: '#519aba', tsx: '#519aba', html: '#e37933', css: '#519aba',
-        scss: '#c6538c', sass: '#c6538c', less: '#519aba', yml: '#e37933', yaml: '#e37933',
-        txt: '#d4d7d6', xml: '#e37933', py: '#519aba', rb: '#d4d7d6', go: '#519aba',
-        rs: '#dea584', java: '#d4d7d6', c: '#519aba', cpp: '#519aba', h: '#519aba',
-        sh: '#89e051', sql: '#d4d7d6', toml: '#9c4221', ini: '#d4d7d6',
-        default: '#d4d7d6',
-      };
+    const FILE_COLORS = {
+      md: '#519aba', json: '#cbcb41', js: '#cbcb41', mjs: '#cbcb41', cjs: '#cbcb41',
+      jsx: '#cbcb41', ts: '#519aba', tsx: '#519aba', html: '#e37933', css: '#519aba',
+      scss: '#c6538c', sass: '#c6538c', less: '#519aba', yml: '#e37933', yaml: '#e37933',
+      txt: '#d4d7d6', xml: '#e37933', py: '#519aba', rb: '#d4d7d6', go: '#519aba',
+      rs: '#dea584', java: '#d4d7d6', c: '#519aba', cpp: '#519aba', h: '#519aba',
+      sh: '#89e051', sql: '#d4d7d6', toml: '#9c4221', ini: '#d4d7d6', key: '#ff6b6b',
+      default: '#d4d7d6',
+    };
 
-      createApp({
-        setup() {
-          const theme = ref('dark');
-          function toggleTheme() {
-            theme.value = theme.value === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-pe-theme', theme.value);
+    const LANGUAGE_BY_EXT = {
+      md: 'Markdown', markdown: 'Markdown', json: 'JSON', js: 'JavaScript', mjs: 'JavaScript',
+      cjs: 'JavaScript', jsx: 'JavaScript React', ts: 'TypeScript', tsx: 'TypeScript React',
+      html: 'HTML', css: 'CSS', scss: 'SCSS', sass: 'Sass', less: 'Less', yml: 'YAML',
+      yaml: 'YAML', txt: 'Texto', xml: 'XML', py: 'Python', rb: 'Ruby', go: 'Go', rs: 'Rust',
+      java: 'Java', c: 'C', cpp: 'C++', h: 'C/C++ Header', sh: 'Shell', sql: 'SQL',
+      toml: 'TOML', ini: 'INI', key: 'Chave', env: 'Environment', default: 'Texto',
+    };
+
+    function byteLength(value) {
+      const text = value == null ? '' : String(value);
+      try { return new Blob([text]).size; } catch (e) { return text.length; }
+    }
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    createApp({
+      setup() {
+        const theme = ref('dark');
+        function toggleTheme() {
+          theme.value = theme.value === 'dark' ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-pe-theme', theme.value);
+        }
+
+        const activeProject = ref({
+          id: 'prj_8f3a2b1c',
+          name: 'Onboarding Flow Prompts',
+          description: 'Repositório central de prompts para a experiência de onboarding.',
+          instructions: 'Use respostas estruturadas e concisas. Valide entradas antes de gerar prompts.',
+          defaultView: 'files',
+          createdAt: '12/03/2026',
+          updatedAt: '17/11/2026',
+        });
+
+        const files = ref([
+          {
+            id: 'folder-prompts', name: 'prompts', type: 'folder',
+            children: [
+              { id: 'file-system', name: 'system-prompt.md', type: 'file', content: '# System Prompt\n\nYou are a helpful assistant specialized in prompt engineering.\n\n## Guidelines\n- Be concise\n- Use structured output\n- Validate inputs' },
+              { id: 'file-user', name: 'user-template.md', type: 'file', content: '{{user_message}}\n\n---\nContext: {{context}}' },
+              {
+                id: 'folder-tests', name: 'tests', type: 'folder',
+                children: [
+                  { id: 'file-test1', name: 'test-cases.json', type: 'file', content: '{\n  "cases": [\n    { "input": "Hello", "expected": "Hi!" }\n  ]\n}' },
+                  { id: 'file-test2', name: 'eval.js', type: 'file', content: 'export default function evaluate(input) {\n  return input.length > 0;\n}' }
+                ]
+              }
+            ]
+          },
+          {
+            id: 'folder-config', name: 'config', type: 'folder',
+            children: [
+              { id: 'file-config', name: 'settings.json', type: 'file', content: '{\n  "model": "gpt-4",\n  "temperature": 0.7,\n  "max_tokens": 2048\n}' },
+              { id: 'file-env', name: 'defaults.yml', type: 'file', content: 'model: gpt-4\ntemperature: 0.7\n' },
+              { id: 'file-readonly', name: 'credentials.key', type: 'file', readOnly: true, content: 'AIzaSyExampleReadOnlyValueNotEditable' }
+            ]
+          },
+          { id: 'file-readme', name: 'README.md', type: 'file', content: '# Onboarding Flow Prompts\n\nA centralized repository of prompts for the onboarding experience.\n\n## Structure\n- prompts/\n- config/\n- tests/' }
+        ]);
+
+        const isExplorerCollapsed = ref(false);
+        const isFocusMode = ref(false);
+        const isInspectorOpen = ref(false);
+        const activeView = ref('files');
+
+        const activityItems = [
+          { id: 'files', label: 'Arquivos', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' },
+          { id: 'ai', label: 'Acesso à IA', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 0 1 4 4c0 1.95-1.4 3.58-3.25 3.93L13 10h-2l.25-.07A4.001 4.001 0 0 1 12 2z"/><path d="M8 14a4 4 0 1 1 8 0"/><path d="M5 22v-3a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v3"/></svg>' },
+          { id: 'settings', label: 'Configurações', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>' },
+        ];
+
+        const viewTitle = computed(() => {
+          if (activeView.value === 'ai') return 'Acesso à IA';
+          if (activeView.value === 'settings') return 'Configurações';
+          return 'Arquivos';
+        });
+        const viewSubtitle = computed(() => {
+          if (activeView.value === 'ai') return 'Provedores, credenciais, modelos e permissões';
+          if (activeView.value === 'settings') return 'Preferências e metadados do projeto';
+          return activeProject.value.name;
+        });
+
+        const expandedFolders = ref(new Set(['folder-prompts', 'folder-config']));
+        const selectedFileId = ref(null);
+        const inspectedNodeId = ref(null);
+        const focusedNodeId = ref(null);
+        const searchQuery = ref('');
+        const editingNodeId = ref(null);
+        const renameValue = ref('');
+
+        const flattenedNodes = computed(() => {
+          const result = [];
+          const query = searchQuery.value.trim().toLowerCase();
+
+          function hasMatchingDescendant(node, q) {
+            if (!node.children) return false;
+            return node.children.some(c => c.name.toLowerCase().includes(q) || hasMatchingDescendant(c, q));
           }
 
-          const activeProject = ref({
-            id: 'prj_8f3a2b1c',
-            name: 'Onboarding Flow Prompts',
-            filesLabel: 'arquivos do projeto',
-          });
+          function walk(nodes, level, parentId) {
+            for (const node of nodes) {
+              const matchesQuery = !query || node.name.toLowerCase().includes(query);
+              const hasChildren = node.type === 'folder' && node.children && node.children.length > 0;
+              const isExpanded = expandedFolders.value.has(node.id);
+              if (query && !matchesQuery && !hasMatchingDescendant(node, query)) continue;
 
-          const files = ref([
-            {
-              id: 'folder-prompts', name: 'prompts', type: 'folder',
-              children: [
-                { id: 'file-system', name: 'system-prompt.md', type: 'file', content: '# System Prompt\n\nYou are a helpful assistant specialized in prompt engineering.\n\n## Guidelines\n- Be concise\n- Use structured output\n- Validate inputs' },
-                { id: 'file-user', name: 'user-template.md', type: 'file', content: '{{user_message}}\n\n---\nContext: {{context}}' },
-                {
-                  id: 'folder-tests', name: 'tests', type: 'folder',
-                  children: [
-                    { id: 'file-test1', name: 'test-cases.json', type: 'file', content: '{\n  "cases": [\n    { "input": "Hello", "expected": "Hi!" }\n  ]\n}' },
-                    { id: 'file-test2', name: 'eval.js', type: 'file', content: 'export default function evaluate(input) {\n  return input.length > 0;\n}' }
-                  ]
-                }
-              ]
-            },
-            {
-              id: 'folder-config', name: 'config', type: 'folder',
-              children: [
-                { id: 'file-config', name: 'settings.json', type: 'file', content: '{\n  "model": "gpt-4",\n  "temperature": 0.7,\n  "max_tokens": 2048\n}' },
-                { id: 'file-env', name: 'defaults.yml', type: 'file', content: 'model: gpt-4\ntemperature: 0.7\n' }
-              ]
-            },
-            { id: 'file-readme', name: 'README.md', type: 'file', content: '# Onboarding Flow Prompts\n\nA centralized repository of prompts for the onboarding experience.\n\n## Structure\n- prompts/\n- config/\n- tests/' }
-          ]);
+              result.push({
+                id: node.id, name: node.name, type: node.type, content: node.content,
+                readOnly: node.readOnly, level, parentId, hasChildren,
+                isExpanded: hasChildren && isExpanded,
+                setsize: 0, posinset: 0,
+              });
 
-          const isExplorerCollapsed = ref(false);
-          const isFocusMode = ref(false);
-          const activeView = ref('files');
-
-          const activityItems = [
-            { id: 'files', label: 'Arquivos', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' },
-            { id: 'ai', label: 'Acesso à IA', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 0 1 4 4c0 1.95-1.4 3.58-3.25 3.93L13 10h-2l.25-.07A4.001 4.001 0 0 1 12 2z"/><path d="M8 14a4 4 0 1 1 8 0"/><path d="M5 22v-3a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v3"/></svg>' },
-            { id: 'settings', label: 'Configurações', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>' },
-          ];
-
-          function switchView(id) { activeView.value = id; }
-          function toggleExplorer() { isExplorerCollapsed.value = !isExplorerCollapsed.value; }
-          function toggleFocusMode() {
-            // Modo foco é independente do estado do explorer.
-            // Não mexemos em isExplorerCollapsed para não "lembrar" um estado
-            // que o usuário não escolheu.
-            isFocusMode.value = !isFocusMode.value;
-          }
-          function goBackToProjects() { showToast('Voltar aos meus projetos', 'info'); }
-
-          const expandedFolders = ref(new Set(['folder-prompts', 'folder-config']));
-          const selectedFileId = ref(null);
-          const focusedNodeId = ref(null);
-          const searchQuery = ref('');
-          const editingNodeId = ref(null);
-          const renameValue = ref('');
-          const creatingNodeId = ref(null);
-const creatingType = ref('file');
-          const createValue = ref('');
-          let folderClickTimeout = null;
-          let pendingNodeId = null;
-          const DBLCLICK_INTERVAL = 150;
-
-          const flattenedNodes = computed(() => {
-            const result = [];
-            const query = searchQuery.value.trim().toLowerCase();
-
-            function hasMatchingDescendant(node, q) {
-              if (!node.children) return false;
-              return node.children.some(c => c.name.toLowerCase().includes(q) || hasMatchingDescendant(c, q));
-            }
-
-            function walk(nodes, level, parentId) {
-              for (const node of nodes) {
-                const matchesQuery = !query || node.name.toLowerCase().includes(query);
-                const hasChildren = node.type === 'folder' && node.children && node.children.length > 0;
-                const isExpanded = expandedFolders.value.has(node.id);
-                if (query && !matchesQuery && !hasMatchingDescendant(node, query)) continue;
-
-                result.push({
-                  id: node.id, name: node.name, type: node.type, content: node.content,
-                  level, parentId, hasChildren,
-                  isExpanded: hasChildren && isExpanded,
-                  setsize: 0, posinset: 0,
-                });
-
-                if (hasChildren && (isExpanded || (query && matchesQuery))) {
-                  walk(node.children, level + 1, node.id);
-                }
+              if (hasChildren && (isExpanded || (query && (matchesQuery || hasMatchingDescendant(node, query))))) {
+                walk(node.children, level + 1, node.id);
               }
             }
-            walk(files.value, 0, null);
-
-            const siblingsByParent = new Map();
-            for (const node of result) {
-              const key = node.parentId ?? '__root__';
-              if (!siblingsByParent.has(key)) siblingsByParent.set(key, []);
-              siblingsByParent.get(key).push(node);
-            }
-            for (const siblings of siblingsByParent.values()) {
-              const total = siblings.length;
-              siblings.forEach((n, i) => { n.setsize = total; n.posinset = i + 1; });
-            }
-            return result;
-          });
-
-          const treeContainerRef = ref(null);
-          const scrollTop = ref(0);
-          const viewportHeight = ref(400);
-          let resizeObserver = null;
-
-          const totalTreeHeight = computed(() => flattenedNodes.value.length * ITEM_HEIGHT);
-
-          const visibleRows = computed(() => {
-            const flat = flattenedNodes.value;
-            const vh = viewportHeight.value || 400;
-            const start = Math.max(0, Math.floor(scrollTop.value / ITEM_HEIGHT) - OVERSCAN);
-            const end = Math.min(flat.length, Math.ceil((scrollTop.value + vh) / ITEM_HEIGHT) + OVERSCAN);
-            const out = [];
-            for (let i = start; i < end; i++) out.push({ node: flat[i], top: i * ITEM_HEIGHT });
-            return out;
-          });
-
-          function onTreeScroll(e) { scrollTop.value = e.target.scrollTop; }
-
-          function ensureRowVisible(index) {
-            const el = treeContainerRef.value;
-            if (!el) return;
-            const itemTop = index * ITEM_HEIGHT;
-            const itemBottom = itemTop + ITEM_HEIGHT;
-            const viewTop = el.scrollTop;
-            const viewBottom = viewTop + el.clientHeight;
-            if (itemTop < viewTop) { el.scrollTop = itemTop; scrollTop.value = el.scrollTop; }
-            else if (itemBottom > viewBottom) { el.scrollTop = itemBottom - el.clientHeight; scrollTop.value = el.scrollTop; }
           }
+          walk(files.value, 0, null);
 
-          const fileContents = ref({});
-          const dirtyFiles = ref({});
-
-          function findNode(id, nodes) {
-            const list = nodes || files.value;
-            for (const n of list) {
-              if (n.id === id) return n;
-              if (n.children) { const found = findNode(id, n.children); if (found) return found; }
-            }
-            return null;
+          const siblingsByParent = new Map();
+          for (const node of result) {
+            const key = node.parentId ?? '__root__';
+            if (!siblingsByParent.has(key)) siblingsByParent.set(key, []);
+            siblingsByParent.get(key).push(node);
           }
-
-          const selectedFile = computed(() => selectedFileId.value ? findNode(selectedFileId.value) : null);
-          const pendingChangesCount = computed(() => Object.values(dirtyFiles.value).filter(Boolean).length);
-
-          const breadcrumbParts = computed(() => {
-            const file = selectedFile.value;
-            if (!file) return [];
-            const names = getPathParts(file.id);
-            const ids = [];
-            let currentId = file.id;
-            while (currentId) {
-              ids.unshift(currentId);
-              let parentId = null;
-              (function findParent(list) {
-                for (const n of list) {
-                  if (n.children) {
-                    for (const c of n.children) { if (c.id === currentId) { parentId = n.id; return; } }
-                    findParent(n.children);
-                    if (parentId) return;
-                  }
-                }
-              })(files.value);
-              currentId = parentId;
-            }
-            return names.map((name, i) => ({ id: ids[i], name }));
-          });
-
-          function onNodeClick(node) {
-            focusedNodeId.value = node.id;
-            if (editingNodeId.value === node.id) return;
-            if (node.type === 'folder') toggleFolder(node.id);
-            else selectFile(node.id);
+          for (const siblings of siblingsByParent.values()) {
+            const total = siblings.length;
+            siblings.forEach((n, i) => { n.setsize = total; n.posinset = i + 1; });
           }
+          return result;
+        });
 
-          function selectFile(id) {
+        const treeContainerRef = ref(null);
+        const scrollTop = ref(0);
+        const viewportHeight = ref(400);
+        let resizeObserver = null;
+
+        const totalTreeHeight = computed(() => flattenedNodes.value.length * ITEM_HEIGHT);
+
+        const visibleRows = computed(() => {
+          const flat = flattenedNodes.value;
+          const vh = viewportHeight.value || 400;
+          const start = Math.max(0, Math.floor(scrollTop.value / ITEM_HEIGHT) - OVERSCAN);
+          const end = Math.min(flat.length, Math.ceil((scrollTop.value + vh) / ITEM_HEIGHT) + OVERSCAN);
+          const out = [];
+          for (let i = start; i < end; i++) out.push({ node: flat[i], top: i * ITEM_HEIGHT });
+          return out;
+        });
+
+        const allFiles = computed(() => {
+          const out = [];
+          function walk(nodes, parents) {
+            for (const n of nodes) {
+              if (n.type === 'file') out.push({ id: n.id, name: n.name, path: parents.concat(n.name).join('/'), content: n.content || '' });
+              if (n.children) walk(n.children, parents.concat(n.name));
+            }
+          }
+          walk(files.value, []);
+          return out;
+        });
+
+        const folderCount = computed(() => {
+          let count = 0;
+          function walk(nodes) { for (const n of nodes) { if (n.type === 'folder') count++; if (n.children) walk(n.children); } }
+          walk(files.value);
+          return count;
+        });
+
+        const totalSize = computed(() => allFiles.value.reduce((sum, f) => sum + byteLength(f.content), 0));
+        const totalSizeLabel = computed(() => formatBytes(totalSize.value));
+const fileContents = ref({});
+        const dirtyFiles = ref({});
+        const saveError = ref(null);
+
+        function findNode(id, nodes) {
+          const list = nodes || files.value;
+          for (const n of list) {
+            if (n.id === id) return n;
+            if (n.children) { const found = findNode(id, n.children); if (found) return found; }
+          }
+          return null;
+        }
+
+        function findParentId(id, nodes) {
+          const list = nodes || files.value;
+          for (const n of list) {
+            if (n.children) {
+              for (const c of n.children) {
+                if (c.id === id) return n.id;
+                const found = findParentId(id, n.children);
+                if (found) return found;
+              }
+            }
+          }
+          return null;
+        }
+
+        function getPathParts(id) {
+          const parts = [];
+          let currentId = id;
+          while (currentId) {
+            const node = findNode(currentId);
+            if (!node) break;
+            parts.unshift(node.name);
+            currentId = findParentId(currentId);
+          }
+          return parts;
+        }
+
+        const selectedFile = computed(() => selectedFileId.value ? findNode(selectedFileId.value) : null);
+        const pendingChangesCount = computed(() => Object.values(dirtyFiles.value).filter(Boolean).length);
+
+        const breadcrumbParts = computed(() => {
+          const file = selectedFile.value;
+          if (!file) return [];
+          const names = getPathParts(file.id);
+          const ids = [];
+          let currentId = file.id;
+          while (currentId) {
+            ids.unshift(currentId);
+            currentId = findParentId(currentId);
+          }
+          return names.map((name, i) => ({ id: ids[i], name }));
+        });
+
+        function onNodeClick(node) {
+          focusedNodeId.value = node.id;
+          inspectedNodeId.value = node.id;
+          if (editingNodeId.value === node.id) return;
+          if (node.type === 'folder') toggleFolder(node.id);
+          else selectFile(node.id);
+        }
+
+        function doSelectFile(id) {
+          const node = findNode(id);
+          if (!node || node.type !== 'file') return;
+          selectedFileId.value = id;
+          inspectedNodeId.value = id;
+          if (!(id in fileContents.value)) fileContents.value[id] = node.content || '';
+          saveError.value = null;
+        }
+
+        function selectFile(id) { requestAction({ type: 'select', id }); }
+
+        function toggleFolder(id) {
+          const s = new Set(expandedFolders.value);
+          if (s.has(id)) s.delete(id); else s.add(id);
+          expandedFolders.value = s;
+        }
+
+        function onEditorInput(id) {
+          if (!(id in fileContents.value)) fileContents.value[id] = '';
+          const node = findNode(id);
+          dirtyFiles.value[id] = fileContents.value[id] !== (node.content || '');
+          if (saveError.value && saveError.value.fileId === id) saveError.value = null;
+        }
+
+        function saveFile(id) {
+          const node = findNode(id);
+          if (!node) return;
+          if (node.readOnly) {
+            saveError.value = { fileId: id, message: 'Este arquivo é somente leitura e não pode ser salvo.' };
+            showToast('Falha ao salvar: arquivo somente leitura', 'error');
+            return;
+          }
+          node.content = fileContents.value[id] ?? '';
+          dirtyFiles.value[id] = false;
+          saveError.value = null;
+          showToast('Arquivo salvo com sucesso', 'success');
+        }
+
+        function discardChanges(id) {
+          const node = findNode(id);
+          if (!node) return;
+          fileContents.value[id] = node.content || '';
+          dirtyFiles.value[id] = false;
+          saveError.value = null;
+          showToast('Alterações descartadas', 'info');
+        }
+
+        function saveAllFiles() {
+          let ok = true;
+          for (const id of Object.keys(dirtyFiles.value)) {
+            if (!dirtyFiles.value[id]) continue;
             const node = findNode(id);
-            if (!node || node.type === 'folder') return;
-            selectedFileId.value = id;
-            if (!(id in fileContents.value)) fileContents.value[id] = node.content || '';
-          }
-
-          function toggleFolder(id) {
-            const s = new Set(expandedFolders.value);
-            if (s.has(id)) s.delete(id); else s.add(id);
-            expandedFolders.value = s;
-          }
-
-          function onEditorInput(id) {
-            if (!(id in fileContents.value)) fileContents.value[id] = '';
-            const node = findNode(id);
-            dirtyFiles.value[id] = fileContents.value[id] !== (node.content || '');
-          }
-
-          function saveFile(id) {
-            const node = findNode(id);
-            if (!node) return;
+            if (!node) continue;
+            if (node.readOnly) {
+              saveError.value = { fileId: id, message: 'Este arquivo é somente leitura e não pode ser salvo.' };
+              ok = false;
+              continue;
+            }
             node.content = fileContents.value[id] ?? '';
             dirtyFiles.value[id] = false;
-            showToast('Arquivo salvo com sucesso', 'success');
           }
-
-          function discardChanges(id) {
-            const node = findNode(id);
-            if (!node) return;
-            fileContents.value[id] = node.content || '';
-            dirtyFiles.value[id] = false;
-            showToast('Alterações descartadas', 'info');
-          }
-
-          function getPathParts(id) {
-            const parts = [];
-            let currentId = id;
-            while (currentId) {
-              const node = findNode(currentId);
-              if (!node) break;
-              parts.unshift(node.name);
-              let parentId = null;
-              (function findParent(list) {
-                for (const n of list) {
-                  if (n.children) {
-                    for (const c of n.children) { if (c.id === currentId) { parentId = n.id; return; } }
-                    findParent(n.children);
-                    if (parentId) return;
-                  }
-                }
-              })(files.value);
-              currentId = parentId;
-            }
-            return parts;
-          }
-
-          function selectBreadcrumb(id) {
-            const node = findNode(id);
-            if (!node) return;
-            if (node.type === 'file') { selectFile(id); return; }
-            focusedNodeId.value = id;
-            let pid = findParentId(id);
-            while (pid) { expandedFolders.value.add(pid); pid = findParentId(pid); }
-            nextTick(() => {
-              const flat = flattenedNodes.value;
-              const idx = flat.findIndex(n => n.id === id);
-              if (idx >= 0) ensureRowVisible(idx);
-            });
-          }
-
-          function getFileIcon(node) {
-            if (node.type === 'folder') {
-              const isOpen = expandedFolders.value.has(node.id);
-              if (isOpen) {
-                return '<svg viewBox="0 0 16 16" width="16" height="16"><path d="M1.5 3C1.22 3 1 3.22 1 3.5V15c0 .28.22.5.5.5h13c.28 0 .5-.22.5-.5V5.5c0-.28-.22-.5-.5-.5H8L6.5 3.5H1.5z" fill="#dcb67a" opacity="0.6"/><path d="M1 6h14l-1.5 7H2.5L1 6z" fill="#dcb67a"/></svg>';
-              }
-              return '<svg viewBox="0 0 16 16" width="16" height="16"><path d="M14.5 3H8L6.5 1.5H1.5C1.22 1.5 1 1.72 1 2v12c0 .28.22.5.5.5h13c.28 0 .5-.22.5-.5V3.5c0-.28-.22-.5-.5-.5z" fill="#dcb67a"/></svg>';
-            }
-            const ext = node.name.split('.').pop().toLowerCase();
-            const color = FILE_COLORS[ext] || FILE_COLORS.default;
-            return '<svg viewBox="0 0 16 16" width="16" height="16"><path d="M9 1H3a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V6L9 1zm-.5 1.5L12 6H8.5V2.5z" fill="' + color + '"/></svg>';
-          }
-
-          function focusTreeInput() {
-            nextTick(() => {
-              const el = treeContainerRef.value ? treeContainerRef.value.querySelector('.pe-tree-input') : null;
-              if (el) { el.focus(); el.select(); }
-            });
-          }
-
-          function findParentId(id, nodes) {
-            const list = nodes || files.value;
-            for (const n of list) {
-              if (n.children) {
-                for (const c of n.children) {
-                  if (c.id === id) return n.id;
-                  const found = findParentId(id, n.children);
-                  if (found) return found;
-                }
-              }
-            }
-            return null;
-          }
-
-          function insertNode(parentId, node) {
-            if (!parentId) {
-              files.value.push(node);
-              return;
-            }
-            const parent = findNode(parentId);
-            if (parent) {
-              if (!parent.children) parent.children = [];
-              parent.children.push(node);
-            }
-          }
-
-          function getCreateParentId() {
-            const sel = selectedFileId.value;
-            if (!sel) return null;
-            const node = findNode(sel);
-            if (node && node.type === 'folder') return sel;
-            return findParentId(sel);
-          }
-
-          function startCreateFile() {
-            creatingType.value = 'file';
-            creatingNodeId.value = getCreateParentId();
-            const id = 'new-' + Date.now();
-            const node = { id, name: 'Novo arquivo.md', type: 'file', content: '' };
-            insertNode(creatingNodeId.value, node);
-            if (creatingNodeId.value) expandedFolders.value.add(creatingNodeId.value);
-            editingNodeId.value = id;
-            renameValue.value = node.name;
-            focusTreeInput();
-          }
-
-          function startCreateFolder() {
-            creatingType.value = 'folder';
-            creatingNodeId.value = getCreateParentId();
-            const id = 'new-' + Date.now();
-            const node = { id, name: 'Nova pasta', type: 'folder', children: [] };
-            insertNode(creatingNodeId.value, node);
-            if (creatingNodeId.value) expandedFolders.value.add(creatingNodeId.value);
-            editingNodeId.value = id;
-            renameValue.value = node.name;
-            focusTreeInput();
-          }
-
-          function startRename(node) {
-            editingNodeId.value = node.id;
-            if (node.type === 'folder' && expandedFolders.value.has(node.id)) {
-              toggleFolder(node.id);
-            }
-            renameValue.value = node.name;
-            focusTreeInput();
-          }
-
-          function commitRename() {
-            const id = editingNodeId.value;
-            if (!id) return;
-            const node = findNode(id);
-            if (!node) { editingNodeId.value = null; return; }
-            const newName = (renameValue.value || '').trim();
-            if (!newName || newName === node.name) { editingNodeId.value = null; return; }
-            node.name = newName;
-            editingNodeId.value = null;
-            showToast(node.type === 'folder' ? 'Pasta renomeada' : 'Arquivo renomeado', 'info');
-          }
-
-          function cancelRename() {
-            const id = editingNodeId.value;
-            editingNodeId.value = null;
-            if (id && id.startsWith('new-')) deleteNode({ id }, true);
-          }
-
-          function prepareDelete(node) {
-            pendingDelete.value = node;
-          }
-
-          function confirmDelete() {
-            if (!pendingDelete.value) return;
-            deleteNode(pendingDelete.value, false);
-            pendingDelete.value = null;
-          }
-
-          function cancelDelete() {
-            pendingDelete.value = null;
-          }
-
-          function deleteNode(node, silent) {
-            if (!node) return;
-            if (!silent) {
-              const msg = node.type === 'folder'
-                ? `Excluir a pasta "${node.name}" e todo seu conteúdo?`
-                : `Excluir o arquivo "${node.name}"?`;
-              if (!window.confirm(msg)) return;
-            }
-            const parentId = findParentId(node.id);
-            const parent = parentId ? findNode(parentId) : null;
-            if (parent && parent.children) {
-              parent.children = parent.children.filter(c => c.id !== node.id);
-            } else {
-              files.value = files.value.filter(f => f.id !== node.id);
-            }
-            if (selectedFileId.value === node.id) selectedFileId.value = null;
-            expandedFolders.value.delete(node.id);
-            if (!silent) showToast(node.type === 'folder' ? 'Pasta excluída' : 'Arquivo excluído', 'info');
-          }
-
-          function renderName(node) {
-            const q = searchQuery.value.trim();
-            if (!q) return node.name;
-            const name = node.name;
-            const lower = name.toLowerCase();
-            const idx = lower.indexOf(q.toLowerCase());
-            if (idx < 0) return name;
-            return name.slice(0, idx) + '<span class="pe-match">' + name.slice(idx, idx + q.length) + '</span>' + name.slice(idx + q.length);
-          }
-
-          function handleTreeKeydown(e) {
-            const flat = flattenedNodes.value;
-            if (!flat.length) return;
-            let currentIndex = flat.findIndex(n => n.id === focusedNodeId.value);
-            if (currentIndex < 0) { currentIndex = 0; focusedNodeId.value = flat[0].id; }
-            let nextIndex = currentIndex;
-
-            switch (e.key) {
-              case 'ArrowDown': e.preventDefault(); nextIndex = Math.min(currentIndex + 1, flat.length - 1); break;
-              case 'ArrowUp': e.preventDefault(); nextIndex = Math.max(currentIndex - 1, 0); break;
-              case 'ArrowRight': {
-                e.preventDefault();
-                const curr = flat[currentIndex];
-                if (curr && curr.type === 'folder') {
-                  if (!expandedFolders.value.has(curr.id)) toggleFolder(curr.id);
-                  else { const child = flat[currentIndex + 1]; if (child && child.parentId === curr.id) nextIndex = currentIndex + 1; }
-                }
-                break;
-              }
-              case 'ArrowLeft': {
-                e.preventDefault();
-                const curr = flat[currentIndex];
-                if (curr && curr.type === 'folder' && expandedFolders.value.has(curr.id)) toggleFolder(curr.id);
-                else if (curr && curr.parentId) { const parentIdx = flat.findIndex(n => n.id === curr.parentId); if (parentIdx >= 0) nextIndex = parentIdx; }
-                break;
-              }
-              case 'Enter': case ' ': {
-                e.preventDefault();
-                const curr = flat[currentIndex]; if (curr) onNodeClick(curr); break;
-              }
-              case 'Home': e.preventDefault(); nextIndex = 0; break;
-              case 'End': e.preventDefault(); nextIndex = flat.length - 1; break;
-              default: return;
-            }
-
-            if (nextIndex !== currentIndex && flat[nextIndex]) {
-              focusedNodeId.value = flat[nextIndex].id;
-              nextTick(() => ensureRowVisible(nextIndex));
-            }
-          }
-
-          const toasts = ref([]);
-          let toastId = 0;
-          function showToast(message, type) {
-            const id = ++toastId;
-            toasts.value.push({ id, message, type: type || 'info' });
-            setTimeout(() => { toasts.value = toasts.value.filter(t => t.id !== id); }, 3000);
-          }
-
-          function handleGlobalKeydown(e) {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-            if ((e.ctrlKey || e.metaKey) && e.key === 'n' && !e.shiftKey) { e.preventDefault(); startCreateFile(); }
-            if ((e.ctrlKey || e.metaKey) && e.key === 'n' && e.shiftKey) { e.preventDefault(); startCreateFolder(); }
-            if (e.key === 'F2') { e.preventDefault(); const f = selectedFile.value; if (f && f.type === 'file') startRename(f); }
-            if (e.key === 'Delete') { e.preventDefault(); const f = selectedFile.value; if (f) deleteNode(f); }
-          }
-
-          onMounted(() => {
-            document.documentElement.setAttribute('data-pe-theme', theme.value);
-            if (!selectedFileId.value && flattenedNodes.value.length) {
-              const first = flattenedNodes.value.find(n => n.type === 'file');
-              if (first) selectFile(first.id);
-            }
-            nextTick(() => {
-              const el = treeContainerRef.value;
-              if (el) {
-                viewportHeight.value = el.clientHeight || 400;
-                resizeObserver = new ResizeObserver(entries => {
-                  for (const entry of entries) { const h = entry.contentRect.height; if (h > 0) viewportHeight.value = h; }
-                });
-                resizeObserver.observe(el);
-              }
-            });
-          });
-          onBeforeUnmount(() => {
-            window.removeEventListener('keydown', handleGlobalKeydown);
-            if (folderClickTimeout) clearTimeout(folderClickTimeout);
-            if (resizeObserver) { resizeObserver.disconnect(); resizeObserver = null; }
-          });
-
-          return {
-            theme, toggleTheme, activeProject, activityItems, activeView, switchView,
-            isExplorerCollapsed, toggleExplorer, isFocusMode, toggleFocusMode,
-            goBackToProjects, searchQuery, flattenedNodes, totalTreeHeight, visibleRows,
-            treeContainerRef, onTreeScroll, handleTreeKeydown,
-            selectedFileId, focusedNodeId, selectedFile,
-            fileContents, dirtyFiles, pendingChangesCount,
-            onNodeClick, toggleFolder, onEditorInput, saveFile, discardChanges,
-            getPathParts, getFileIcon, renderName,
-            editingNodeId, renameValue, creatingNodeId, creatingType, createValue,
-            startCreateFile, startCreateFolder, startRename, commitRename, cancelRename, deleteNode,
-            breadcrumbParts, selectBreadcrumb,
-            toasts, showToast,
-          };
+          return ok;
         }
-      }).mount('#app');
-    })();
+
+        function discardAllFiles() {
+          for (const id of Object.keys(dirtyFiles.value)) {
+            const node = findNode(id);
+            if (node) { fileContents.value[id] = node.content || ''; dirtyFiles.value[id] = false; }
+          }
+          saveError.value = null;
+        }
+
+        function insertNode(parentId, node) {
+          if (!parentId) { files.value.push(node); return; }
+          const parent = findNode(parentId);
+          if (parent) { if (!parent.children) parent.children = []; parent.children.push(node); }
+        }
+
+        function getCreateParentId() {
+          const sel = inspectedNodeId.value;
+          if (!sel) return null;
+          const node = findNode(sel);
+          if (node && node.type === 'folder') return sel;
+          return findParentId(sel);
+        }
+
+        function focusTreeInput() {
+          nextTick(() => {
+            const el = treeContainerRef.value ? treeContainerRef.value.querySelector('.pe-tree-input') : null;
+            if (el) { el.focus(); el.select(); }
+          });
+        }
+
+        function startCreateFile() {
+          const parentId = getCreateParentId();
+          const id = 'new-' + Date.now();
+          const node = { id, name: 'Novo arquivo.md', type: 'file', content: '' };
+          insertNode(parentId, node);
+          if (parentId) expandedFolders.value.add(parentId);
+          editingNodeId.value = id;
+          renameValue.value = node.name;
+          focusTreeInput();
+        }
+
+        function startCreateFolder() {
+          const parentId = getCreateParentId();
+          const id = 'new-' + Date.now();
+          const node = { id, name: 'Nova pasta', type: 'folder', children: [] };
+          insertNode(parentId, node);
+          if (parentId) expandedFolders.value.add(parentId);
+          editingNodeId.value = id;
+          renameValue.value = node.name;
+          focusTreeInput();
+        }
+
+        function startRename(node) {
+          editingNodeId.value = node.id;
+          renameValue.value = node.name;
+          focusTreeInput();
+        }
+
+        function commitRename() {
+          const id = editingNodeId.value;
+          if (!id) return;
+          const node = findNode(id);
+          if (!node) { editingNodeId.value = null; return; }
+          const newName = (renameValue.value || '').trim();
+          if (!newName || newName === node.name) { editingNodeId.value = null; return; }
+          node.name = newName;
+          editingNodeId.value = null;
+          showToast(node.type === 'folder' ? 'Pasta renomeada' : 'Arquivo renomeado', 'info');
+        }
+
+        function cancelRename() {
+          const id = editingNodeId.value;
+          editingNodeId.value = null;
+          if (id && id.startsWith('new-')) deleteNode({ id }, true);
+        }
+
+        function deleteNode(node, silent) {
+          if (!node) return;
+          const parentId = findParentId(node.id);
+          const parent = parentId ? findNode(parentId) : null;
+          if (parent && parent.children) parent.children = parent.children.filter(c => c.id !== node.id);
+          else files.value = files.value.filter(f => f.id !== node.id);
+          if (selectedFileId.value === node.id) selectedFileId.value = null;
+          if (inspectedNodeId.value === node.id) inspectedNodeId.value = null;
+          expandedFolders.value.delete(node.id);
+          delete dirtyFiles.value[node.id];
+          if (!silent) showToast(node.type === 'folder' ? 'Pasta excluída' : 'Arquivo excluído', 'info');
+        }
+
+        function escapeHtml(value) {
+          return String(value).replace(/[&<>\"']/g, function (ch) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+          });
+        }
+
+        function renderName(node) {
+          const q = searchQuery.value.trim();
+          const name = node.name;
+          if (!q) return escapeHtml(name);
+          const idx = name.toLowerCase().indexOf(q.toLowerCase());
+          if (idx < 0) return escapeHtml(name);
+          return escapeHtml(name.slice(0, idx)) +
+            '<span class=\"pe-match\">' + escapeHtml(name.slice(idx, idx + q.length)) + '</span>' +
+            escapeHtml(name.slice(idx + q.length));
+        }
+
+        function getFileIcon(node) {
+          if (node.type === 'folder') {
+            const isOpen = expandedFolders.value.has(node.id);
+            if (isOpen) return '<svg viewBox="0 0 16 16" width="16" height="16"><path d="M1.5 3C1.22 3 1 3.22 1 3.5V15c0 .28.22.5.5.5h13c.28 0 .5-.22.5-.5V5.5c0-.28-.22-.5-.5-.5H8L6.5 3.5H1.5z" fill="#dcb67a" opacity="0.6"/><path d="M1 6h14l-1.5 7H2.5L1 6z" fill="#dcb67a"/></svg>';
+            return '<svg viewBox="0 0 16 16" width="16" height="16"><path d="M14.5 3H8L6.5 1.5H1.5C1.22 1.5 1 1.72 1 2v12c0 .28.22.5.5.5h13c.28 0 .5-.22.5-.5V3.5c0-.28-.22-.5-.5-.5z" fill="#dcb67a"/></svg>';
+          }
+          const ext = node.name.split('.').pop().toLowerCase();
+          const color = FILE_COLORS[ext] || FILE_COLORS.default;
+          return '<svg viewBox="0 0 16 16" width="16" height="16"><path d="M9 1H3a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V6L9 1zm-.5 1.5L12 6H8.5V2.5z" fill="' + color + '"/></svg>';
+        }
+function onTreeScroll(e) { scrollTop.value = e.target.scrollTop; }
+
+        function ensureRowVisible(index) {
+          const el = treeContainerRef.value;
+          if (!el) return;
+          const itemTop = index * ITEM_HEIGHT;
+          const itemBottom = itemTop + ITEM_HEIGHT;
+          const viewTop = el.scrollTop;
+          const viewBottom = viewTop + el.clientHeight;
+          if (itemTop < viewTop) { el.scrollTop = itemTop; scrollTop.value = el.scrollTop; }
+          else if (itemBottom > viewBottom) { el.scrollTop = itemBottom - el.clientHeight; scrollTop.value = el.scrollTop; }
+        }
+
+        function selectBreadcrumb(id) {
+          const node = findNode(id);
+          if (!node) return;
+          if (node.type === 'file') { selectFile(id); return; }
+          focusedNodeId.value = id;
+          inspectedNodeId.value = id;
+          let pid = findParentId(id);
+          while (pid) { expandedFolders.value.add(pid); pid = findParentId(pid); }
+          nextTick(() => {
+            const idx = flattenedNodes.value.findIndex(n => n.id === id);
+            if (idx >= 0) ensureRowVisible(idx);
+          });
+        }
+
+        function handleTreeKeydown(e) {
+          const flat = flattenedNodes.value;
+          if (!flat.length) return;
+          let currentIndex = flat.findIndex(n => n.id === focusedNodeId.value);
+          if (currentIndex < 0) { currentIndex = 0; focusedNodeId.value = flat[0].id; }
+          let nextIndex = currentIndex;
+
+          switch (e.key) {
+            case 'ArrowDown': e.preventDefault(); nextIndex = Math.min(currentIndex + 1, flat.length - 1); break;
+            case 'ArrowUp': e.preventDefault(); nextIndex = Math.max(currentIndex - 1, 0); break;
+            case 'ArrowRight': {
+              e.preventDefault();
+              const curr = flat[currentIndex];
+              if (curr && curr.type === 'folder') {
+                if (!expandedFolders.value.has(curr.id)) toggleFolder(curr.id);
+                else { const child = flat[currentIndex + 1]; if (child && child.parentId === curr.id) nextIndex = currentIndex + 1; }
+              }
+              break;
+            }
+            case 'ArrowLeft': {
+              e.preventDefault();
+              const curr = flat[currentIndex];
+              if (curr && curr.type === 'folder' && expandedFolders.value.has(curr.id)) toggleFolder(curr.id);
+              else if (curr && curr.parentId) { const parentIdx = flat.findIndex(n => n.id === curr.parentId); if (parentIdx >= 0) nextIndex = parentIdx; }
+              break;
+            }
+            case 'Enter': case ' ': {
+              e.preventDefault();
+              const curr = flat[currentIndex];
+              if (curr) { focusedNodeId.value = curr.id; inspectedNodeId.value = curr.id; if (curr.type === 'file') selectFile(curr.id); else toggleFolder(curr.id); }
+              break;
+            }
+            case 'Home': e.preventDefault(); nextIndex = 0; break;
+            case 'End': e.preventDefault(); nextIndex = flat.length - 1; break;
+            default: return;
+          }
+
+          if (nextIndex !== currentIndex && flat[nextIndex]) {
+            focusedNodeId.value = flat[nextIndex].id;
+            inspectedNodeId.value = flat[nextIndex].id;
+            nextTick(() => ensureRowVisible(nextIndex));
+          }
+        }
+
+        const fileInput = ref(null);
+        const dirInput = ref(null);
+
+        function triggerImport(kind) {
+          const el = kind === 'dir' ? dirInput.value : fileInput.value;
+          if (el) el.click();
+        }
+
+        function onImportChange(e) {
+          const list = Array.from(e.target.files || []);
+          e.target.value = '';
+          if (!list.length) return;
+
+          const parentId = getCreateParentId();
+          const valid = [];
+          const rejected = [];
+          const MAX_FILE_BYTES = 1024 * 1024;
+          const MAX_FILES = 250;
+
+          for (const file of list) {
+            if (file.size > MAX_FILE_BYTES) rejected.push(file.name + ' (excede 1 MiB)');
+            else if (allFiles.value.length + valid.length >= MAX_FILES) rejected.push(file.name + ' (limite de arquivos)');
+            else valid.push(file);
+          }
+
+          if (rejected.length) {
+            showToast('Não importado: ' + rejected.join(', '), 'error');
+          }
+          if (!valid.length) return;
+
+          let remaining = valid.length;
+          for (const file of valid) {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const rel = file.webkitRelativePath || file.name;
+              const parts = rel.split('/').filter(Boolean);
+              const name = parts.pop();
+              let targetParent = parentId;
+              for (const dir of parts) {
+                const siblings = targetParent ? ((findNode(targetParent) || {}).children || []) : files.value;
+                let dirNode = siblings.find(n => n.type === 'folder' && n.name === dir);
+                if (!dirNode) {
+                  dirNode = { id: 'imp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7), name: dir, type: 'folder', children: [] };
+                  insertNode(targetParent, dirNode);
+                  expandedFolders.value.add(dirNode.id);
+                }
+                targetParent = dirNode.id;
+              }
+              const id = 'imp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+              insertNode(targetParent, { id, name, type: 'file', content: String(reader.result || '') });
+              remaining--;
+              if (remaining === 0) showToast(valid.length + ' arquivo(s) importado(s)', 'success');
+            };
+            reader.onerror = () => {
+              remaining--;
+              if (remaining === 0) showToast('Falha ao importar arquivos', 'error');
+            };
+            reader.readAsText(file);
+          }
+        }
+
+        const isBatchOpen = ref(false);
+        const batchPaths = ref('');
+        const batchPreview = computed(() => {
+          const lines = batchPaths.value.split('\n').map(l => l.trim()).filter(Boolean);
+          if (!lines.length) return 'Nenhum caminho informado.';
+          return lines.length + ' arquivo(s) serão criados.';
+        });
+
+        function openBatch() { isBatchOpen.value = true; batchPaths.value = ''; }
+        function closeBatch() { isBatchOpen.value = false; }
+
+        function commitBatch() {
+          const lines = batchPaths.value.split('\n').map(l => l.trim()).filter(Boolean);
+          if (!lines.length) { showToast('Informe ao menos um caminho', 'error'); return; }
+          const parentId = getCreateParentId();
+          let created = 0;
+          for (const line of lines) {
+            const parts = line.split('/').filter(Boolean);
+            const name = parts.pop();
+            if (!name) continue;
+            let targetParent = parentId;
+            for (const dir of parts) {
+              let dirNode = null;
+              const siblings = targetParent ? (findNode(targetParent).children || []) : files.value;
+              dirNode = siblings.find(n => n.type === 'folder' && n.name === dir);
+              if (!dirNode) {
+                dirNode = { id: 'batch-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7), name: dir, type: 'folder', children: [] };
+                insertNode(targetParent, dirNode);
+                expandedFolders.value.add(dirNode.id);
+              }
+              targetParent = dirNode.id;
+            }
+            const id = 'batch-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+            insertNode(targetParent, { id, name, type: 'file', content: '' });
+            created++;
+          }
+          isBatchOpen.value = false;
+          showToast(created + ' arquivo(s) criado(s)', 'success');
+        }
+
+        const pendingDelete = ref(null);
+        function prepareDelete(node) { pendingDelete.value = node; }
+        function cancelDelete() { pendingDelete.value = null; }
+        function confirmDelete() {
+          if (!pendingDelete.value) return;
+          deleteNode(pendingDelete.value, false);
+          pendingDelete.value = null;
+        }
+const providers = [
+          { id: 'openai', name: 'OpenAI', meta: 'gpt-4o · gpt-4o-mini', configured: true, key: 'sk-proj-9f2a7c1b4e6d8a0f2b5c7e9d1a3f5b7c9d2e4f6a8b0c1d3e5f7a9b2c4d6e8f0a1b', model: 'gpt-4o', models: ['gpt-4o', 'gpt-4o-mini'] },
+          { id: 'anthropic', name: 'Anthropic', meta: 'claude-3-5-sonnet', configured: false, key: '', model: 'claude-3-5-sonnet', models: ['claude-3-5-sonnet', 'claude-3-opus'] },
+          { id: 'gemini', name: 'Google Gemini', meta: 'gemini-1.5-pro', configured: true, key: 'AIzaSyA1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8', model: 'gemini-1.5-pro', models: ['gemini-1.5-pro', 'gemini-1.5-flash'] },
+    ];
+
+        const showKey = ref(false);
+        const aiErrors = ref({});
+        const aiState = ref({
+          providerId: 'openai',
+          apiKey: providers[0].key,
+          model: providers[0].model,
+          accessMode: 'selected',
+          fileAccess: { 'file-system': 'allowed' },
+        });
+
+        const accessModes = [
+          { id: 'none', label: 'Nenhum' },
+          { id: 'selected', label: 'Somente selecionados' },
+          { id: 'all', label: 'Todos' },
+        ];
+
+        const selectedProvider = computed(() => providers.find(p => p.id === aiState.value.providerId) || providers[0]);
+
+        const accessModeLabel = computed(() => {
+          if (aiState.value.accessMode === 'none') return 'Nenhum arquivo disponível';
+          if (aiState.value.accessMode === 'all') return 'Todos os arquivos disponíveis';
+          return 'Somente arquivos permitidos';
+        });
+
+        const accessModeHint = computed(() => {
+          if (aiState.value.accessMode === 'none') return 'Nenhum arquivo do projeto fica disponível para a IA, independentemente das permissões individuais.';
+          if (aiState.value.accessMode === 'all') return 'Todos os arquivos do projeto ficam disponíveis para a IA, independentemente das permissões individuais.';
+          return 'Apenas arquivos com permissão individual "permitido" ficam disponíveis para a IA.';
+        });
+
+        function pickAi() {
+          const s = aiState.value;
+          return { providerId: s.providerId, apiKey: s.apiKey, model: s.model, accessMode: s.accessMode, fileAccess: Object.assign({}, s.fileAccess) };
+        }
+
+        const aiSaved = ref(JSON.stringify(pickAi()));
+        const aiDirty = computed(() => JSON.stringify(pickAi()) !== aiSaved.value);
+
+        const aiSummary = computed(() => {
+          const mode = accessModeLabel.value;
+          return mode;
+        });
+
+        const effectiveSummary = computed(() => {
+          const total = allFiles.value.length;
+          const allowed = allFiles.value.filter(f => effectiveAccess(f.id) === 'allowed').length;
+          return allowed + ' de ' + total + ' arquivo(s) com acesso efetivo para a IA.';
+        });
+
+        function effectiveAccess(fileId) {
+          const mode = aiState.value.accessMode;
+          if (mode === 'none') return 'denied';
+          if (mode === 'all') return 'allowed';
+          return aiState.value.fileAccess[fileId] === 'allowed' ? 'allowed' : 'denied';
+        }
+
+        function toggleFileAccess(fileId) {
+          if (aiState.value.accessMode !== 'selected') return;
+          const current = aiState.value.fileAccess[fileId] === 'allowed' ? 'denied' : 'allowed';
+          const next = Object.assign({}, aiState.value.fileAccess);
+          next[fileId] = current;
+          aiState.value.fileAccess = next;
+        }
+
+        function selectProvider(id) {
+          const provider = providers.find(p => p.id === id);
+          if (!provider) return;
+          aiState.value.providerId = id;
+          aiState.value.apiKey = provider.key || '';
+          aiState.value.model = provider.model;
+          aiErrors.value = {};
+          showKey.value = false;
+        }
+
+        function validationClass(valid, configured) {
+          if (valid && configured) return 'is-ok';
+          if (valid || configured) return 'is-warn';
+          return 'is-error';
+        }
+
+        function saveAi(silent) {
+          const errs = {};
+          if (!aiState.value.apiKey || !aiState.value.apiKey.trim()) errs.key = 'Informe a chave de API do provedor.';
+          if (!aiState.value.model) errs.model = 'Selecione um modelo.';
+          aiErrors.value = errs;
+          if (Object.keys(errs).length) {
+            if (!silent) showToast('Verifique os campos destacados', 'error');
+            return false;
+          }
+          aiSaved.value = JSON.stringify(pickAi());
+          if (!silent) showToast('Configurações de acesso salvas', 'success');
+          return true;
+        }
+
+        function resetAi() {
+          const snapshot = JSON.parse(aiSaved.value);
+          aiState.value.providerId = snapshot.providerId;
+          aiState.value.apiKey = snapshot.apiKey;
+          aiState.value.model = snapshot.model;
+          aiState.value.accessMode = snapshot.accessMode;
+          aiState.value.fileAccess = snapshot.fileAccess;
+          aiErrors.value = {};
+        }
+const defaultConfig = '{\n  "includePatterns": ["prompts/**", "config/**"],\n  "maxContextBytes": 20480\n}';
+
+        const settingsState = ref({
+          name: activeProject.value.name,
+          description: activeProject.value.description,
+          defaultView: activeProject.value.defaultView,
+          instructions: activeProject.value.instructions,
+          configText: defaultConfig,
+        });
+
+        const settingsSaved = ref(JSON.stringify(settingsState.value));
+        const settingsDirty = computed(() => JSON.stringify(settingsState.value) !== settingsSaved.value);
+
+        const settingsErrors = computed(() => {
+          const errs = {};
+          const s = settingsState.value;
+          if (!s.name || !s.name.trim()) errs.name = 'Informe o nome do projeto.';
+          if (s.instructions && s.instructions.length > 20000) errs.instructions = 'As instruções excedem 20.000 caracteres.';
+          if (s.configText && s.configText.trim()) {
+            try { JSON.parse(s.configText); } catch (e) { errs.config = 'Configuração inválida: ' + e.message; }
+          }
+          return errs;
+        });
+
+        function saveSettings(silent) {
+          if (Object.keys(settingsErrors.value).length) {
+            if (!silent) showToast('Corrija os campos destacados antes de salvar', 'error');
+            return false;
+          }
+          const s = settingsState.value;
+          activeProject.value.name = s.name.trim();
+          activeProject.value.description = s.description;
+          activeProject.value.defaultView = s.defaultView;
+          activeProject.value.instructions = s.instructions;
+          activeProject.value.updatedAt = '17/11/2026';
+          settingsSaved.value = JSON.stringify(settingsState.value);
+          if (!silent) showToast('Configurações do projeto salvas', 'success');
+          return true;
+        }
+
+        function resetSettings() {
+          const snapshot = JSON.parse(settingsSaved.value);
+          settingsState.value.name = snapshot.name;
+          settingsState.value.description = snapshot.description;
+          settingsState.value.defaultView = snapshot.defaultView;
+          settingsState.value.instructions = snapshot.instructions;
+          settingsState.value.configText = snapshot.configText;
+        }
+const layoutClasses = computed(() => ({
+          'is-explorer-collapsed': isExplorerCollapsed.value,
+          'is-focus-mode': isFocusMode.value,
+          'is-page-view': activeView.value !== 'files',
+          'has-inspector': activeView.value === 'files' && isInspectorOpen.value,
+        }));
+
+        const saveStateClass = computed(() => {
+          if (saveError.value && selectedFile.value && saveError.value.fileId === selectedFile.value.id) return 'is-error';
+          if (selectedFile.value && dirtyFiles.value[selectedFile.value.id]) return 'is-dirty';
+          return '';
+        });
+        const saveStateLabel = computed(() => {
+          if (saveError.value && selectedFile.value && saveError.value.fileId === selectedFile.value.id) return 'Erro ao salvar';
+          if (selectedFile.value && dirtyFiles.value[selectedFile.value.id]) return 'Alterações não salvas';
+          return selectedFile.value ? 'Salvo' : 'Sem arquivo';
+        });
+
+        const statusColor = computed(() => {
+          if (saveError.value) return 'var(--pe-error)';
+          if (pendingChangesCount.value) return 'var(--pe-warning)';
+          return 'var(--pe-success)';
+        });
+        const statusText = computed(() => {
+          if (saveError.value) return 'Erro ao salvar';
+          if (pendingChangesCount.value) return 'Alterações não salvas';
+          return 'Pronto';
+        });
+
+        function languageOf(node) {
+          if (!node) return 'Texto';
+          const ext = node.name.split('.').pop().toLowerCase();
+          return LANGUAGE_BY_EXT[ext] || LANGUAGE_BY_EXT.default;
+        }
+
+        const inspectedNode = computed(() => inspectedNodeId.value ? findNode(inspectedNodeId.value) : null);
+        const inspectedPath = computed(() => inspectedNodeId.value ? getPathParts(inspectedNodeId.value).join(' / ') : '');
+        const inspectedExtension = computed(() => {
+          if (!inspectedNode.value || inspectedNode.value.type !== 'file') return '—';
+          const parts = inspectedNode.value.name.split('.');
+          return parts.length > 1 ? '.' + parts.pop().toLowerCase() : 'sem extensão';
+        });
+        const inspectedLanguage = computed(() => languageOf(inspectedNode.value));
+        const inspectedSize = computed(() => {
+          const node = inspectedNode.value;
+          if (!node) return '0 B';
+          if (node.type === 'file') return formatBytes(byteLength(node.content));
+          let total = 0;
+          (function walk(n) { if (n.children) n.children.forEach(c => { if (c.type === 'file') total += byteLength(c.content); walk(c); }); })(node);
+          return formatBytes(total);
+        });
+        const inspectedChildren = computed(() => {
+          const node = inspectedNode.value;
+          return node && node.children ? node.children.length : 0;
+        });
+
+        const hasPendingChanges = computed(() => pendingChangesCount.value > 0 || aiDirty.value || settingsDirty.value);
+
+        const pendingAction = ref(null);
+
+        function performBack() { showToast('Voltar aos meus projetos', 'info'); }
+
+        function executeAction(action) {
+          if (!action) return;
+          if (action.type === 'select') doSelectFile(action.id);
+          else if (action.type === 'view') {
+            activeView.value = action.view;
+            if (action.view !== 'files') isFocusMode.value = false;
+          } else if (action.type === 'back') performBack();
+        }
+
+        function requestAction(action) {
+          if (!hasPendingChanges.value) { executeAction(action); return; }
+          pendingAction.value = action;
+        }
+
+        function cancelPending() { pendingAction.value = null; }
+
+        function saveAndContinue() {
+          const okFiles = saveAllFiles();
+          let okAi = true;
+          let okSettings = true;
+          if (aiDirty.value) okAi = saveAi(true);
+          if (settingsDirty.value) okSettings = saveSettings(true);
+          if (okFiles && okAi && okSettings) {
+            showToast('Alterações salvas', 'success');
+            const action = pendingAction.value;
+            pendingAction.value = null;
+            if (action) executeAction(action);
+          } else {
+            showToast('Não foi possível salvar todas as alterações', 'error');
+          }
+        }
+
+        function discardAndContinue() {
+          discardAllFiles();
+          resetAi();
+          resetSettings();
+          const action = pendingAction.value;
+          pendingAction.value = null;
+          if (action) executeAction(action);
+          showToast('Alterações descartadas', 'info');
+        }
+
+        function switchView(id) { requestAction({ type: 'view', view: id }); }
+        function toggleExplorer() { isExplorerCollapsed.value = !isExplorerCollapsed.value; }
+        function toggleInspector() {
+          isInspectorOpen.value = !isInspectorOpen.value;
+          if (isInspectorOpen.value && isFocusMode.value) isFocusMode.value = false;
+        }
+        function toggleFocusMode() {
+          isFocusMode.value = !isFocusMode.value;
+          if (isFocusMode.value) isInspectorOpen.value = false;
+        }
+        function goBackToProjects() { requestAction({ type: 'back' }); }
+
+        const toasts = ref([]);
+        let toastId = 0;
+        function showToast(message, type) {
+          const id = ++toastId;
+          toasts.value.push({ id, message, type: type || 'info' });
+          setTimeout(() => { toasts.value = toasts.value.filter(t => t.id !== id); }, 3000);
+        }
+
+        function handleGlobalKeydown(e) {
+          const tag = (e.target && e.target.tagName) || '';
+          const typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+          const mod = e.ctrlKey || e.metaKey;
+          if (mod && e.key.toLowerCase() === 's' && selectedFile.value) { e.preventDefault(); saveFile(selectedFile.value.id); return; }
+          if (typing) return;
+          if (mod && e.key.toLowerCase() === 'n' && !e.shiftKey) { e.preventDefault(); startCreateFile(); }
+          if (mod && e.key.toLowerCase() === 'n' && e.shiftKey) { e.preventDefault(); startCreateFolder(); }
+          if (e.key === 'F2' && selectedFile.value) { e.preventDefault(); startRename(selectedFile.value); }
+          if ((e.key === 'Delete' || e.key === 'DEL') && inspectedNode.value) { e.preventDefault(); prepareDelete(inspectedNode.value); }
+        }
+
+        onMounted(() => {
+          document.documentElement.setAttribute('data-pe-theme', theme.value);
+          const narrow = window.innerWidth <= 900;
+          if (narrow) { isExplorerCollapsed.value = true; isInspectorOpen.value = false; }
+          const first = flattenedNodes.value.find(n => n.type === 'file');
+          if (first) { doSelectFile(first.id); focusedNodeId.value = first.id; }
+          nextTick(() => {
+            const el = treeContainerRef.value;
+            if (el) {
+              viewportHeight.value = el.clientHeight || 400;
+              resizeObserver = new ResizeObserver(entries => {
+                for (const entry of entries) { const h = entry.contentRect.height; if (h > 0) viewportHeight.value = h; }
+              });
+              resizeObserver.observe(el);
+            }
+          });
+          window.addEventListener('keydown', handleGlobalKeydown);
+        });
+
+        onBeforeUnmount(() => {
+          window.removeEventListener('keydown', handleGlobalKeydown);
+          if (resizeObserver) { resizeObserver.disconnect(); resizeObserver = null; }
+        });
+
+        return {
+          theme, toggleTheme, activeProject, hasPendingChanges,
+          viewTitle, viewSubtitle, saveStateClass, saveStateLabel,
+          isFocusMode, isExplorerCollapsed, isInspectorOpen,
+          toggleExplorer, toggleInspector, toggleFocusMode, layoutClasses,
+          activityItems, activeView, switchView,
+          searchQuery, flattenedNodes, treeContainerRef, totalTreeHeight, visibleRows,
+          onTreeScroll, handleTreeKeydown, inspectedNodeId, focusedNodeId, editingNodeId,
+          getFileIcon, renderName, startRename, commitRename, cancelRename, renameValue,
+          dirtyFiles, prepareDelete, startCreateFile, startCreateFolder,
+          triggerImport, onImportChange, fileInput, dirInput,
+          selectedFile, breadcrumbParts, selectBreadcrumb, saveFile, discardChanges, saveError,
+          fileContents, onEditorInput, onNodeClick, toggleFolder,
+          inspectedNode, inspectedPath, inspectedExtension, inspectedLanguage, inspectedSize, inspectedChildren,
+          effectiveAccess, accessModeLabel, toggleFileAccess, languageOf,
+          providers, selectProvider, aiState, aiErrors, showKey, selectedProvider,
+          accessModes, accessModeHint, validationClass, aiSummary, effectiveSummary,
+          allFiles, aiDirty, resetAi, saveAi,
+          settingsState, settingsErrors, settingsDirty, resetSettings, saveSettings,
+          statusColor, statusText, pendingChangesCount, toasts,
+          pendingAction, cancelPending, discardAndContinue, saveAndContinue,
+          pendingDelete, cancelDelete, confirmDelete,
+          isBatchOpen, batchPaths, batchPreview, openBatch, closeBatch, commitBatch,
+          goBackToProjects,
+        };
+      }
+    }).mount('#app');
+  })();
   </script>
 </body>
 </html>
