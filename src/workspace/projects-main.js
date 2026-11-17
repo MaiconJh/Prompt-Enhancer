@@ -18,6 +18,13 @@ const ProjectsMain = (() => {
         identity.append(brand, subtitle);
 
         const actions = element('div', 'pe-projects-main__actions');
+        const themeButton = Atoms.buttonNode({
+            label: I18n.t('sm.projects.theme'),
+            ariaLabel: I18n.t('sm.projects.theme'),
+            variant: 'ghost',
+            onClick: () => Theme.cycle()
+        });
+        themeButton.prepend(document.createTextNode('◐ '));
         const search = element('input', 'pe-param-input pe-projects-main__search');
         search.type = 'search';
         search.placeholder = I18n.t('sm.projects.search');
@@ -40,7 +47,7 @@ const ProjectsMain = (() => {
             onClick: createProject
         });
         create.prepend(document.createTextNode('+ '));
-        actions.append(search, sort, create);
+        actions.append(themeButton, search, sort, create);
         header.append(identity, actions);
 
         const intro = element('div', 'pe-projects-main__intro');
