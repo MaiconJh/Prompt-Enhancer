@@ -29,11 +29,12 @@ const WorkspaceController = (() => {
     }
 
     function createFolder(projectId, folderPath, relativePaths = null, targetFolderPath = '') {
+        const normalizedFolderPath = String(folderPath || '').replace(/\/+$/, '');
         if (relativePaths == null) {
-            const path = resolveTargetPath(folderPath, targetFolderPath);
+            const path = resolveTargetPath(normalizedFolderPath, targetFolderPath);
             return Workspace.folders.create(projectId, path);
         }
-        const folder = resolveTargetPath(folderPath, targetFolderPath);
+        const folder = resolveTargetPath(normalizedFolderPath, targetFolderPath);
         const names = Array.isArray(relativePaths) ? relativePaths : parsePaths(relativePaths);
         if (!names.length) throw new Error(I18n.t('ws.errors.createFileFailed'));
         return createFiles(projectId, names.map(name => folder + '/' + name));
