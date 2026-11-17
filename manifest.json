@@ -820,27 +820,27 @@
       ]
     },
     {
-      "file": "workspace/workspace-mock-styles.js",
-      "description": "Scoped production stylesheet ported from the approved workspace mock.",
+      "file": "workspace/workspace-styles.js",
+      "description": "Scoped production stylesheet for the project workspace.",
       "interfaces": {
         "provides": [
-          "WorkspaceMockStyles"
+          "WorkspaceStyles"
         ],
         "consumes": []
       },
       "interactions": [
-        "WorkspaceMockUI injects the stylesheet when a project workspace is mounted."
+        "WorkspaceUI injects the stylesheet when a project workspace is mounted."
       ]
     },
     {
-      "file": "workspace/workspace-mock-ui.js",
-      "description": "Mock-faithful project workspace view bound to persistent project, folder, file, provider, permission, and settings domains.",
+      "file": "workspace/workspace-ui.js",
+      "description": "Project workspace view bound to persistent project, folder, file, provider, permission, and settings domains.",
       "interfaces": {
         "provides": [
-          "WorkspaceMockUI"
+          "WorkspaceUI"
         ],
         "consumes": [
-          "WorkspaceMockStyles",
+          "WorkspaceStyles",
           "Workspace",
           "WorkspaceController",
           "WorkspaceExplorerView",
@@ -852,23 +852,8 @@
         ]
       },
       "interactions": [
-        "WorkspaceUI delegates its public render contract to WorkspaceMockUI.",
+        "Provides the WorkspaceUI.render(container, options) contract consumed by settings-modal.",
         "All project, folder, file, permission, provider, import, and configuration operations use the existing domain facades."
-      ]
-    },
-    {
-      "file": "workspace/workspace-ui.js",
-      "description": "Provides the operational editor interface for one selected project.",
-      "interfaces": {
-        "provides": [
-          "WorkspaceUI"
-        ],
-        "consumes": [
-          "WorkspaceMockUI"
-        ]
-      },
-      "interactions": [
-        "Preserves the WorkspaceUI.render(container, options) contract consumed by settings-modal."
       ]
     },
     {
