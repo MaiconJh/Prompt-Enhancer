@@ -5,6 +5,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 
 const source = await readFile(new URL('../workspace/workspace-controller.js', import.meta.url), 'utf8');
+const modelSource = await readFile(new URL('../workspace/workspace-model.js', import.meta.url), 'utf8');
 
 function createHarness() {
     const calls = [];
@@ -25,6 +26,7 @@ function createHarness() {
             }
         }
     });
+    vm.runInContext(modelSource, context);
     vm.runInContext(source, context);
     return { controller: vm.runInContext('WorkspaceController', context), calls };
 }
@@ -71,7 +73,7 @@ test('rejeita MIME binário, UTF-8 inválido e caminho inválido antes de persis
     await assert.rejects(controller.importFiles('project-a', [invalidUtf8]), /ws.errors.textOnly/);
     const invalidPath = { name: 'bad.txt', type: 'text/plain', size: 1, arrayBuffer: async () => new TextEncoder().encode('x').buffer };
     invalidPath.webkitRelativePath = '../bad.txt';
-    await assert.rejects(controller.importFiles('project-a', [invalidPath]), /invalid-file/);
+    await assert.rejects(controller.importFiles('project-a', [invalidPath]), /segmentos inválidos/);
     assert.equal(calls.length, 0);
 });
 
