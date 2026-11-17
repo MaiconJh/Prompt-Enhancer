@@ -6,7 +6,7 @@ import test from 'node:test';
 const root = new URL('../workspace/', import.meta.url);
 const uiSource = await readFile(new URL('workspace-ui.js', root), 'utf8');
 const mockUiSource = await readFile(new URL('workspace-mock-ui.js', root), 'utf8');
-const markupMatch = mockUiSource.match(/const MARKUP = (\"(?:\\\\.|[^\"\\\\])*\");/);
+const markupMatch = mockUiSource.match(/const MARKUP = ("(?:\\.|[^"\\])*");/);
 const mockMarkup = markupMatch ? JSON.parse(markupMatch[1]) : '';
 const mockStylesSource = await readFile(new URL('workspace-mock-styles.js', root), 'utf8');
 const settingsSource = await readFile(new URL('../settings-modal.js', import.meta.url), 'utf8');
