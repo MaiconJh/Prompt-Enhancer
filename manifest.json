@@ -668,6 +668,23 @@
       ]
     },
     {
+      "file": "workspace/folder-registry.js",
+      "description": "Persistent project folder operations with path validation and atomic subtree mutations.",
+      "interfaces": {
+        "provides": [
+          "FolderRegistry"
+        ],
+        "consumes": [
+          "WorkspaceStorage",
+          "WorkspaceModel",
+          "ProjectManager"
+        ]
+      },
+      "interactions": [
+        "Workspace exposes FolderRegistry through Workspace.folders."
+      ]
+    },
+    {
       "file": "workspace/workspace.js",
       "description": "Provides the public Workspace facade, initialization lifecycle, and UI-controlled active project selection.",
       "interfaces": {
@@ -680,7 +697,9 @@
           "ProjectManager",
           "FileRegistry",
           "GM_getValue",
-          "GM_setValue"
+          "GM_setValue",
+          "FolderRegistry",
+          "FileRegistry"
         ]
       },
       "interactions": [
@@ -784,8 +803,15 @@
       "file": "workspace/projects-main.js",
       "description": "Provides the dedicated Projects Main interface for searching, sorting, creating, renaming, deleting, and opening projects.",
       "interfaces": {
-        "provides": ["ProjectsMain"],
-        "consumes": ["Workspace", "I18n", "Atoms", "Theme"]
+        "provides": [
+          "ProjectsMain"
+        ],
+        "consumes": [
+          "Workspace",
+          "I18n",
+          "Atoms",
+          "Theme"
+        ]
       },
       "interactions": [
         "Settings modal mounts Projects Main and keeps its view state while a project Workspace is active.",
