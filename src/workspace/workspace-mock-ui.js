@@ -18,7 +18,7 @@ const WorkspaceMockUI = (() => {
   const tree=$('[data-tree]'),editor=$('[data-editor]'),fileInput=$('[data-file-input]'),dirInput=$('[data-dir-input]');
   let project=null,files=[],folders=[],selectedFile=null,selectedFileId=null,inspectedNodeId=null,focusedNodeId=null;
   let activeView='files',collapsed=false,focusMode=false,inspectorOpen=false,searchQuery='',expandedPaths=new Set();
-  let editingNodeId=null,renameValue='',draftFiles=[],draftFolders=[],saveError=null;
+  let editingNodeId=null,renameValue='',renameCommitInProgress=false,draftFiles=[],draftFolders=[],saveError=null;
   const contents=new Map(),originals=new Map(),dirty=new Set();
   let providerGroups=[],ai={providerId:'',modelId:'',apiKey:'',accessMode:'selected',fileAccess:{}},aiSaved='',showKey=false,aiErrors={};
   let settings={name:'',description:'',defaultView:'files',instructions:'',configText:'{}'},settingsSaved='';
@@ -137,29 +137,30 @@ const WorkspaceMockUI = (() => {
    if(!originals.has(id))originals.set(id,file.content||'');if(!contents.has(id))contents.set(id,file.content||'');saveError=null;updateAll();
   }
   function requestAction(action){if(!hasPending()){executeAction(action);return;}pendingAction=action;dialog('pending',true);}
-  function executeAction(action){if(!action)return;if(action.type==='select')selectFileNow(action.id).catch(e=>toast(e.message,'error'));else if(action.type==='view'){activeView=action.view;if(activeView!=='files')focusMode=false;if(activeView==='ai')ensureCatalog();updateAll();}else if(action.type==='back')options.onBack?.();else if(action.type==='delete')showDelete(action.node);}
+  function executeAction(action){if(!action)return;if(action.type==='select')selectFileNow(action.id).catch(e=>toast(e.message,'error'));else if(action.type==='view'){activeView=action.view;if(activeView!=='files')focusMode=false;if(activeView==='ai')ensureCatalog().catch(e=>toast(e.message||'Falha ao carregar provedores.','error'));updateAll();}else if(action.type==='back')options.onBack?.();else if(action.type==='delete')showDelete(action.node);}
   function selectFile(id){if(id===selectedFileId)return;requestAction({type:'select',id});}
   function startCreateFile(){const parent=createParent(),id='draft-file-'+Utils.uid('f'),name='novo-arquivo.md';draftFiles.push({id,name,path:parent?parent+'/'+name:name,size:0,aiAccess:'denied',draft:true});editingNodeId=id;renameValue=name;if(parent)expandedPaths.add(parent);renderTree();}
   function startCreateFolder(){const parent=createParent(),id='draft-folder-'+Utils.uid('d'),name='nova-pasta';draftFolders.push({id,name,path:parent?parent+'/'+name:name,draft:true});editingNodeId=id;renameValue=name;if(parent)expandedPaths.add(parent);renderTree();}
   function startRename(row){editingNodeId=row.id;renameValue=row.name;renderTree();}
   function cancelRename(){const id=editingNodeId;editingNodeId=null;if(id){draftFiles=draftFiles.filter(f=>f.id!==id);draftFolders=draftFolders.filter(f=>f.id!==id);}renderTree();}
   async function commitRename(){
-   const id=editingNodeId,node=nodeById(id),name=String(renameValue||'').trim();if(!id)return;if(!node||!name){cancelRename();return;}
+   const id=editingNodeId,node=nodeById(id),name=String(renameValue||'').trim();if(!id||renameCommitInProgress)return;renameCommitInProgress=true;if(!node||!name){cancelRename();return;}
    const parent=node.path.split('/').slice(0,-1).join('/'),path=parent?parent+'/'+name:name;
    try{WorkspaceModel.normalizeFilePath(path);if(path===node.path){editingNodeId=null;renderTree();return;}
     if(node.type==='file'){if(node.file?.draft){const created=await Workspace.files.create(project.id,{path,content:''});draftFiles=draftFiles.filter(f=>f.id!==id);await refreshData();await selectFileNow(created.id);}
      else{const saved=await Workspace.files.get(project.id,id);await Workspace.files.update(project.id,id,{path,content:saved.content});await refreshData();}}
     else if(node.folder?.draft){const created=await Workspace.folders.create(project.id,path);draftFolders=draftFolders.filter(f=>f.id!==id);await refreshData();inspectedNodeId=created.id;}
-    else{await Workspace.folders.rename(project.id,node.path,path);await refreshData();inspectedNodeId=folders.find(f=>f.path===path)?.id||'folder:'+path;}
+    else{await Workspace.folders.rename(project.id,node.path,path);await refreshData();inspectedNodeId=folders.find(f=>f.path===path)?.id||'folder:'+path;focusedNodeId=inspectedNodeId;}
     editingNodeId=null;updateAll();toast('Item criado ou renomeado','success');
    }catch(e){toast(e.message||'Não foi possível renomear o item.','error');renderTree();}
+   finally{renameCommitInProgress=false;}
   }
   function prepareDelete(row){const node=nodeById(row.id);if(!node)return;if(hasPending()){requestAction({type:'delete',node});return;}showDelete(node);}
   function showDelete(node){pendingDelete=node;$('[data-delete-title]').textContent='Excluir '+(node.type==='folder'?'pasta':'arquivo');$('[data-delete-message]').textContent='Excluir '+node.name+'? '+(node.type==='folder'?'Todo o conteúdo da pasta também será removido. ':'')+'Esta ação não pode ser desfeita.';dialog('delete',true);}
   function cancelDelete(){pendingDelete=null;dialog('delete',false);}
   async function confirmDelete(){
    const n=pendingDelete;if(!n)return;try{
-    if(n.type==='folder'){if(n.folder?.draft)draftFolders=draftFolders.filter(f=>f.id!==n.id);else await Workspace.folders.remove(project.id,n.path);for(const f of files.filter(f=>f.path.startsWith(n.path+'/'))){dirty.delete(f.id);contents.delete(f.id);originals.delete(f.id);delete ai.fileAccess[f.id];}if(selectedFile?.path.startsWith(n.path+'/')){selectedFile=null;selectedFileId=null;}}
+    if(n.type==='folder'){if(n.folder?.draft){draftFolders=draftFolders.filter(f=>f.id!==n.id);draftFiles=draftFiles.filter(f=>!f.path.startsWith(n.path+'/'));}else await Workspace.folders.remove(project.id,n.path);for(const f of files.filter(f=>f.path.startsWith(n.path+'/'))){dirty.delete(f.id);contents.delete(f.id);originals.delete(f.id);delete ai.fileAccess[f.id];}if(selectedFile?.path.startsWith(n.path+'/')){selectedFile=null;selectedFileId=null;}if(inspectedNodeId!==n.id&&nodeById(inspectedNodeId)?.path.startsWith(n.path+'/'))inspectedNodeId=null;if(focusedNodeId!==n.id&&nodeById(focusedNodeId)?.path.startsWith(n.path+'/'))focusedNodeId=null;}
     else{if(n.file?.draft)draftFiles=draftFiles.filter(f=>f.id!==n.id);else await Workspace.files.remove(project.id,n.id);dirty.delete(n.id);contents.delete(n.id);originals.delete(n.id);delete ai.fileAccess[n.id];if(selectedFileId===n.id){selectedFile=null;selectedFileId=null;}}
     if(n.folder?.draft)draftFolders=draftFolders.filter(f=>f.id!==n.id);if(inspectedNodeId===n.id)inspectedNodeId=null;cancelDelete();await refreshData();toast('Item excluído','success');
    }catch(e){toast(e.message||'Não foi possível excluir o item.','error');}
@@ -185,7 +186,8 @@ const WorkspaceMockUI = (() => {
   function canLeave(){if(!hasPending())return Promise.resolve(true);return new Promise(resolve=>{pendingAction=null;pendingResolver=resolve;dialog('pending',true);});}
 
   async function ensureCatalog(){
-   if(catalogPromise)return catalogPromise;catalogPromise=(async()=>{await ProviderRegistry.hydrate();providerGroups=ProviderRegistry.groupByProvider();if(!ai.modelId&&providerGroups[0]?.entries[0]){ai.providerId=providerGroups[0].providerId;ai.modelId=providerGroups[0].entries[0].id;}renderAI();})().finally(()=>catalogPromise=null);return catalogPromise;
+   if(providerGroups.length)return Promise.resolve(providerGroups);
+   if(catalogPromise)return catalogPromise;catalogPromise=(async()=>{try{await ProviderRegistry.hydrate();}catch(error){if(!ProviderRegistry.getCached().length)throw error;}providerGroups=ProviderRegistry.groupByProvider();if(!ai.modelId&&providerGroups[0]?.entries[0]){ai.providerId=providerGroups[0].providerId;ai.modelId=providerGroups[0].entries[0].id;}renderAI();})().finally(()=>catalogPromise=null);return catalogPromise;
   }
   const model=()=>ProviderRegistry.get(ai.modelId);
   const group=()=>providerGroups.find(g=>g.providerId===ai.providerId)||null;
