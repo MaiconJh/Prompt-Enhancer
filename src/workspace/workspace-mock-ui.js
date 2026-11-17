@@ -206,7 +206,7 @@ const WorkspaceMockUI = (() => {
   const group=()=>providerGroups.find(g=>g.providerId===ai.providerId)||null;
   const needsKey=e=>!!e&&e.auth?.type!=='none'&&e.auth?.key!=='anonymous';
   function configured(g){const p=ProviderManager.getPinned?.(),a=ProviderManager.getActive?.();if(!g)return false;if(g.providerId===ai.providerId){const entry=model();return !!entry&&(!needsKey(entry)||(p?.id===entry.id&&!!a?.apiKey));}return g.entries.some(e=>!needsKey(e)||(p?.id===e.id&&!!a?.apiKey));}
-  function renderProviders(){const list=$('[data-provider-list]');list.replaceChildren();for(const g of providerGroups){const b=el('button','pe-provider'+(g.providerId===ai.providerId?' is-active':''));b.type='button';b.append(el('span','pe-provider__name',g.providerLabel),el('span','pe-provider__meta',g.entries.slice(0,3).map(x=>x.label).join(' · ')),el('span','pe-badge '+(configured(g)?'pe-badge--ok':'pe-badge--warn'),configured(g)?'Configurado':'Pendente'));b.addEventListener('click',()=>selectProvider(g.providerId));list.append(b);}}
+  function renderProviders(){const list=$('[data-provider-list]');list.replaceChildren();if(!providerGroups.length){list.append(el('div','pe-tree-empty','Nenhum provedor disponível no catálogo.'));return;}for(const g of providerGroups){const b=el('button','pe-provider'+(g.providerId===ai.providerId?' is-active':''));b.type='button';b.append(el('span','pe-provider__name',g.providerLabel),el('span','pe-provider__meta',g.entries.slice(0,3).map(x=>x.label).join(' · ')),el('span','pe-badge '+(configured(g)?'pe-badge--ok':'pe-badge--warn'),configured(g)?'Configurado':'Pendente'));b.addEventListener('click',()=>selectProvider(g.providerId));list.append(b);}}
   function selectProvider(id){const g=providerGroups.find(x=>x.providerId===id);if(!g)return;const prev=ai.providerId;ai.providerId=id;const pinned=ProviderManager.getPinned?.();const next=g.entries.find(e=>e.id===pinned?.id)||g.entries[0];ai.modelId=next?.id||'';if(prev!==id)ai.apiKey='';aiErrors={};showKey=false;renderAI();}
   function selectModel(id){const e=ProviderRegistry.get(id);if(!e)return;if(e.providerId!==ai.providerId)ai.apiKey='';ai.providerId=e.providerId;ai.modelId=e.id;aiErrors={};renderAI();}
   function renderAI(){
@@ -224,7 +224,7 @@ const WorkspaceMockUI = (() => {
    if(!files.length)perms.append(el('div','pe-tree-empty','Nenhum arquivo para configurar.'));
    $('[data-effective-summary]').textContent=allowed+' de '+files.length+' arquivo(s) com acesso efetivo.';
    const keyValid=!needsKey(m)||!!ai.apiKey.trim(),isConfigured=!needsKey(m)||(ProviderManager.getPinned?.()?.id===m?.id&&!!ProviderManager.getActive?.()?.apiKey);
-   $('[data-validation-key]').className=keyValid&&isConfigured?'is-ok':keyValid||isConfigured?'is-warn':'is-error';$('[data-validation-key]').textContent=isConfigured?'Credencial configurada':'Credencial pendente';
+   $('[data-validation-key]').className=keyValid&&isConfigured?'is-ok':keyValid||isConfigured?'is-warn':'is-error';$('[data-validation-key]').textContent=!needsKey(m)?'Este modelo não exige chave':isConfigured?'Credencial configurada':'Credencial pendente';
    $('[data-validation-model]').className=m?'is-ok':'is-error';$('[data-validation-model]').textContent=m?'Modelo selecionado: '+m.label:'Nenhum modelo selecionado';
    $('[data-validation-access]').className='is-ok';$('[data-validation-access]').textContent=accessLabel();
    $('[data-ai-actions]').hidden=!aiDirty();updateHeader();
