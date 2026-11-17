@@ -819,6 +819,45 @@
       ]
     },
     {
+      "file": "workspace/workspace-mock-styles.js",
+      "description": "Scoped production stylesheet ported from the approved workspace mock.",
+      "interfaces": {
+        "provides": [
+          "WorkspaceMockStyles"
+        ],
+        "consumes": [
+          "document"
+        ]
+      },
+      "interactions": [
+        "WorkspaceMockUI injects the stylesheet when a project workspace is mounted."
+      ]
+    },
+    {
+      "file": "workspace/workspace-mock-ui.js",
+      "description": "Mock-faithful project workspace view bound to persistent project, folder, file, provider, permission, and settings domains.",
+      "interfaces": {
+        "provides": [
+          "WorkspaceMockUI"
+        ],
+        "consumes": [
+          "WorkspaceMockStyles",
+          "Workspace",
+          "WorkspaceController",
+          "WorkspaceExplorerView",
+          "WorkspaceModel",
+          "ProviderRegistry",
+          "ProviderManager",
+          "Theme",
+          "Utils"
+        ]
+      },
+      "interactions": [
+        "WorkspaceUI delegates its public render contract to WorkspaceMockUI.",
+        "All project, folder, file, permission, provider, import, and configuration operations use the existing domain facades."
+      ]
+    },
+    {
       "file": "workspace/workspace-ui.js",
       "description": "Provides the operational editor interface for one selected project.",
       "interfaces": {
@@ -826,21 +865,11 @@
           "WorkspaceUI"
         ],
         "consumes": [
-          "Workspace",
-          "I18n",
-          "Utils",
-          "Atoms",
-          "Molecules",
-          "WorkspaceController",
-          "WorkspaceExplorerView",
-          "WorkspaceEditorView",
-          "WorkspaceInspectorView",
-          "WorkspacePanelLayout"
+          "WorkspaceMockUI"
         ]
       },
       "interactions": [
-        "The modal mounts one project at a time; navigation back to Projects Main is guarded by the Workspace dirty-state confirmation.",
-        "The interface manages local editor drafts, derived directory navigation, imports, and effective AI read access."
+        "Preserves the WorkspaceUI.render(container, options) contract consumed by settings-modal."
       ]
     },
     {
