@@ -148,11 +148,20 @@
 
         async function close() {
             if (closed || isClosing) return;
-            if (activeWorkspaceId) {
-                const session = workspaceSessions.get(activeWorkspaceId);
-                if (session && !(await session.canLeave())) return;
-            }
             isClosing = true;
+            try {
+                if (activeWorkspaceId) {
+                    const session = workspaceSessions.get(activeWorkspaceId);
+                    if (session && !(await session.canLeave())) {
+                        isClosing = false;
+                        return;
+                    }
+                }
+            } catch (error) {
+                isClosing = false;
+                Molecules.toast(error.message || I18n.t('ws.errors.operationFailed'), 'error');
+                return;
+            }
             if (i18nRefresh) { window.removeEventListener('pe:i18n-changed', i18nRefresh); i18nRefresh = null; }
             closed = true;
             cancelAnimationFrame(openFrame);
