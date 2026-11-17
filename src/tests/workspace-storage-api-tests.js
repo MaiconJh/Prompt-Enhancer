@@ -15,7 +15,7 @@ test('expõe deleteProject na API pública do WorkspaceStorage', () => {
 test('persiste pastas em object store versionado e expõe mutações atômicas', () => {
     assert.match(source, /const DB_VERSION = 2/);
     assert.match(source, /createObjectStore\('folders'/);
-    const publicApi = source.match(/return\\s*\\{([\\s\\S]*?)\\n\\s*\\};\\s*\\n\\}\\)\\(\\);/);
+    const publicApi = source.match(/return\s*\{([\s\S]*?)\n\s*\};\s*\n\}\)\(\);/);
     assert.ok(publicApi);
     for (const method of ['listFolders', 'createProjectFolder', 'renameProjectFolder', 'deleteProjectFolder', 'setFileAccessMany']) {
         assert.ok(publicApi[1].includes(method), method + ' ausente da API pública');
