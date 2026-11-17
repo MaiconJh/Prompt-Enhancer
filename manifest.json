@@ -627,7 +627,8 @@
           "WorkspaceStorage"
         ],
         "consumes": [
-          "IndexedDB"
+          "IndexedDB",
+          "WorkspaceModel"
         ]
       },
       "interactions": [
@@ -698,8 +699,7 @@
           "FileRegistry",
           "GM_getValue",
           "GM_setValue",
-          "FolderRegistry",
-          "FileRegistry"
+          "FolderRegistry"
         ]
       },
       "interactions": [
@@ -761,7 +761,8 @@
         ],
         "consumes": [
           "Workspace",
-          "I18n"
+          "I18n",
+          "WorkspaceModel"
         ]
       },
       "interactions": [
