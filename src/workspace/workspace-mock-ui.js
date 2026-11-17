@@ -131,12 +131,12 @@ const WorkspaceMockUI = (() => {
    settings={name:project.name,description:project.description||'',defaultView:project.settings?.defaultView||'files',instructions:project.settings?.instructions||'',configText:JSON.stringify(project.settings?.config||{includePatterns:[],maxContextBytes:49152},null,2)};
    settingsSaved=json(settings);ai.accessMode=project.settings?.aiAccessMode||'selected';ai.fileAccess=Object.fromEntries(files.map(f=>[f.id,f.aiAccess||'denied']));
    const pinned=ProviderManager.getPinned?.();const preferredModelId=project.settings?.aiProviderModelId||'';let model=preferredModelId?ProviderRegistry.get(preferredModelId):null;if(!model)model=pinned||ProviderRegistry.getCached()[0]||null;
-   if(preferredModelId){await ensureCatalog();model=ProviderRegistry.get(preferredModelId)||null;}
+   if(preferredModelId){try{await ensureCatalog();}catch(error){toast(error.message||'Catálogo de provedores indisponível.','warning');}model=ProviderRegistry.get(preferredModelId)||null;}
    if(model){if(preferredModelId&&!ProviderManager.pin(model))throw new Error('Não foi possível ativar o modelo salvo no projeto.');ai.providerId=model.providerId;ai.modelId=model.id;const currentPinned=ProviderManager.getPinned?.();const active=ProviderManager.getActive?.();ai.apiKey=currentPinned?.id===model.id?active?.apiKey||'':'';}
    else if(preferredModelId){ai.providerId='';ai.modelId=preferredModelId;ai.apiKey='';}
    aiSaved=json(aiSnapshot());activeView=['files','ai','settings'].includes(project.settings?.defaultView)?project.settings.defaultView:'files';
    expandedPaths=new Set(folders.filter(f=>!f.path.includes('/')).map(f=>f.path));if(!expandedPaths.size)for(const f of files)if(f.path.includes('/'))expandedPaths.add(f.path.split('/')[0]);
-   if(files[0])await selectFileNow(files[0].id);if(activeView==='ai')await ensureCatalog();updateAll();status('Pronto');
+   if(files[0])await selectFileNow(files[0].id);if(activeView==='ai'){try{await ensureCatalog();}catch(error){toast(error.message||'Catálogo de provedores indisponível.','warning');}}updateAll();status('Pronto');
   }
   async function selectFileNow(id){
    const file=await Workspace.files.get(project.id,id);if(!file)throw new Error('Arquivo não encontrado.');
