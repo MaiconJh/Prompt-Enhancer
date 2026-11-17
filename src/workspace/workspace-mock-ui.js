@@ -194,7 +194,7 @@ const WorkspaceMockUI = (() => {
   function switchView(view){if(view!==activeView)requestAction({type:'view',view});}
   function back(){requestAction({type:'back'});}
   function cancelPending(){dialog('pending',false);const r=pendingResolver;pendingResolver=null;pendingAction=null;if(r)r(false);}
-  function discardAndContinue(){discardAllFiles();resetAi();resetSettings();dialog('pending',false);const a=pendingAction,r=pendingResolver;pendingAction=null;pendingResolver=null;if(a)executeAction(a);if(r)r(true);toast('Alterações descartadas','info');}
+  function discardAndContinue(){if(dirty.size)discardAllFiles();if(aiDirty())resetAi();if(settingsDirty())resetSettings();dialog('pending',false);const a=pendingAction,r=pendingResolver;pendingAction=null;pendingResolver=null;if(a)executeAction(a);if(r)r(true);toast('Alterações descartadas','info');}
   async function saveAndContinue(){const a=await saveAllFiles(),b=aiDirty()?await saveAi(true):true,c=settingsDirty()?await saveSettings(true):true;if(a&&b&&c){dialog('pending',false);const action=pendingAction,resolver=pendingResolver;pendingAction=null;pendingResolver=null;if(action)executeAction(action);if(resolver)resolver(true);toast('Alterações salvas','success');}else toast('Não foi possível salvar todas as alterações','error');}
   function canLeave(){if(!hasPending())return Promise.resolve(true);return new Promise(resolve=>{pendingAction=null;pendingResolver=resolve;dialog('pending',true);});}
 
