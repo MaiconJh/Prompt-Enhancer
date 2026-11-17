@@ -137,13 +137,18 @@ const WorkspaceStorage = (() => {
                     error.code = 'project-file-limit';
                     return abort(error);
                 }
+                const exactPathConflict = existing.some(item => item.id !== file.id && item.path === file.path);
+                const exactFolderConflict = projectFolders.some(folder => folder.path === file.path);
+                if (exactPathConflict || exactFolderConflict) {
+                    const error = new Error('Já existe um arquivo ou pasta com esse caminho no projeto.');
+                    error.code = 'file-exists';
+                    return abort(error);
+                }
                 const pathConflict = existing.some(item => item.id !== file.id && (
-                    item.path === file.path || item.path.startsWith(file.path + '/') || file.path.startsWith(item.path + '/')
-                )) || projectFolders.some(folder =>
-                    folder.path === file.path || folder.path.startsWith(file.path + '/')
-                );
+                    item.path.startsWith(file.path + '/') || file.path.startsWith(item.path + '/')
+                )) || projectFolders.some(folder => folder.path.startsWith(file.path + '/'));
                 if (pathConflict) {
-                    const error = new Error('O caminho do arquivo conflita com outro arquivo ou pasta do projeto.');
+                    const error = new Error('O caminho do arquivo conflita com a hierarquia de arquivos ou pastas do projeto.');
                     error.code = 'path-conflict';
                     return abort(error);
                 }
@@ -214,17 +219,19 @@ const WorkspaceStorage = (() => {
                         error.code = 'file-exists';
                         return abort(error);
                     }
-                    const conflictsWithExistingFile = existing.some(item =>
-                        item.path === file.path || item.path.startsWith(file.path + '/') || file.path.startsWith(item.path + '/')
-                    );
-                    const conflictsWithFolder = projectFolders.some(folder =>
-                        folder.path === file.path || folder.path.startsWith(file.path + '/')
-                    );
-                    const conflictsWithBatch = incomingPaths.some(path =>
-                        path === file.path || path.startsWith(file.path + '/') || file.path.startsWith(path + '/')
-                    );
-                    if (conflictsWithExistingFile || conflictsWithFolder || conflictsWithBatch) {
-                        const error = new Error('O lote contém caminhos duplicados ou incompatíveis com arquivos e pastas existentes.');
+                    const exactFileConflict = existing.some(item => item.path === file.path);
+                    const exactFolderConflict = projectFolders.some(folder => folder.path === file.path);
+                    const exactBatchConflict = incomingPaths.includes(file.path);
+                    if (exactFileConflict || exactFolderConflict || exactBatchConflict) {
+                        const error = new Error('O lote contém caminhos duplicados ou já existentes no projeto.');
+                        error.code = 'file-exists';
+                        return abort(error);
+                    }
+                    const hierarchyConflict = existing.some(item => item.path.startsWith(file.path + '/') || file.path.startsWith(item.path + '/'))
+                        || projectFolders.some(folder => folder.path.startsWith(file.path + '/'))
+                        || incomingPaths.some(path => path.startsWith(file.path + '/') || file.path.startsWith(path + '/'));
+                    if (hierarchyConflict) {
+                        const error = new Error('O lote contém caminhos incompatíveis com a hierarquia de arquivos e pastas.');
                         error.code = 'path-conflict';
                         return abort(error);
                     }
