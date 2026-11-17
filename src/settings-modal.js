@@ -1026,6 +1026,15 @@
     footerEl.appendChild(closeBtn);
 }
         function renderWorkspace() {
+            if (activeWorkspaceId) {
+                const activeSession = workspaceSessions.get(activeWorkspaceId);
+                if (activeSession) {
+                    bodyEl.replaceChildren(activeSession.root);
+                    panel.classList.remove('is-projects-main');
+                    panel.classList.add('is-workspace-expanded');
+                    return;
+                }
+            }
             if (!projectsMainView) {
                 projectsMainView = ProjectsMain.render(bodyEl, {
                     onOpenProject: openWorkspace,
