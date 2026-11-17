@@ -117,3 +117,55 @@ test('normaliza acentos e identifica tokens técnicos', () => {
     const resolver = createHarness();
     assert.deepEqual(Array.from(resolver.tokenize('Validação de URL validateUrl')), ['validacao', 'url', 'validateurl']);
 });
+
+
+test('corresponde padrões glob sem permitir que curingas atravessem segmentos simples', () => {
+    const resolver = createHarness();
+    assert.equal(resolver.matchesPattern('src/app.js', 'src/**'), true);
+    assert.equal(resolver.matchesPattern('README.md', '**/*.md'), true);
+    assert.equal(resolver.matchesPattern('src/README.md', '**/*.md'), true);
+    assert.equal(resolver.matchesPattern('secrets/config.js', 'src/**'), false);
+    assert.equal(resolver.matchesPattern('src/app.js', 'src/*.md'), false);
+});
+
+test('aplica includePatterns antes do ranqueamento de contexto', async () => {
+    const resolver = createHarness({
+        accessMode: 'all',
+        files: sampleFiles,
+        project: {
+            id: 'project_a', name: 'Project A', updatedAt: 10,
+            settings: { aiAccessMode: 'all', instructions: '', config: { includePatterns: ['src/**'], maxContextBytes: 2048 } }
+        }
+    });
+    const result = await resolver.resolve({ projectId: 'project_a', query: 'privateKey' });
+    assert.equal(result.status, 'no-relevant-files');
+    assert.equal(result.diagnostics.accessibleFiles, 3);
+    assert.equal(result.diagnostics.includedFiles, 2);
+});
+
+test('retorna estado específico quando nenhum arquivo corresponde aos padrões do projeto', async () => {
+    const resolver = createHarness({
+        accessMode: 'all',
+        files: sampleFiles,
+        project: {
+            id: 'project_a', name: 'Project A', updatedAt: 10,
+            settings: { aiAccessMode: 'all', instructions: '', config: { includePatterns: ['docs/**'], maxContextBytes: 2048 } }
+        }
+    });
+    const result = await resolver.resolve({ projectId: 'project_a', query: 'validateUrl' });
+    assert.equal(result.status, 'no-files-included');
+    assert.equal(result.diagnostics.includedFiles, 0);
+});
+
+test('limita contexto pelo orçamento configurado no projeto', async () => {
+    const large = [{ id: 'large', projectId: 'project_a', path: 'src/large.txt', name: 'large.txt', aiAccess: 'allowed', content: 'needle '.repeat(1200) }];
+    const resolver = createHarness({
+        files: large,
+        project: {
+            id: 'project_a', name: 'Project A', updatedAt: 10,
+            settings: { aiAccessMode: 'selected', instructions: '', config: { includePatterns: [], maxContextBytes: 1024 } }
+        }
+    });
+    const result = await resolver.resolve({ projectId: 'project_a', query: 'needle', maxContextBytes: 8192 });
+    assert.ok(result.context.totalBytes <= 1024);
+});
