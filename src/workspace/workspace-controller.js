@@ -12,24 +12,34 @@ const WorkspaceController = (() => {
         return String(value || '').split(/\r?\n/).map(path => path.trim()).filter(Boolean);
     }
 
-    function createFiles(projectId, paths) {
+    function resolveTargetPath(path, targetFolderPath = '') {
+        const normalized = WorkspaceModel.normalizeFilePath(path);
+        if (!targetFolderPath) return normalized;
+        const folder = WorkspaceModel.normalizeFilePath(targetFolderPath);
+        return WorkspaceModel.normalizeFilePath(folder + '/' + normalized);
+    }
+
+    function createFiles(projectId, paths, targetFolderPath = '') {
         const entries = Array.isArray(paths) ? paths : parsePaths(paths);
         if (!entries.length) throw new Error(I18n.t('ws.errors.createFileFailed'));
         return Workspace.files.createMany(projectId, entries.map(path => ({
-            path,
+            path: resolveTargetPath(path, targetFolderPath),
             content: ''
         })));
     }
 
-    function createFolder(projectId, folderPath, relativePaths) {
-        const folder = String(folderPath || '').trim().replace(/\/+$/, '');
-        if (!folder) throw new Error(I18n.t('ws.errors.createFileFailed'));
+    function createFolder(projectId, folderPath, relativePaths = null, targetFolderPath = '') {
+        if (relativePaths == null) {
+            const path = resolveTargetPath(folderPath, targetFolderPath);
+            return Workspace.folders.create(projectId, path);
+        }
+        const folder = resolveTargetPath(folderPath, targetFolderPath);
         const names = Array.isArray(relativePaths) ? relativePaths : parsePaths(relativePaths);
         if (!names.length) throw new Error(I18n.t('ws.errors.createFileFailed'));
         return createFiles(projectId, names.map(name => folder + '/' + name));
     }
 
-    async function importFiles(projectId, fileList) {
+    async function importFiles(projectId, fileList, targetFolderPath = '') {
         const incomingFiles = Array.from(fileList || []);
         if (!incomingFiles.length) return [];
 
@@ -49,7 +59,8 @@ const WorkspaceController = (() => {
                 throw new Error(incoming.name + ': ' + I18n.t('ws.errors.textOnly'));
             }
 
-            const path = incoming.webkitRelativePath || incoming.name;
+            const relativePath = incoming.webkitRelativePath || incoming.name;
+            const path = resolveTargetPath(relativePath, targetFolderPath);
             const validation = Workspace.files.validate({ path, content });
             if (!validation.valid) throw new Error(incoming.name + ': ' + (validation.message || I18n.t('ws.errors.importFailed')));
             batch.push({
@@ -62,5 +73,5 @@ const WorkspaceController = (() => {
         return Workspace.files.createMany(projectId, batch);
     }
 
-    return Object.freeze({ parsePaths, createFiles, createFolder, importFiles });
+    return Object.freeze({ parsePaths, resolveTargetPath, createFiles, createFolder, importFiles });
 })();
