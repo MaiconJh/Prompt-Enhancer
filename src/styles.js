@@ -4817,6 +4817,7 @@ function injectStyles() {
         .pe-workspace.is-project-workspace { height: 100%; min-height: 0; }
         .pe-workspace__header { grid-template-columns: auto minmax(0, 1fr) auto auto auto; align-items: center; }
         .pe-workspace__back { justify-self: start; }
+        .pe-workspace__back .pe-ico { transform: rotate(180deg); }
         .pe-workspace__project-title { min-width: 0; color: var(--pe-text); font-size: var(--pe-fs-base); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .pe-workspace__header > [hidden] { display: none !important; }
 
