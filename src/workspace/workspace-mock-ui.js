@@ -72,7 +72,7 @@ const WorkspaceMockUI = (() => {
   function renderTree(){
    WorkspaceExplorerView.render(tree,{files:files.concat(draftFiles),folders:folders.concat(draftFolders),expandedPaths,searchQuery,
     selectedFileId,inspectedNodeId,focusedNodeId,editingNodeId,renameValue,isDirty:dirtyFile,
-    onSelect:selectFile,onInspect:r=>{inspectedNodeId=r.id;renderInspector();updateHeader();},onFocus:r=>{focusedNodeId=r.id;},
+    onSelect:selectFile,onInspect:r=>{inspectedNodeId=r.id;renderInspector();updateHeader();renderTree();},onFocus:r=>{focusedNodeId=r.id;},
     onStartRename:startRename,onRenameInput:v=>{renameValue=v;},onCommitRename:commitRename,onCancelRename:cancelRename,onDelete:prepareDelete});
   }
   function breadcrumbs(){
@@ -185,7 +185,7 @@ const WorkspaceMockUI = (() => {
   function canLeave(){if(!hasPending())return Promise.resolve(true);return new Promise(resolve=>{pendingAction=null;pendingResolver=resolve;dialog('pending',true);});}
 
   async function ensureCatalog(){
-   if(catalogPromise)return catalogPromise;catalogPromise=(async()=>{await ProviderRegistry.hydrate();providerGroups=ProviderRegistry.groupByProvider();if(!ai.modelId&&providerGroups[0]?.entries[0]){ai.providerId=providerGroups[0].providerId;ai.modelId=providerGroups[0].entries[0].id;aiSaved=json(aiSnapshot());}renderAI();})().finally(()=>catalogPromise=null);return catalogPromise;
+   if(catalogPromise)return catalogPromise;catalogPromise=(async()=>{await ProviderRegistry.hydrate();providerGroups=ProviderRegistry.groupByProvider();if(!ai.modelId&&providerGroups[0]?.entries[0]){ai.providerId=providerGroups[0].providerId;ai.modelId=providerGroups[0].entries[0].id;}renderAI();})().finally(()=>catalogPromise=null);return catalogPromise;
   }
   const model=()=>ProviderRegistry.get(ai.modelId);
   const group=()=>providerGroups.find(g=>g.providerId===ai.providerId)||null;
