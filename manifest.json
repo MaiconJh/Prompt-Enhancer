@@ -780,6 +780,18 @@
       ]
     },
     {
+      "file": "workspace/projects-main.js",
+      "description": "Provides the dedicated Projects Main interface for searching, sorting, creating, renaming, deleting, and opening projects.",
+      "interfaces": {
+        "provides": ["ProjectsMain"],
+        "consumes": ["Workspace", "I18n", "Atoms"]
+      },
+      "interactions": [
+        "Settings modal mounts Projects Main and keeps its view state while a project Workspace is active.",
+        "All project reads and mutations use the public Workspace facade."
+      ]
+    },
+    {
       "file": "workspace/workspace-ui.js",
       "description": "Provides the project and text-file management interface for the Workspace settings view.",
       "interfaces": {
