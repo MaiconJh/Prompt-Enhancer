@@ -6,6 +6,8 @@ import test from 'node:test';
 const root = new URL('../workspace/', import.meta.url);
 const uiSource = await readFile(new URL('workspace-ui.js', root), 'utf8');
 const mockUiSource = await readFile(new URL('workspace-mock-ui.js', root), 'utf8');
+const markupMatch = mockUiSource.match(/const MARKUP = (\"(?:\\\\.|[^\"\\\\])*\");/);
+const mockMarkup = markupMatch ? JSON.parse(markupMatch[1]) : '';
 const mockStylesSource = await readFile(new URL('workspace-mock-styles.js', root), 'utf8');
 const settingsSource = await readFile(new URL('../settings-modal.js', import.meta.url), 'utf8');
 const explorerSource = await readFile(new URL('workspace-explorer-view.js', root), 'utf8');
@@ -25,12 +27,12 @@ test('WorkspaceUI preserva o contrato público e delega ao workspace mock-backed
 test('implementa as três áreas do mock e mantém o Inspector contextual fora da Activity Bar', () => {
     assert.doesNotThrow(() => new Function(mockUiSource));
     for (const view of ['files', 'ai', 'settings']) {
-        assert.ok(mockUiSource.includes('data-view-panel="' + view + '"'), view);
-        assert.ok(mockUiSource.includes('data-view="' + view + '"'), view);
+        assert.ok(mockMarkup.includes('data-view-panel="' + view + '"'), view);
+        assert.ok(mockMarkup.includes('data-view="' + view + '"'), view);
     }
-    assert.match(mockUiSource, /data-inspector/);
+    assert.ok(mockMarkup.includes('data-inspector'));
     assert.match(mockUiSource, /toggleInspector/);
-    assert.doesNotMatch(mockUiSource, /data-view="inspector"/);
+    assert.ok(!mockMarkup.includes('data-view="inspector"'));
     assert.match(mockUiSource, /is-explorer-collapsed/);
     assert.match(mockUiSource, /is-focus-mode/);
     assert.match(mockUiSource, /is-page-view/);
@@ -76,7 +78,7 @@ test('Explorer implementa busca, hierarquia, virtualização, teclado e renomea�
     assert.match(explorerSource, /onStartRename/);
     assert.match(explorerSource, /onCommitRename/);
     assert.match(explorerSource, /onDelete/);
-    assert.match(mockUiSource, /data-search/);
+    assert.ok(mockMarkup.includes('data-search'));
 });
 
 test('arquivos e pastas usam operações reais, inclusive diretórios vazios e importação no destino selecionado', () => {
@@ -96,7 +98,7 @@ test('Acesso à IA usa catálogo e credenciais reais, sem provedores ou chaves d
     assert.match(mockUiSource, /ProviderRegistry\.groupByProvider\(\)/);
     assert.match(mockUiSource, /ProviderManager\.pin\(entry\)/);
     assert.match(mockUiSource, /ProviderManager\.update\(active\?\.id,\s*\{apiKey:/);
-    assert.match(mockUiSource, /password/);
+    assert.ok(mockMarkup.includes('password'));
     assert.match(mockUiSource, /Workspace\.files\.setAccessMany/);
     assert.match(mockUiSource, /aiProviderModelId/);
     assert.doesNotMatch(mockUiSource, /AIzaSyExample|sk-proj-example|Anthropic Claude 3/);
@@ -123,7 +125,7 @@ test('proteção de alterações pendentes cobre arquivos, Acesso à IA e Config
 
 test('Status Bar, Inspector e feedback refletem estado real do Workspace', () => {
     for (const marker of ['data-status-files', 'data-status-size', 'data-status-selection', 'data-status-pending']) {
-        assert.ok(mockUiSource.includes(marker), marker);
+        assert.ok(mockMarkup.includes(marker), marker);
     }
     assert.match(mockUiSource, /effective\(node\.id\)/);
     assert.match(mockUiSource, /nodeSize\(node\)/);
