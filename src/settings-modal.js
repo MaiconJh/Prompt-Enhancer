@@ -1050,10 +1050,12 @@
 
         async function openWorkspace(projectId) {
             if (!projectId || closed) return;
+            activeWorkspaceId = projectId;
+            panel.classList.remove('is-projects-main');
+            panel.classList.add('is-workspace-expanded');
             try {
                 if (!Workspace.isInitialized()) await Workspace.init();
                 await Workspace.setActiveProjectId(projectId);
-                activeWorkspaceId = projectId;
                 bodyEl.replaceChildren();
                 let session = workspaceSessions.get(projectId);
                 if (!session) {
