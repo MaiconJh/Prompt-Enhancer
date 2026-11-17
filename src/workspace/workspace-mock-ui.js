@@ -78,7 +78,7 @@ const WorkspaceMockUI = (() => {
   function breadcrumbs(){
    const target=$('[data-breadcrumbs]');target.replaceChildren();if(!selectedFile)return;
    let path='';const parts=selectedFile.path.split('/');
-   parts.forEach((part,i)=>{path=path?path+'/'+part:part;const crumb=el('span','crumb'+(i===parts.length-1?' last':''),part);crumb.addEventListener('click',()=>{if(i===parts.length-1)selectFile(selectedFile.id);else{const id=folders.find(f=>f.path===path)?.id||'folder:'+path;inspectedNodeId=id;focusedNodeId=id;WorkspaceExplorerView.reveal(tree,path);renderInspector();}});target.append(crumb);if(i<parts.length-1)target.append(el('span','sep','/'));});
+   parts.forEach((part,i)=>{path=path?path+'/'+part:part;const crumb=el('span','crumb'+(i===parts.length-1?' last':''),part);crumb.addEventListener('click',()=>{if(i===parts.length-1)selectFile(selectedFile.id);else{const id=folders.find(f=>f.path===path)?.id||'folder:'+path;inspectedNodeId=id;focusedNodeId=id;renderTree();WorkspaceExplorerView.reveal(tree,path);renderInspector();}});target.append(crumb);if(i<parts.length-1)target.append(el('span','sep','/'));});
   }
   function renderEditor(){
    const has=!!selectedFile;$('[data-editor-toolbar]').hidden=!has;$('[data-editor-area]').hidden=!has;$('[data-editor-empty]').hidden=has;
