@@ -173,9 +173,15 @@ const WorkspaceMockUI = (() => {
    }catch(e){toast(e.message||'Não foi possível excluir o item.','error');}
   }
   async function saveFile(id){
-   const f=await Workspace.files.get(project.id,id);if(!f)throw new Error('Arquivo não encontrado.');if(f.readOnly){saveError={id,message:'Arquivo somente leitura.'};updateAll();return false;}
-   try{const content=contents.get(id)??f.content??'';const updated=await Workspace.files.update(project.id,id,{path:f.path,content});contents.set(id,content);originals.set(id,content);dirty.delete(id);if(selectedFileId===id)selectedFile={...f,...updated,content};saveError=null;await refreshData();toast('Arquivo salvo','success');return true;}
-   catch(e){saveError={id,message:e.message||'Falha ao salvar o arquivo.'};updateAll();toast('Falha ao salvar o arquivo','error');return false;}
+   const f=await Workspace.files.get(project.id,id);if(!f)throw new Error('Arquivo não encontrado.');
+   if(f.readOnly){saveError={id,message:'Arquivo somente leitura.'};updateAll();toast('Falha ao salvar: arquivo somente leitura','error');return false;}
+   const content=contents.get(id)??f.content??'';
+   try{
+    const updated=await Workspace.files.update(project.id,id,{path:f.path,content});
+    contents.set(id,content);originals.set(id,content);dirty.delete(id);if(selectedFileId===id)selectedFile={...f,...updated,content};saveError=null;
+   }catch(e){saveError={id,message:e.message||'Falha ao salvar o arquivo.'};updateAll();toast('Falha ao salvar o arquivo','error');return false;}
+   try{await refreshData();}catch(_){updateAll();toast('Arquivo salvo, mas a árvore não pôde ser atualizada.','warning');}
+   toast('Arquivo salvo','success');return true;
   }
   function discardFile(id){if(!originals.has(id))return;contents.set(id,originals.get(id));dirty.delete(id);saveError=null;forceEditorSync=true;updateAll();toast('Alterações descartadas','info');}
   async function saveAllFiles(){let ok=true;for(const id of [...dirty])if(!await saveFile(id))ok=false;return ok;}
@@ -226,14 +232,14 @@ const WorkspaceMockUI = (() => {
   async function saveAi(silent=false){
    const entry=model(),errors={};if(!entry)errors.model='Selecione um modelo.';if(needsKey(entry)&&!ai.apiKey.trim())errors.key='Informe a chave de API.';
    aiErrors=errors;renderAI();if(Object.keys(errors).length){if(!silent)toast('Verifique os campos destacados','error');return false;}
-   const previousActive=ProviderManager.getActive?.(),previousPinned=ProviderManager.getPinned?.(),oldProject=project;let projectWasSaved=false;
+   const previousActive=ProviderManager.getActive?.(),previousPinned=ProviderManager.getPinned?.(),oldProject=project,oldFileAccess=files.map(f=>({id:f.id,access:f.aiAccess||'denied'}));let projectWasSaved=false,permissionsSaved=false;
    try{
     if(!ProviderManager.pin(entry))throw new Error('Não foi possível selecionar o provedor.');
     const active=ProviderManager.getActive?.();if(needsKey(entry)&&!ProviderManager.update(active?.id,{apiKey:ai.apiKey.trim()}))throw new Error('Não foi possível salvar a credencial.');
     const updated=await Workspace.projects.update(project.id,{settings:{...project.settings,aiAccessMode:ai.accessMode,aiProviderModelId:entry.id}});projectWasSaved=true;
-    await Workspace.files.setAccessMany(project.id,files.map(f=>({id:f.id,access:ai.fileAccess[f.id]==='allowed'?'allowed':'denied'})));
+    await Workspace.files.setAccessMany(project.id,files.map(f=>({id:f.id,access:ai.fileAccess[f.id]==='allowed'?'allowed':'denied'})));permissionsSaved=true;
     project=updated;await refreshData();ai.fileAccess=Object.fromEntries(files.map(f=>[f.id,f.aiAccess||'denied']));aiSaved=json(aiSnapshot());aiErrors={};renderAI();if(!silent)toast('Configurações de acesso salvas','success');return true;
-   }catch(e){try{if(projectWasSaved)await Workspace.projects.update(projectId,{settings:oldProject.settings});if(previousPinned)ProviderManager.pin(previousPinned);else{ProviderManager.unpin?.();if(previousActive?.id)ProviderManager.setActive(previousActive.id);}project=await Workspace.projects.get(projectId);}catch(_){}toast(e.message||'Não foi possível salvar o acesso à IA.','error');return false;}
+   }catch(e){try{if(permissionsSaved)await Workspace.files.setAccessMany(projectId,oldFileAccess);}catch(_){}try{if(projectWasSaved)await Workspace.projects.update(projectId,{settings:oldProject.settings});}catch(_){}try{if(previousPinned)ProviderManager.pin(previousPinned);else{ProviderManager.unpin?.();if(previousActive?.id)ProviderManager.setActive(previousActive.id);}}catch(_){}try{project=await Workspace.projects.get(projectId);}catch(_){}toast(e.message||'Não foi possível salvar o acesso à IA.','error');return false;}
   }
   function resetAi(){const p=ProviderManager.getPinned?.(),a=ProviderManager.getActive?.(),id=project?.settings?.aiProviderModelId||p?.id||'',m=id?ProviderRegistry.get(id):p;ai.providerId=m?.providerId||'';ai.modelId=m?.id||'';ai.apiKey=p?.id===m?.id?a?.apiKey||'':'';ai.accessMode=project?.settings?.aiAccessMode||'selected';ai.fileAccess=Object.fromEntries(files.map(f=>[f.id,f.aiAccess||'denied']));aiErrors={};showKey=false;aiSaved=json(aiSnapshot());renderAI();}
   function settingsErrors(){const errors={};if(!settings.name.trim())errors.name='Informe o nome do projeto.';else if(settings.name.trim().length>100)errors.name='O nome deve ter no máximo 100 caracteres.';if(settings.description.length>500)errors.description='A descrição deve ter no máximo 500 caracteres.';if(settings.instructions.length>20000)errors.instructions='Limite de 20.000 caracteres.';let config;try{config=JSON.parse(settings.configText);WorkspaceModel.normalizeConfig(config);}catch(e){errors.config='JSON inválido: '+e.message;}return{errors,config};}
@@ -244,7 +250,7 @@ const WorkspaceMockUI = (() => {
    const meta=$('[data-project-meta]');meta.replaceChildren();for(const [k,v] of [['ID',project?.id||'—'],['Criado em',date(project?.createdAt)],['Atualizado em',date(project?.updatedAt)]]){const r=el('div');r.append(el('dt','',k),el('dd','',v));meta.append(r);}
    const prefs=$('[data-project-preferences]');prefs.replaceChildren();for(const [k,v] of [['Arquivos',files.length],['Tamanho',fmt(totalSize())],['Acesso à IA',accessLabel()]]){const r=el('div');r.append(el('dt','',k),el('dd','',String(v)));prefs.append(r);}
   }
-  async function saveSettings(silent=false){const v=settingsErrors();if(Object.keys(v.errors).length){renderSettings();if(!silent)toast('Corrija os campos destacados','error');return false;}try{project=await Workspace.projects.update(project.id,{name:settings.name.trim(),description:settings.description,settings:{...project.settings,defaultView:settings.defaultView,instructions:settings.instructions,config:WorkspaceModel.normalizeConfig(v.config)}});settings.name=project.name;settingsSaved=json(settings);updateHeader();renderSettings();if(!silent)toast('Configurações salvas','success');return true;}catch(e){toast(e.message||'Falha ao salvar configurações.','error');return false;}}
+  async function saveSettings(silent=false){const v=settingsErrors();if(Object.keys(v.errors).length){renderSettings();if(!silent)toast('Corrija os campos destacados','error');return false;}try{project=await Workspace.projects.update(project.id,{name:settings.name.trim(),description:settings.description,settings:{...project.settings,defaultView:settings.defaultView,instructions:settings.instructions,config:WorkspaceModel.normalizeConfig(v.config)}});settings.name=project.name;settings.description=project.description||'';settings.instructions=project.settings?.instructions||'';settingsSaved=json(settings);updateHeader();renderSettings();if(!silent)toast('Configurações salvas','success');return true;}catch(e){toast(e.message||'Falha ao salvar configurações.','error');return false;}}
   function resetSettings(){settings={name:project.name,description:project.description||'',defaultView:project.settings?.defaultView||'files',instructions:project.settings?.instructions||'',configText:JSON.stringify(project.settings?.config||{includePatterns:[],maxContextBytes:49152},null,2)};settingsSaved=json(settings);renderSettings();}
 
   async function importFiles(kind){const input=kind==='dir'?dirInput:fileInput,list=[...(input.files||[])];input.value='';if(!list.length)return;try{const created=await WorkspaceController.importFiles(project.id,list,createParent());await refreshData();toast(created.length+' arquivo(s) importado(s)','success');}catch(e){toast(e.message||'Falha ao importar.','error');}}
