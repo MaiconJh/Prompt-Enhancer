@@ -192,6 +192,7 @@ const ProjectsMain = (() => {
             try {
                 if (!Workspace.isInitialized()) await Workspace.init();
                 const project = await Workspace.projects.create({ name: name.trim() });
+                loading = false;
                 await refresh();
                 onOpenProject?.(project.id);
             } catch (error) {
