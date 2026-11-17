@@ -434,6 +434,12 @@ const WorkspaceStorage = (() => {
                 }
                 const outsideFiles = projectFiles.filter(file => !fileIds.has(file.id));
                 const outsideFolders = projectFolders.filter(folder => !folderIds.has(folder.id));
+                if (outsideFiles.some(file => file.path === targetPath || file.path.startsWith(targetPath + '/'))
+                    || outsideFolders.some(folder => folder.path === targetPath || folder.path.startsWith(targetPath + '/'))) {
+                    const error = new Error('O destino já contém arquivos ou pastas e não pode receber esta renomeação.');
+                    error.code = 'file-exists';
+                    return abort(error);
+                }
                 const nextFilePaths = new Set();
                 const nextFolderPaths = new Set();
                 for (const file of nextFiles) {
