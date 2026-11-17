@@ -4855,7 +4855,27 @@ function injectStyles() {
             .pe-workspace__back { grid-column: 1; }
             .pe-workspace__project-title { grid-column: 2; }
         }
+        @media (max-width: 768px) and (min-width: 521px) {
+            .pe-modal-backdrop:has(.pe-modal.is-projects-main),
+            .pe-modal-backdrop:has(.pe-modal.is-workspace-expanded) { padding: 10px; }
+            .pe-scope .pe-modal.is-projects-main,
+            .pe-scope .pe-modal.is-workspace-expanded {
+                width: calc(100vw - 20px);
+                height: calc(100dvh - 20px);
+                max-height: calc(100dvh - 20px);
+                border-radius: 18px;
+            }
+        }
         @media (max-width: 520px) {
+            .pe-modal-backdrop:has(.pe-modal.is-projects-main),
+            .pe-modal-backdrop:has(.pe-modal.is-workspace-expanded) { padding: 0; }
+            .pe-scope .pe-modal.is-projects-main,
+            .pe-scope .pe-modal.is-workspace-expanded {
+                width: 100%;
+                height: 100dvh;
+                max-height: 100dvh;
+                border-radius: 0;
+            }
             .pe-projects-main__grid { grid-template-columns: minmax(0, 1fr); }
             .pe-project-card { min-height: 150px; }
         }
