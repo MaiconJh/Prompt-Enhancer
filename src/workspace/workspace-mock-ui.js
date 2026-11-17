@@ -125,8 +125,8 @@ const WorkspaceMockUI = (() => {
    settings={name:project.name,description:project.description||'',defaultView:project.settings?.defaultView||'files',instructions:project.settings?.instructions||'',configText:JSON.stringify(project.settings?.config||{includePatterns:[],maxContextBytes:49152},null,2)};
    settingsSaved=json(settings);ai.accessMode=project.settings?.aiAccessMode||'selected';ai.fileAccess=Object.fromEntries(files.map(f=>[f.id,f.aiAccess||'denied']));
    const pinned=ProviderManager.getPinned?.();let model=project.settings?.aiProviderModelId?ProviderRegistry.get(project.settings.aiProviderModelId):null;if(!model)model=pinned||ProviderRegistry.getCached()[0]||null;
-   if(project.settings?.aiProviderModelId)await ensureCatalog();
-   if(model){ai.providerId=model.providerId;ai.modelId=model.id;const active=ProviderManager.getActive?.();ai.apiKey=pinned?.id===model.id?active?.apiKey||'':'';}
+   if(project.settings?.aiProviderModelId){await ensureCatalog();model=ProviderRegistry.get(project.settings.aiProviderModelId)||model;}
+   if(model){if(project.settings?.aiProviderModelId&&!ProviderManager.pin(model))throw new Error('Não foi possível ativar o modelo salvo no projeto.');ai.providerId=model.providerId;ai.modelId=model.id;const currentPinned=ProviderManager.getPinned?.();const active=ProviderManager.getActive?.();ai.apiKey=currentPinned?.id===model.id?active?.apiKey||'':'';}
    aiSaved=json(aiSnapshot());activeView=['files','ai','settings'].includes(project.settings?.defaultView)?project.settings.defaultView:'files';
    expandedPaths=new Set(folders.filter(f=>!f.path.includes('/')).map(f=>f.path));if(!expandedPaths.size)for(const f of files)if(f.path.includes('/'))expandedPaths.add(f.path.split('/')[0]);
    if(files[0])await selectFileNow(files[0].id);if(activeView==='ai')await ensureCatalog();updateAll();status('Pronto');
@@ -139,7 +139,6 @@ const WorkspaceMockUI = (() => {
   function requestAction(action){if(!hasPending()){executeAction(action);return;}pendingAction=action;dialog('pending',true);}
   function executeAction(action){if(!action)return;if(action.type==='select')selectFileNow(action.id).catch(e=>toast(e.message,'error'));else if(action.type==='view'){activeView=action.view;if(activeView!=='files')focusMode=false;if(activeView==='ai')ensureCatalog();updateAll();}else if(action.type==='back')options.onBack?.();else if(action.type==='delete')showDelete(action.node);}
   function selectFile(id){if(id===selectedFileId)return;requestAction({type:'select',id});}
-  function createParent(){return parentPath(inspected());}
   function startCreateFile(){const parent=createParent(),id='draft-file-'+Utils.uid('f'),name='novo-arquivo.md';draftFiles.push({id,name,path:parent?parent+'/'+name:name,size:0,aiAccess:'denied',draft:true});editingNodeId=id;renameValue=name;if(parent)expandedPaths.add(parent);renderTree();}
   function startCreateFolder(){const parent=createParent(),id='draft-folder-'+Utils.uid('d'),name='nova-pasta';draftFolders.push({id,name,path:parent?parent+'/'+name:name,draft:true});editingNodeId=id;renameValue=name;if(parent)expandedPaths.add(parent);renderTree();}
   function startRename(row){editingNodeId=row.id;renameValue=row.name;renderTree();}
