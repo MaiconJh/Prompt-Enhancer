@@ -133,7 +133,7 @@ const WorkspaceStorage = (() => {
                     return abort(error);
                 }
                 if (mode === 'create' && existing.length >= maxFiles) {
-                    const error = new Error(\`O projeto atingiu o limite de \${maxFiles} arquivos.\`);
+                    const error = new Error(`O projeto atingiu o limite de ${maxFiles} arquivos.`);
                     error.code = 'project-file-limit';
                     return abort(error);
                 }
@@ -246,7 +246,7 @@ const WorkspaceStorage = (() => {
                     incomingBytes += size;
                 }
                 if (existing.length + batch.length > maxFiles) {
-                    const error = new Error(\`O projeto excede o limite de \${maxFiles} arquivos.\`);
+                    const error = new Error(`O projeto excede o limite de ${maxFiles} arquivos.`);
                     error.code = 'project-file-limit';
                     return abort(error);
                 }
