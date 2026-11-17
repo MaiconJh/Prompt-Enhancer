@@ -2,7 +2,7 @@
 const WorkspaceExplorerView = (() => {
     const ROW_HEIGHT = 22;
     const VIRTUALIZATION_THRESHOLD = 300;
-    const OVERSCAN = 10;
+    const OVERSCAN = 6;
     const states = new WeakMap();
     const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -57,6 +57,7 @@ const WorkspaceExplorerView = (() => {
         item.dataset.treeId = node.id;
         item.dataset.rowKind = node.kind;
         item.dataset.rowPath = node.path;
+        if (node.kind === 'file') item.dataset.fileId = node.id;
         item.setAttribute('role', 'treeitem');
         item.setAttribute('aria-level', String(node.depth + 1));
         item.setAttribute('aria-setsize', String(node.setsize || 1));
@@ -141,14 +142,14 @@ const WorkspaceExplorerView = (() => {
 
         if (!rows.length) {
             const empty = document.createElement('div');
-            empty.className = 'pe-tree-empty';
+            empty.className = 'pe-tree-empty pe-workspace__empty';
             empty.textContent = options.searchQuery
                 ? I18n.t('ws.files.noMatches')
                 : I18n.t('ws.files.empty');
             fragment.appendChild(empty);
         } else {
             const spacer = document.createElement('div');
-            spacer.className = 'pe-tree-spacer';
+            spacer.className = 'pe-tree-spacer pe-workspace__tree-spacer';
             spacer.style.height = (rows.length * ROW_HEIGHT) + 'px';
             spacer.setAttribute('aria-hidden', 'true');
             fragment.appendChild(spacer);
