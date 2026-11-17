@@ -826,9 +826,7 @@
         "provides": [
           "WorkspaceMockStyles"
         ],
-        "consumes": [
-          "document"
-        ]
+        "consumes": []
       },
       "interactions": [
         "WorkspaceMockUI injects the stylesheet when a project workspace is mounted."
