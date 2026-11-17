@@ -114,7 +114,7 @@ test('configurações do projeto persistem defaultView, instruções e JSON vali
 });
 
 test('proteção de alterações pendentes cobre arquivos, Acesso à IA e Configurações', () => {
-    assert.match(mockUiSource, /function hasPending\(\)/);
+    assert.match(mockUiSource, /const hasPending=/);
     assert.match(mockUiSource, /function canLeave\(\)/);
     assert.match(mockUiSource, /function saveAndContinue\(\)/);
     assert.match(mockUiSource, /function discardAndContinue\(\)/);
