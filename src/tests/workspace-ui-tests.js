@@ -94,6 +94,7 @@ test('arquivos e pastas usam operações reais, inclusive diretórios vazios e i
 test('Acesso à IA usa catálogo e credenciais reais, sem provedores ou chaves demonstrativas fixas', () => {
     assert.match(mockUiSource, /ProviderRegistry\.hydrate\(\)/);
     assert.match(mockUiSource, /ProviderRegistry\.groupByProvider\(\)/);
+    assert.match(mockUiSource, /ProviderManager\.pin\(entry\)/);
     assert.match(mockUiSource, /ProviderManager\.update\(active\?\.id,\s*\{apiKey:/);
     assert.match(mockUiSource, /ProviderManager\.update\(active\?\.id,\s*\{apiKey:/);
     assert.match(mockUiSource, /password/);
