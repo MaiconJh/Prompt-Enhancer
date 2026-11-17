@@ -144,3 +144,11 @@ test('mock e módulos de domínio estão registrados na ordem de dependência', 
         assert.ok(mock.interfaces.consumes.includes(dependency), dependency);
     }
 });
+
+
+test('mantém sessões ao retornar à Projects Main e libera recursos ao encerrar o modal', () => {
+    assert.match(settingsSource, /workspaceSessions\.get\(activeWorkspaceId\)/);
+    assert.match(settingsSource, /bodyEl\.replaceChildren\(activeSession\.root\)/);
+    assert.match(settingsSource, /session\.destroy\?\.\(\)/);
+    assert.match(settingsSource, /workspaceSessions\.clear\(\)/);
+});
