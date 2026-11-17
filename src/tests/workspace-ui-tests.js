@@ -53,8 +53,9 @@ test('ações do Workspace têm agrupamento acessível, ícones e semântica des
     assert.ok(styles.includes('overflow-x: auto;'));
 });
 
-test('aba Workspace monta o gerenciador dedicado', () => {
-    assert.match(settingsSource, /function renderWorkspace\(\)\s*\{\s*WorkspaceUI\.render\(bodyEl\);/);
+test('aba Workspace monta Projects Main e abre a interface operacional por projeto', () => {
+    assert.match(settingsSource, /function renderWorkspace\(\)\s*\{[\s\S]*ProjectsMain\.render\(bodyEl/);
+    assert.match(settingsSource, /WorkspaceUI\.render\(bodyEl,\s*\{\s*projectId,/);
     const settingsModule = manifest.modules.find(item => item.file === 'settings-modal.js');
     assert.ok(settingsModule.interfaces.consumes.includes('WorkspaceUI'));
 });
