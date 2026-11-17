@@ -37,6 +37,12 @@ const Workspace = (() => {
             update: (...args) => { assertInitialized(); return ProjectManager.update(...args); },
             remove: (...args) => { assertInitialized(); return ProjectManager.remove(...args); }
         },
+        folders: {
+            list: (...args) => { assertInitialized(); return FolderRegistry.list(...args); },
+            create: (...args) => { assertInitialized(); return FolderRegistry.create(...args); },
+            rename: (...args) => { assertInitialized(); return FolderRegistry.rename(...args); },
+            remove: (...args) => { assertInitialized(); return FolderRegistry.remove(...args); }
+        },
         files: {
             list: (...args) => { assertInitialized(); return FileRegistry.list(...args); },
             get: (...args) => { assertInitialized(); return FileRegistry.get(...args); },
@@ -44,6 +50,7 @@ const Workspace = (() => {
             createMany: (...args) => { assertInitialized(); return FileRegistry.createMany(...args); },
             update: (...args) => { assertInitialized(); return FileRegistry.update(...args); },
             setAccess: (...args) => { assertInitialized(); return FileRegistry.setAccess(...args); },
+            setAccessMany: (...args) => { assertInitialized(); return FileRegistry.setAccessMany(...args); },
             remove: (...args) => { assertInitialized(); return FileRegistry.remove(...args); },
             validate: (...args) => FileRegistry.validateTextFile(...args)
         }
