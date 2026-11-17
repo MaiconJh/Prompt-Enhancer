@@ -72,7 +72,8 @@ test('fornece labels, títulos e descrições nos dois idiomas', () => {
 
 test('usa navegação horizontal compacta com label somente na aba ativa', () => {
     assert.ok(settings.includes("b.title = t.label"));
-    assert.ok(settings.includes("panel.classList.toggle('is-workspace-expanded', activeTab === 'workspace')"));
+    assert.ok(settings.includes("panel.classList.toggle('is-projects-main', workspaceRoute)"));
+    assert.ok(settings.includes("panel.classList.toggle('is-workspace-expanded', workspaceRoute && activeWorkspaceId !== null)"));
     assert.ok(settings.includes("b.classList.toggle('is-active', selected)"));
     assert.ok(styles.includes('.pe-modal-layout {'));
     assert.ok(styles.includes('flex-direction: column;'));
