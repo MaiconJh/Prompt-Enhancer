@@ -3,149 +3,152 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-const uiSource = await readFile(new URL('../workspace/workspace-ui.js', import.meta.url), 'utf8');
+const root = new URL('../workspace/', import.meta.url);
+const uiSource = await readFile(new URL('workspace-ui.js', root), 'utf8');
+const mockUiSource = await readFile(new URL('workspace-mock-ui.js', root), 'utf8');
+const markupMatch = mockUiSource.match(/const MARKUP = ("(?:\\.|[^"\\])*");/);
+const mockMarkup = markupMatch ? JSON.parse(markupMatch[1]) : '';
+const mockStylesSource = await readFile(new URL('workspace-mock-styles.js', root), 'utf8');
 const settingsSource = await readFile(new URL('../settings-modal.js', import.meta.url), 'utf8');
-const explorerSource = await readFile(new URL('../workspace/workspace-explorer-view.js', import.meta.url), 'utf8');
-const controllerSource = await readFile(new URL('../workspace/workspace-controller.js', import.meta.url), 'utf8');
+const explorerSource = await readFile(new URL('workspace-explorer-view.js', root), 'utf8');
+const controllerSource = await readFile(new URL('workspace-controller.js', root), 'utf8');
+const resolverSource = await readFile(new URL('context-resolver.js', root), 'utf8');
 const manifest = JSON.parse(await readFile(new URL('../../manifest.json', import.meta.url), 'utf8'));
-const i18n = await readFile(new URL('../i18n.js', import.meta.url), 'utf8');
-const styles = await readFile(new URL('../styles.js', import.meta.url), 'utf8');
-const editorViewSource = await readFile(new URL('../workspace/workspace-editor-view.js', import.meta.url), 'utf8');
 
-test('Workspace UI possui sintaxe válida e é registrado como módulo de produção', () => {
+test('WorkspaceUI preserva o contrato público e delega ao workspace mock-backed', () => {
     assert.doesNotThrow(() => new Function(uiSource));
+    assert.match(uiSource, /WorkspaceMockUI\.render\(container, options\)/);
     const module = manifest.modules.find(item => item.file === 'workspace/workspace-ui.js');
     assert.ok(module);
     assert.ok(module.interfaces.provides.includes('WorkspaceUI'));
-    assert.ok(module.interfaces.consumes.includes('Workspace'));
-    assert.ok(module.interfaces.consumes.includes('Atoms'));
-    for (const dependency of ['WorkspaceController', 'WorkspaceExplorerView', 'WorkspaceEditorView', 'WorkspaceInspectorView', 'WorkspacePanelLayout']) {
-        assert.ok(module.interfaces.consumes.includes(dependency), dependency + ' deve estar declarado no manifest');
+    assert.ok(module.interfaces.consumes.includes('WorkspaceMockUI'));
+});
+
+test('implementa as três áreas do mock e mantém o Inspector contextual fora da Activity Bar', () => {
+    assert.doesNotThrow(() => new Function(mockUiSource));
+    for (const view of ['files', 'ai', 'settings']) {
+        assert.ok(mockMarkup.includes('data-view-panel="' + view + '"'), view);
+        assert.ok(mockMarkup.includes('data-view="' + view + '"'), view);
     }
+    assert.ok(mockMarkup.includes('data-inspector'));
+    assert.match(mockUiSource, /toggleInspector/);
+    assert.ok(!mockMarkup.includes('data-view="inspector"'));
+    assert.match(mockUiSource, /is-explorer-collapsed/);
+    assert.match(mockUiSource, /is-focus-mode/);
+    assert.match(mockUiSource, /is-page-view/);
+    assert.match(mockUiSource, /has-inspector/);
 });
 
-test('Workspace UI organiza quatro áreas na Activity Bar e mantém o Inspector contextual', () => {
-    for (const [view, variable] of [
-        ['overview', 'overviewView'],
-        ['files', 'filesView'],
-        ['access', 'accessView'],
-        ['settings', 'projectSettings']
-    ]) assert.ok(uiSource.includes(variable + ".dataset.viewPanel = '" + view + "'"));
-    assert.match(uiSource, /pe-workspace__activity-bar/);
-    assert.match(uiSource, /function setActiveView\(key\)/);
-    assert.match(uiSource, /aria-current/);
-    assert.ok(uiSource.includes('WorkspaceInspectorView.create'));
-    assert.ok(uiSource.includes('sections: [inspectorDetails]'));
-    assert.match(uiSource, /function updateOverview\(\)/);
-    assert.match(uiSource, /inspectorFilePermission\.textContent/);
-    assert.doesNotMatch(uiSource, /workspaceLayout\.hidden/);
+test('stylesheet é portado do mock e permanece isolado do shell externo', () => {
+    assert.doesNotThrow(() => new Function(mockStylesSource));
+    assert.match(mockStylesSource, /\.pe-workspace-host/);
+    assert.match(mockStylesSource, /\.pe-workspace-host \[hidden\]/);
+    assert.match(mockStylesSource, /pe-workspace-mock-styles/);
+    assert.match(mockStylesSource, /\.pe-workspace-host \.pe-activity-bar/);
+    assert.match(mockStylesSource, /\.pe-workspace-host \.pe-inspector/);
+    assert.doesNotMatch(mockStylesSource, /\.pe-workspace-host \.pe-modal-backdrop/);
 });
 
-test('ações do Workspace têm agrupamento acessível, ícones e semântica destrutiva', () => {
-    assert.ok(uiSource.includes('ws.files.actions'));
-    assert.ok(uiSource.includes('ws.files.importActions'));
-    assert.ok(uiSource.includes("variant: 'danger'"));
-    assert.ok(uiSource.includes("projectDeleteButton.prepend(Atoms.icon('trash'))"));
-    assert.ok(editorViewSource.includes("Atoms.icon('panelLeft')"));
-    assert.ok(editorViewSource.includes("Atoms.icon('panelRight')"));
-    assert.ok(styles.includes('.pe-workspace__file-access.is-denied { color: var(--pe-error); }'));
-    assert.ok(styles.includes('.pe-scope .pe-modal .pe-workspace .pe-param-input::placeholder { color: var(--pe-text-muted); opacity: 1; }'));
-    assert.ok(styles.includes('overflow-x: auto;'));
-});
-
-test('aba Workspace monta Projects Main e abre a interface operacional por projeto', () => {
+test('modal continua responsável pela navegação Projects Main → Workspace no mesmo shell', () => {
     assert.match(settingsSource, /function renderWorkspace\(\)\s*\{[\s\S]*ProjectsMain\.render\(bodyEl/);
     assert.match(settingsSource, /WorkspaceUI\.render\(bodyEl,\s*\{\s*projectId,/);
-    const settingsModule = manifest.modules.find(item => item.file === 'settings-modal.js');
-    assert.ok(settingsModule.interfaces.consumes.includes('WorkspaceUI'));
+    const module = manifest.modules.find(item => item.file === 'settings-modal.js');
+    assert.ok(module.interfaces.consumes.includes('WorkspaceUI'));
 });
 
-test('UI usa somente a fachada pública Workspace para operações de dados', () => {
-    assert.doesNotMatch(uiSource, /WorkspaceStorage|ProjectManager|FileRegistry|indexedDB/);
+test('UI usa as fachadas públicas para projetos, arquivos, pastas e permissões', () => {
+    assert.doesNotMatch(mockUiSource, /WorkspaceStorage|ProjectManager|FileRegistry|indexedDB/);
     for (const api of [
-        'Workspace.projects.list()',
-        'Workspace.projects.get(',
-        'Workspace.projects.create(',
-        'Workspace.projects.update(',
-        'Workspace.projects.remove(',
-        'Workspace.files.list(',
-        'Workspace.files.get(',
-        'Workspace.files.create(',
-        'Workspace.files.update(',
-        'Workspace.files.setAccess(',
-        'Workspace.files.remove('
-    ]) assert.ok(uiSource.includes(api), 'API pública ausente: ' + api);
+        'Workspace.projects.get(', 'Workspace.projects.update(',
+        'Workspace.files.list(', 'Workspace.files.get(', 'Workspace.files.create(',
+        'Workspace.files.update(', 'Workspace.files.remove(', 'Workspace.files.setAccessMany(',
+        'Workspace.folders.list(', 'Workspace.folders.create(', 'Workspace.folders.rename(',
+        'Workspace.folders.remove('
+    ]) assert.ok(mockUiSource.includes(api), 'API pública ausente: ' + api);
 });
 
-test('UI mantém proteção de rascunhos e confirma operações destrutivas', () => {
-    assert.ok(uiSource.includes('function fileDirty()'));
-    assert.ok(uiSource.includes('function projectDirty()'));
-    assert.ok(uiSource.includes('function confirmLeave()'));
-    assert.ok(uiSource.includes('ws.project.deleteMessage'));
-    assert.ok(uiSource.includes('ws.files.deleteMessage'));
-    assert.ok(uiSource.includes('ws.dirty.discard'));
-    assert.ok(uiSource.includes('ws.dirty.cancel'));
+test('Explorer implementa busca, hierarquia, virtualização, teclado e renomeação inline', () => {
+    assert.match(explorerSource, /WorkspaceTreeModel\.buildIndex\(state\.files, state\.folders\)/);
+    assert.match(explorerSource, /VIRTUALIZATION_THRESHOLD/);
+    assert.match(explorerSource, /OVERSCAN/);
+    assert.match(explorerSource, /ArrowDown/);
+    assert.match(explorerSource, /ArrowUp/);
+    assert.match(explorerSource, /ArrowRight/);
+    assert.match(explorerSource, /ArrowLeft/);
+    assert.match(explorerSource, /onStartRename/);
+    assert.match(explorerSource, /onCommitRename/);
+    assert.match(explorerSource, /onDelete/);
+    assert.ok(mockMarkup.includes('data-search'));
 });
 
-test('importação limita conteúdo a texto UTF-8 e valida caminhos e limites no Workspace', () => {
-    assert.ok(uiSource.includes('WorkspaceController.importFiles('));
-    assert.ok(controllerSource.includes("new TextDecoder('utf-8', { fatal: true })"));
-    assert.ok(controllerSource.includes('Workspace.files.validate({ path, content })'));
-    assert.ok(controllerSource.includes('incoming.size > MAX_FILE_BYTES'));
-    assert.ok(controllerSource.includes('ws.errors.textOnly'));
+test('arquivos e pastas usam operações reais, inclusive diretórios vazios e importação no destino selecionado', () => {
+    assert.match(mockUiSource, /Workspace\.folders\.create/);
+    assert.match(mockUiSource, /Workspace\.folders\.rename/);
+    assert.match(mockUiSource, /Workspace\.folders\.remove/);
+    assert.match(controllerSource, /Workspace\.folders\.create/);
+    assert.match(controllerSource, /resolveTargetPath/);
+    assert.match(controllerSource, /Workspace\.files\.createMany/);
+    assert.match(controllerSource, /new TextDecoder\('utf-8', \{ fatal: true \}\)/);
+    assert.match(controllerSource, /Workspace\.files\.validate\(\{ path, content \}\)/);
+    assert.match(controllerSource, /incoming\.size > MAX_FILE_BYTES/);
 });
 
-test('permissão visual reflete o modo efetivo do projeto', () => {
-    assert.ok(explorerSource.includes("mode === 'all' || (mode === 'selected' && row.file.aiAccess === 'allowed')"));
-    assert.ok(uiSource.includes('ws.access.overriddenNone'));
-    assert.ok(uiSource.includes('ws.access.overriddenAll'));
-    assert.ok(uiSource.includes("effectiveMode !== 'selected'"));
+test('Acesso à IA usa catálogo e credenciais reais, sem provedores ou chaves demonstrativas fixas', () => {
+    assert.match(mockUiSource, /ProviderRegistry\.hydrate\(\)/);
+    assert.match(mockUiSource, /ProviderRegistry\.groupByProvider\(\)/);
+    assert.match(mockUiSource, /ProviderManager\.pin\(entry\)/);
+    assert.match(mockUiSource, /ProviderManager\.update\(active\?\.id,\s*\{apiKey:/);
+    assert.ok(mockMarkup.includes('password'));
+    assert.match(mockUiSource, /Workspace\.files\.setAccessMany/);
+    assert.match(mockUiSource, /aiProviderModelId/);
+    assert.doesNotMatch(mockUiSource, /AIzaSyExample|sk-proj-example|Anthropic Claude 3/);
 });
 
-test('novas mensagens do Workspace existem em PT-BR e EN', () => {
-    const keys = [...new Set([...uiSource.matchAll(/I18n\.t\('([^']+)'/g)].map(match => match[1]))];
-    for (const key of keys.filter(value => value.startsWith('ws.'))) {
-        assert.equal(i18n.split('"' + key + '":').length - 1, 2, key + ' deve existir nos dois idiomas');
+test('configurações do projeto persistem defaultView, instruções e JSON validado', () => {
+    assert.match(mockUiSource, /defaultView/);
+    assert.match(mockUiSource, /WorkspaceModel\.normalizeConfig/);
+    assert.match(mockUiSource, /configText/);
+    assert.match(mockUiSource, /Workspace\.projects\.update/);
+    assert.match(resolverSource, /matchesAnyPattern\(file\.path, patterns\)/);
+    assert.match(resolverSource, /configuredBudget/);
+});
+
+test('proteção de alterações pendentes cobre arquivos, Acesso à IA e Configurações', () => {
+    assert.match(mockUiSource, /const hasPending=/);
+    assert.match(mockUiSource, /function canLeave\(\)/);
+    assert.match(mockUiSource, /function saveAndContinue\(\)/);
+    assert.match(mockUiSource, /function discardAndContinue\(\)/);
+    assert.match(mockUiSource, /function confirmDelete\(\)/);
+    assert.match(mockUiSource, /function saveFile\(id\)/);
+    assert.match(mockUiSource, /function discardFile\(id\)/);
+});
+
+test('Status Bar, Inspector e feedback refletem estado real do Workspace', () => {
+    for (const marker of ['data-status-files', 'data-status-size', 'data-status-selection', 'data-status-pending']) {
+        assert.ok(mockMarkup.includes(marker), marker);
     }
-    for (const key of [
-        'ws.navigation.label', 'ws.nav.overview', 'ws.nav.files', 'ws.nav.access', 'ws.nav.settings',
-        'ws.overview.title', 'ws.overview.files', 'ws.overview.storage', 'ws.overview.aiAccess',
-        'ws.overview.noProject', 'ws.overview.noDescription', 'ws.access.description', 'ws.access.noFile'
-    ]) {
-        assert.equal(i18n.split('"' + key + '":').length - 1, 2, key + ' deve existir nos dois idiomas');
-    }
-    for (const key of ['ws.project.name', 'ws.project.description', 'ws.access.projectMode', 'ws.project.instructions', 'ws.editor.path', 'ws.access.filePermission']) {
-        assert.equal(i18n.split('"' + key + '":').length - 1, 2, key + ' deve existir nos dois idiomas');
+    assert.match(mockUiSource, /effective\(node\.id\)/);
+    assert.match(mockUiSource, /nodeSize\(node\)/);
+    assert.match(mockUiSource, /function toast\(/);
+    assert.match(mockUiSource, /function updateStatus\(/);
+});
+
+test('mock e módulos de domínio estão registrados na ordem de dependência', () => {
+    const files = manifest.modules.map(item => item.file);
+    const index = file => files.indexOf(file);
+    assert.ok(index('workspace/folder-registry.js') < index('workspace/workspace.js'));
+    assert.ok(index('workspace/workspace-mock-styles.js') < index('workspace/workspace-mock-ui.js'));
+    assert.ok(index('workspace/workspace-mock-ui.js') < index('workspace/workspace-ui.js'));
+    const mock = manifest.modules.find(item => item.file === 'workspace/workspace-mock-ui.js');
+    for (const dependency of ['WorkspaceMockStyles', 'Workspace', 'WorkspaceController', 'WorkspaceExplorerView', 'ProviderRegistry', 'ProviderManager']) {
+        assert.ok(mock.interfaces.consumes.includes(dependency), dependency);
     }
 });
 
 
-test('configurações do projeto indicam alterações pendentes e oferecem descarte explícito', () => {
-    assert.ok(uiSource.includes('ws.project.unsavedChanges'));
-    assert.ok(uiSource.includes('ws.project.cancelSettings'));
-    assert.ok(uiSource.includes('projectDirtyIndicator.hidden = !hasUnsavedProjectChanges'));
-    assert.ok(uiSource.includes('projectCancel.disabled = !hasProject || !hasUnsavedProjectChanges || loading'));
-    assert.ok(uiSource.includes('function resetProjectSettings()'));
-    assert.ok(uiSource.includes("variant: 'primary'"));
-    for (const key of ['ws.project.unsavedChanges', 'ws.project.cancelSettings']) {
-        assert.equal(i18n.split('"' + key + '":').length - 1, 2, key + ' deve existir em PT-BR e EN');
-    }
-});
-
-test('corrige referências de tokens CSS do Workspace e mantém largura inicial do explorer definida', () => {
-    assert.ok(styles.includes('--pe-workspace-explorer-width: 240px;'));
-    for (const missingToken of ['--pe-radius-md', '--pe-surface-1', '--pe-font-mono', '--pe-transition-fast']) {
-        assert.equal(styles.includes('var(' + missingToken), false, missingToken + ' não deve ser referenciado');
-    }
-    assert.ok(styles.includes('border-radius: var(--pe-radius);'));
-    assert.ok(styles.includes('background: var(--pe-surface-2);'));
-    assert.ok(styles.includes('font-family: var(--pe-mono);'));
-    assert.ok(styles.includes('transition: background var(--pe-dur-fast) var(--pe-ease-standard);'));
-});
-
-test('altura do Workspace pode encolher dentro do modal e adapta o editor em telas compactas', () => {
-    assert.match(styles, /\.pe-workspace__shell\s*\{[^}]*min-height:\s*0/s);
-    assert.match(styles, /\.pe-workspace__layout\s*\{[^}]*min-height:\s*min\(46vh, 440px\)/s);
-    assert.match(styles, /\.pe-workspace__code\s*\{[^}]*min-height:\s*min\(36vh, 340px\)/s);
-    assert.match(styles, /@media \(max-width: 768px\)[\s\S]*?\.pe-workspace__layout\s*\{\s*min-height:\s*0/s);
+test('mantém sessões ao retornar à Projects Main e libera recursos ao encerrar o modal', () => {
+    assert.match(settingsSource, /workspaceSessions\.get\(activeWorkspaceId\)/);
+    assert.match(settingsSource, /bodyEl\.replaceChildren\(activeSession\.root\)/);
+    assert.match(settingsSource, /session\.destroy\?\.\(\)/);
+    assert.match(settingsSource, /workspaceSessions\.clear\(\)/);
 });

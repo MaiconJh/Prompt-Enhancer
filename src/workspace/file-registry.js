@@ -202,6 +202,22 @@ const FileRegistry = (() => {
         return WorkspaceStorage.deleteProjectFile(project.id, current.id);
     }
 
+
+    async function setAccessMany(projectId, changes = []) {
+        const project = await ProjectManager.get(projectId);
+        if (!project) throw createError('Projeto não encontrado.', 'project-not-found');
+        if (!Array.isArray(changes)) throw createError('A lista de permissões é inválida.', 'invalid-input');
+        const normalized = changes.map(change => ({
+            id: String(change?.id || ''),
+            access: change?.access
+        }));
+        if (normalized.some(change => !change.id || !['allowed', 'denied'].includes(change.access))) {
+            throw createError('A lista contém uma permissão inválida.', 'invalid-ai-access');
+        }
+        const updated = await WorkspaceStorage.setFileAccessMany(project.id, normalized);
+        return updated.map(metadata);
+    }
+
     return {
         list,
         get,
@@ -209,6 +225,7 @@ const FileRegistry = (() => {
         createMany,
         update,
         setAccess,
+        setAccessMany,
         remove,
         validateTextFile,
         limits: Object.freeze({

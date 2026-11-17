@@ -176,7 +176,9 @@
             if (previouslyFocused?.isConnected && !previouslyFocused.closest('[inert]')) previouslyFocused.focus();
             setTimeout(() => {
                 backdrop.remove();
+                for (const session of workspaceSessions.values()) session.destroy?.();
                 workspaceSessions.clear();
+                projectsMainView?.destroy?.();
                 projectsMainView = null;
             }, 220);
             try { onClose?.(); } catch (_) {}
@@ -1038,7 +1040,7 @@
             if (!projectsMainView) {
                 projectsMainView = ProjectsMain.render(bodyEl, {
                     onOpenProject: openWorkspace,
-                    onDeleteProject: projectId => workspaceSessions.delete(projectId)
+                    onDeleteProject: projectId => { workspaceSessions.get(projectId)?.destroy?.(); workspaceSessions.delete(projectId); }
                 });
             } else {
                 bodyEl.replaceChildren(projectsMainView.root);

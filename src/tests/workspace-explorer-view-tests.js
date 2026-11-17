@@ -12,6 +12,7 @@ function createHarness() {
     const dom = new JSDOM('<!doctype html><div id="tree"></div>');
     const context = vm.createContext({
         document: dom.window.document,
+        queueMicrotask: callback => Promise.resolve().then(callback),
         I18n: { t: key => key }
     });
     vm.runInContext(modelSource, context);
@@ -38,7 +39,7 @@ test('virtualiza linhas visíveis acima do limite e mantém apenas a janela no D
 
     container.scrollTop = 3000;
     container.dispatchEvent(new dom.window.Event('scroll'));
-    assert.ok(container.querySelector('[data-row-index="92"]'));
+    assert.ok(container.querySelector('[data-row-index="130"]'));
     assert.equal(container.querySelector('[data-row-index="0"]'), null);
     assert.ok(container.querySelector('.pe-workspace__tree-spacer'));
     view.destroy(container);
@@ -116,5 +117,53 @@ test('árvore oferece navegação por setas, expansão, recolhimento, ativação
     assert.equal(dom.window.document.activeElement.dataset.rowPath, 'src');
     container.querySelector('[data-row-path="src"]').dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
     assert.equal(container.querySelector('[data-row-path="src"]').getAttribute('aria-expanded'), 'false');
+    view.destroy(container);
+});
+
+
+test('inspeção, foco, seleção e exclusão são callbacks distintos', () => {
+    const { view, container } = createHarness();
+    const events = [];
+    view.render(container, {
+        files: [{ id: 'a', name: 'alpha.js', path: 'src/alpha.js' }],
+        expandedPaths: new Set(['src']),
+        onFocus: row => events.push('focus:' + row.id),
+        onInspect: row => events.push('inspect:' + row.id),
+        onSelect: id => events.push('select:' + id),
+        onDelete: row => events.push('delete:' + row.id)
+    });
+    const file = container.querySelector('[data-file-id="a"]');
+    file.click();
+    assert.deepEqual(events.slice(0, 3), ['focus:a', 'inspect:a', 'select:a']);
+    container.querySelector('[data-file-id="a"] .pe-icon-btn--delete').click();
+    assert.equal(events.at(-1), 'delete:a');
+    view.destroy(container);
+});
+
+test('renomeação inline aceita texto, Enter e Escape sem executar seleção', () => {
+    const { dom, view, container } = createHarness();
+    const events = [];
+    const files = [{ id: 'a', name: 'alpha.js', path: 'src/alpha.js' }];
+    view.render(container, {
+        files,
+        expandedPaths: new Set(['src']),
+        onStartRename: row => events.push('start:' + row.id),
+        onRenameInput: value => events.push('input:' + value),
+        onCommitRename: () => events.push('commit'),
+        onCancelRename: () => events.push('cancel')
+    });
+    container.querySelector('[data-file-id="a"] .pe-file-name').dispatchEvent(new dom.window.MouseEvent('dblclick', { bubbles: true }));
+    assert.deepEqual(events, ['start:a']);
+    view.render(container, { files, expandedPaths: new Set(['src']), editingNodeId: 'a', renameValue: 'renamed.js',
+        onRenameInput: value => events.push('input:' + value),
+        onCommitRename: () => events.push('commit'),
+        onCancelRename: () => events.push('cancel')
+    });
+    const input = container.querySelector('.pe-tree-input');
+    input.value = 'renamed.js';
+    input.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    input.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    assert.ok(events.includes('input:renamed.js'));
+    assert.ok(events.includes('cancel'));
     view.destroy(container);
 });
