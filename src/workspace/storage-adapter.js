@@ -102,26 +102,23 @@ const WorkspaceStorage = (() => {
 
     function saveFile(file, { maxFiles, maxBytes, mode = 'create' } = {}) {
         return open().then(db => new Promise((resolve, reject) => {
-            const tx = db.transaction(['projects', 'files'], 'readwrite');
+            const tx = db.transaction(['projects', 'files', 'folders'], 'readwrite');
             const projects = tx.objectStore('projects');
             const files = tx.objectStore('files');
+            const folders = tx.objectStore('folders');
             const projectRequest = projects.get(file.projectId);
             const filesRequest = files.index('byProject').getAll(IDBKeyRange.only(file.projectId));
-            let project;
-            let projectReady = false;
-            let projectFiles;
-            let filesReady = false;
-            let failure = null;
-            let savedFile = null;
-
+            const foldersRequest = folders.index('byProject').getAll(IDBKeyRange.only(file.projectId));
+            let project, projectFiles = [], projectFolders = [];
+            let projectReady = false, filesReady = false, foldersReady = false;
+            let failure = null, savedFile = null;
             const abort = error => {
                 if (failure) return;
                 failure = error;
                 try { tx.abort(); } catch (_) { reject(error); }
             };
-
             const commit = () => {
-                if (!projectReady || !filesReady || failure) return;
+                if (!projectReady || !filesReady || !foldersReady || failure) return;
                 if (!project) return abort(new Error('Projeto não encontrado.'));
                 const existing = projectFiles || [];
                 const current = existing.find(item => item.id === file.id) || null;
@@ -135,19 +132,19 @@ const WorkspaceStorage = (() => {
                     error.code = 'file-not-found';
                     return abort(error);
                 }
-                if (mode === 'create' && existing.some(item => item.path === file.path)) {
-                    const error = new Error('Já existe um arquivo com esse caminho no projeto.');
-                    error.code = 'file-exists';
-                    return abort(error);
-                }
                 if (mode === 'create' && existing.length >= maxFiles) {
-                    const error = new Error(`O projeto atingiu o limite de ${maxFiles} arquivos.`);
+                    const error = new Error(\`O projeto atingiu o limite de \${maxFiles} arquivos.\`);
                     error.code = 'project-file-limit';
                     return abort(error);
                 }
-                if (existing.some(item => item.id !== file.id && item.path === file.path)) {
-                    const error = new Error('Já existe um arquivo com esse caminho no projeto.');
-                    error.code = 'file-exists';
+                const pathConflict = existing.some(item => item.id !== file.id && (
+                    item.path === file.path || item.path.startsWith(file.path + '/') || file.path.startsWith(item.path + '/')
+                )) || projectFolders.some(folder =>
+                    folder.path === file.path || folder.path.startsWith(file.path + '/')
+                );
+                if (pathConflict) {
+                    const error = new Error('O caminho do arquivo conflita com outro arquivo ou pasta do projeto.');
+                    error.code = 'path-conflict';
                     return abort(error);
                 }
                 const totalBytes = existing.reduce((sum, item) => sum + (Number(item.size) || 0), 0)
@@ -161,44 +158,41 @@ const WorkspaceStorage = (() => {
                 files.put(file);
                 projects.put({ ...project, updatedAt: Date.now() });
             };
-
             projectRequest.onsuccess = () => { project = projectRequest.result; projectReady = true; commit(); };
-            filesRequest.onsuccess = () => { projectFiles = filesRequest.result; filesReady = true; commit(); };
+            filesRequest.onsuccess = () => { projectFiles = filesRequest.result || []; filesReady = true; commit(); };
+            foldersRequest.onsuccess = () => { projectFolders = foldersRequest.result || []; foldersReady = true; commit(); };
             projectRequest.onerror = () => abort(projectRequest.error || new Error('Não foi possível validar o projeto.'));
             filesRequest.onerror = () => abort(filesRequest.error || new Error('Não foi possível consultar os arquivos do projeto.'));
+            foldersRequest.onerror = () => abort(foldersRequest.error || new Error('Não foi possível consultar as pastas do projeto.'));
             tx.oncomplete = () => resolve(savedFile);
             tx.onerror = () => reject(failure || tx.error || new Error('Não foi possível salvar o arquivo.'));
             tx.onabort = () => reject(failure || tx.error || new Error('A gravação do arquivo foi cancelada.'));
         }));
     }
 
-
     function saveFiles(batch, { maxFiles, maxBytes } = {}) {
         if (!Array.isArray(batch) || batch.length === 0) {
             return Promise.reject(new TypeError('O lote de arquivos está vazio ou é inválido.'));
         }
         return open().then(db => new Promise((resolve, reject) => {
-            const tx = db.transaction(['projects', 'files'], 'readwrite');
+            const tx = db.transaction(['projects', 'files', 'folders'], 'readwrite');
             const projects = tx.objectStore('projects');
             const files = tx.objectStore('files');
+            const folders = tx.objectStore('folders');
             const projectId = batch[0]?.projectId;
             const projectRequest = projects.get(projectId);
             const filesRequest = files.index('byProject').getAll(IDBKeyRange.only(projectId));
-            let project;
-            let projectReady = false;
-            let projectFiles;
-            let filesReady = false;
-            let failure = null;
-            let savedFiles = [];
-
+            const foldersRequest = folders.index('byProject').getAll(IDBKeyRange.only(projectId));
+            let project, projectFiles = [], projectFolders = [];
+            let projectReady = false, filesReady = false, foldersReady = false;
+            let failure = null, savedFiles = [];
             const abort = error => {
                 if (failure) return;
                 failure = error;
                 try { tx.abort(); } catch (_) { reject(error); }
             };
-
             const commit = () => {
-                if (!projectReady || !filesReady || failure) return;
+                if (!projectReady || !filesReady || !foldersReady || failure) return;
                 if (!project) {
                     const error = new Error('Projeto não encontrado.');
                     error.code = 'project-not-found';
@@ -206,11 +200,9 @@ const WorkspaceStorage = (() => {
                 }
                 const existing = projectFiles || [];
                 const ids = new Set(existing.map(file => file.id));
-                const paths = new Set(existing.map(file => file.path));
                 const incomingIds = new Set();
-                const incomingPaths = new Set();
+                const incomingPaths = [];
                 let incomingBytes = 0;
-
                 for (const file of batch) {
                     if (!file || file.projectId !== projectId || typeof file.id !== 'string' || typeof file.path !== 'string') {
                         const error = new Error('O lote contém um arquivo inválido.');
@@ -222,9 +214,18 @@ const WorkspaceStorage = (() => {
                         error.code = 'file-exists';
                         return abort(error);
                     }
-                    if (paths.has(file.path) || incomingPaths.has(file.path)) {
-                        const error = new Error('O lote contém caminhos duplicados ou já existentes no projeto.');
-                        error.code = 'file-exists';
+                    const conflictsWithExistingFile = existing.some(item =>
+                        item.path === file.path || item.path.startsWith(file.path + '/') || file.path.startsWith(item.path + '/')
+                    );
+                    const conflictsWithFolder = projectFolders.some(folder =>
+                        folder.path === file.path || folder.path.startsWith(file.path + '/')
+                    );
+                    const conflictsWithBatch = incomingPaths.some(path =>
+                        path === file.path || path.startsWith(file.path + '/') || file.path.startsWith(path + '/')
+                    );
+                    if (conflictsWithExistingFile || conflictsWithFolder || conflictsWithBatch) {
+                        const error = new Error('O lote contém caminhos duplicados ou incompatíveis com arquivos e pastas existentes.');
+                        error.code = 'path-conflict';
                         return abort(error);
                     }
                     const size = Number(file.size);
@@ -234,12 +235,11 @@ const WorkspaceStorage = (() => {
                         return abort(error);
                     }
                     incomingIds.add(file.id);
-                    incomingPaths.add(file.path);
+                    incomingPaths.push(file.path);
                     incomingBytes += size;
                 }
-
                 if (existing.length + batch.length > maxFiles) {
-                    const error = new Error(`O projeto excede o limite de ${maxFiles} arquivos.`);
+                    const error = new Error(\`O projeto excede o limite de \${maxFiles} arquivos.\`);
                     error.code = 'project-file-limit';
                     return abort(error);
                 }
@@ -249,20 +249,18 @@ const WorkspaceStorage = (() => {
                     error.code = 'project-size-limit';
                     return abort(error);
                 }
-
                 try {
                     for (const file of batch) files.add(file);
                     projects.put({ ...project, updatedAt: Date.now() });
                     savedFiles = batch;
-                } catch (error) {
-                    abort(error);
-                }
+                } catch (error) { abort(error); }
             };
-
             projectRequest.onsuccess = () => { project = projectRequest.result; projectReady = true; commit(); };
-            filesRequest.onsuccess = () => { projectFiles = filesRequest.result; filesReady = true; commit(); };
+            filesRequest.onsuccess = () => { projectFiles = filesRequest.result || []; filesReady = true; commit(); };
+            foldersRequest.onsuccess = () => { projectFolders = foldersRequest.result || []; foldersReady = true; commit(); };
             projectRequest.onerror = () => abort(projectRequest.error || new Error('Não foi possível validar o projeto.'));
             filesRequest.onerror = () => abort(filesRequest.error || new Error('Não foi possível consultar os arquivos do projeto.'));
+            foldersRequest.onerror = () => abort(foldersRequest.error || new Error('Não foi possível consultar as pastas do projeto.'));
             tx.oncomplete = () => resolve(savedFiles);
             tx.onerror = () => reject(failure || tx.error || new Error('Não foi possível salvar o lote de arquivos.'));
             tx.onabort = () => reject(failure || tx.error || new Error('A gravação do lote foi cancelada.'));
