@@ -30,7 +30,8 @@ test('aba Workspace delega o gerenciamento à view dedicada', () => {
     const start = settings.indexOf('function renderWorkspace()');
     const end = settings.indexOf('function renderManualContext()', start);
     const view = settings.slice(start, end);
-    assert.ok(view.includes('WorkspaceUI.render(bodyEl)'));
+    assert.ok(view.includes('ProjectsMain.render(bodyEl'));
+    assert.ok(settings.includes('WorkspaceUI.render(bodyEl, {'));
     assert.equal(view.includes('Workspace.projects.create('), false);
 });
 
@@ -72,7 +73,8 @@ test('fornece labels, títulos e descrições nos dois idiomas', () => {
 
 test('usa navegação horizontal compacta com label somente na aba ativa', () => {
     assert.ok(settings.includes("b.title = t.label"));
-    assert.ok(settings.includes("panel.classList.toggle('is-workspace-expanded', activeTab === 'workspace')"));
+    assert.ok(settings.includes("panel.classList.toggle('is-projects-main', workspaceRoute)"));
+    assert.ok(settings.includes("panel.classList.toggle('is-workspace-expanded', workspaceRoute && activeWorkspaceId !== null)"));
     assert.ok(settings.includes("b.classList.toggle('is-active', selected)"));
     assert.ok(styles.includes('.pe-modal-layout {'));
     assert.ok(styles.includes('flex-direction: column;'));
