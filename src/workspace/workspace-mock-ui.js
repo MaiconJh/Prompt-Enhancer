@@ -112,11 +112,17 @@ const WorkspaceMockUI = (() => {
    status(saveError?'Erro ao salvar':dirty.size?'Alterações não salvas':'Pronto',saveError?'error':dirty.size?'warning':'');
   }
   function updateAll(){updateHeader();updateLayout();renderTree();renderEditor();renderInspector();updateStatus();renderAI();renderSettings();}
+  function reconcileAiFileBaseline(){
+   let baseline;try{baseline=JSON.parse(aiSaved||'{}');}catch(_){baseline={};}baseline.fileAccess=baseline.fileAccess||{};
+   const ids=new Set(files.map(f=>f.id));for(const id of Object.keys(baseline.fileAccess))if(!ids.has(id))delete baseline.fileAccess[id];
+   for(const f of files){if(!Object.prototype.hasOwnProperty.call(baseline.fileAccess,f.id))baseline.fileAccess[f.id]=f.aiAccess||'denied';if(!Object.prototype.hasOwnProperty.call(ai.fileAccess,f.id))ai.fileAccess[f.id]=f.aiAccess||'denied';}
+   aiSaved=json(baseline);
+  }
   async function refreshData(){
    files=await Workspace.files.list(project.id);folders=await Workspace.folders.list(project.id);
    for(const id of [...dirty])if(!files.some(f=>f.id===id))dirty.delete(id);
    if(selectedFileId){const f=await Workspace.files.get(project.id,selectedFileId);if(f)selectedFile=f;else{selectedFile=null;selectedFileId=null;}}
-   for(const f of files)if(!ai.fileAccess[f.id])ai.fileAccess[f.id]=f.aiAccess||'denied';
+   reconcileAiFileBaseline();
    updateAll();
   }
   async function loadProject(){
@@ -144,7 +150,7 @@ const WorkspaceMockUI = (() => {
   function startRename(row){editingNodeId=row.id;renameValue=row.name;renderTree();}
   function cancelRename(){const id=editingNodeId;editingNodeId=null;if(id){draftFiles=draftFiles.filter(f=>f.id!==id);draftFolders=draftFolders.filter(f=>f.id!==id);}renderTree();}
   async function commitRename(){
-   const id=editingNodeId,node=nodeById(id),name=String(renameValue||'').trim();if(!id||renameCommitInProgress)return;renameCommitInProgress=true;if(!node||!name){cancelRename();return;}
+   const id=editingNodeId,node=nodeById(id),name=String(renameValue||'').trim();if(!id||renameCommitInProgress)return;if(!node||!name){cancelRename();return;}renameCommitInProgress=true;
    const parent=node.path.split('/').slice(0,-1).join('/'),path=parent?parent+'/'+name:name;
    try{WorkspaceModel.normalizeFilePath(path);if(path===node.path){editingNodeId=null;renderTree();return;}
     if(node.type==='file'){if(node.file?.draft){const created=await Workspace.files.create(project.id,{path,content:''});draftFiles=draftFiles.filter(f=>f.id!==id);await refreshData();await selectFileNow(created.id);}
