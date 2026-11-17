@@ -27,6 +27,10 @@
         let isSaving = false;
         let prevFooterDirty = false;
         let i18nRefresh = null;
+        let projectsMainView = null;
+        const workspaceSessions = new Map();
+        let activeWorkspaceId = null;
+        let isClosing = false;
 
         const backdrop = document.createElement('div');
         backdrop.className = 'pe-modal-backdrop pe-scope';
@@ -142,8 +146,13 @@
             closeBtn.focus();
         });
 
-        function close() {
-            if (closed) return;
+        async function close() {
+            if (closed || isClosing) return;
+            if (activeWorkspaceId) {
+                const session = workspaceSessions.get(activeWorkspaceId);
+                if (session && !(await session.canLeave())) return;
+            }
+            isClosing = true;
             if (i18nRefresh) { window.removeEventListener('pe:i18n-changed', i18nRefresh); i18nRefresh = null; }
             closed = true;
             cancelAnimationFrame(openFrame);
@@ -158,6 +167,8 @@
             if (previouslyFocused?.isConnected && !previouslyFocused.closest('[inert]')) previouslyFocused.focus();
             setTimeout(() => {
                 backdrop.remove();
+                workspaceSessions.clear();
+                projectsMainView = null;
             }, 220);
             try { onClose?.(); } catch (_) {}
         }
@@ -260,7 +271,11 @@
 
         function render() {
             prevFooterDirty = false;
-            panel.classList.toggle('is-workspace-expanded', activeTab === 'workspace');
+            const workspaceRoute = activeTab === 'workspace';
+            if (!workspaceRoute) activeWorkspaceId = null;
+            tabsBar.hidden = workspaceRoute;
+            panel.classList.toggle('is-projects-main', workspaceRoute);
+            panel.classList.toggle('is-workspace-expanded', workspaceRoute && activeWorkspaceId !== null);
             Object.entries(tabButtons).forEach(([k, b]) => {
                 const selected = k === activeTab;
                 b.classList.toggle('is-active', selected);
@@ -274,20 +289,22 @@
             bodyEl.style.overflowY = '';
             footerEl.innerHTML = '';
             const tab = getTabDefs().find(item => item.key === activeTab);
-            const intro = document.createElement('div');
-            intro.className = 'pe-settings-intro';
-            const icon = document.createElement('span');
-            icon.className = 'pe-settings-intro__icon';
-            icon.appendChild(Atoms.icon(tab.icon));
-            const text = document.createElement('div');
-            text.className = 'pe-settings-intro__text';
-            const title = document.createElement('h5');
-            title.textContent = tab.title;
-            const description = document.createElement('p');
-            description.textContent = tab.description;
-            text.append(title, description);
-            intro.append(icon, text);
-            bodyEl.appendChild(intro);
+            if (!workspaceRoute) {
+                const intro = document.createElement('div');
+                intro.className = 'pe-settings-intro';
+                const icon = document.createElement('span');
+                icon.className = 'pe-settings-intro__icon';
+                icon.appendChild(Atoms.icon(tab.icon));
+                const text = document.createElement('div');
+                text.className = 'pe-settings-intro__text';
+                const title = document.createElement('h5');
+                title.textContent = tab.title;
+                const description = document.createElement('p');
+                description.textContent = tab.description;
+                text.append(title, description);
+                intro.append(icon, text);
+                bodyEl.appendChild(intro);
+            }
             if (activeTab === 'params') renderParams();
             else if (activeTab === 'workspace') renderWorkspace();
             else if (activeTab === 'manualContext') renderManualContext();
@@ -1000,7 +1017,51 @@
     footerEl.appendChild(closeBtn);
 }
         function renderWorkspace() {
-            WorkspaceUI.render(bodyEl);
+            if (!projectsMainView) {
+                projectsMainView = ProjectsMain.render(bodyEl, {
+                    onOpenProject: openWorkspace,
+                    onDeleteProject: projectId => workspaceSessions.delete(projectId)
+                });
+            } else {
+                bodyEl.replaceChildren(projectsMainView.root);
+                projectsMainView.refresh();
+            }
+            panel.classList.add('is-projects-main');
+            panel.classList.remove('is-workspace-expanded');
+        }
+
+        async function openWorkspace(projectId) {
+            if (!projectId || closed) return;
+            try {
+                if (!Workspace.isInitialized()) await Workspace.init();
+                await Workspace.setActiveProjectId(projectId);
+                activeWorkspaceId = projectId;
+                bodyEl.replaceChildren();
+                let session = workspaceSessions.get(projectId);
+                if (!session) {
+                    session = WorkspaceUI.render(bodyEl, {
+                        projectId,
+                        onBack: showProjectsMain
+                    });
+                    workspaceSessions.set(projectId, session);
+                } else {
+                    bodyEl.appendChild(session.root);
+                }
+                panel.classList.remove('is-projects-main');
+                panel.classList.add('is-workspace-expanded');
+            } catch (error) {
+                activeWorkspaceId = null;
+                Molecules.toast(error.message || I18n.t('ws.errors.loadFailed'), 'error');
+                showProjectsMain();
+            }
+        }
+
+        function showProjectsMain() {
+            activeWorkspaceId = null;
+            panel.classList.remove('is-workspace-expanded');
+            panel.classList.add('is-projects-main');
+            if (projectsMainView?.root) bodyEl.replaceChildren(projectsMainView.root);
+            projectsMainView?.refresh?.();
         }
 
         function renderManualContext() {
