@@ -627,7 +627,8 @@
           "WorkspaceStorage"
         ],
         "consumes": [
-          "IndexedDB"
+          "IndexedDB",
+          "WorkspaceModel"
         ]
       },
       "interactions": [
@@ -668,6 +669,23 @@
       ]
     },
     {
+      "file": "workspace/folder-registry.js",
+      "description": "Persistent project folder operations with path validation and atomic subtree mutations.",
+      "interfaces": {
+        "provides": [
+          "FolderRegistry"
+        ],
+        "consumes": [
+          "WorkspaceStorage",
+          "WorkspaceModel",
+          "ProjectManager"
+        ]
+      },
+      "interactions": [
+        "Workspace exposes FolderRegistry through Workspace.folders."
+      ]
+    },
+    {
       "file": "workspace/workspace.js",
       "description": "Provides the public Workspace facade, initialization lifecycle, and UI-controlled active project selection.",
       "interfaces": {
@@ -680,7 +698,8 @@
           "ProjectManager",
           "FileRegistry",
           "GM_getValue",
-          "GM_setValue"
+          "GM_setValue",
+          "FolderRegistry"
         ]
       },
       "interactions": [
@@ -742,7 +761,8 @@
         ],
         "consumes": [
           "Workspace",
-          "I18n"
+          "I18n",
+          "WorkspaceModel"
         ]
       },
       "interactions": [
@@ -784,12 +804,56 @@
       "file": "workspace/projects-main.js",
       "description": "Provides the dedicated Projects Main interface for searching, sorting, creating, renaming, deleting, and opening projects.",
       "interfaces": {
-        "provides": ["ProjectsMain"],
-        "consumes": ["Workspace", "I18n", "Atoms", "Theme"]
+        "provides": [
+          "ProjectsMain"
+        ],
+        "consumes": [
+          "Workspace",
+          "I18n",
+          "Atoms",
+          "Theme"
+        ]
       },
       "interactions": [
         "Settings modal mounts Projects Main and keeps its view state while a project Workspace is active.",
         "All project reads and mutations use the public Workspace facade."
+      ]
+    },
+    {
+      "file": "workspace/workspace-mock-styles.js",
+      "description": "Scoped production stylesheet ported from the approved workspace mock.",
+      "interfaces": {
+        "provides": [
+          "WorkspaceMockStyles"
+        ],
+        "consumes": []
+      },
+      "interactions": [
+        "WorkspaceMockUI injects the stylesheet when a project workspace is mounted."
+      ]
+    },
+    {
+      "file": "workspace/workspace-mock-ui.js",
+      "description": "Mock-faithful project workspace view bound to persistent project, folder, file, provider, permission, and settings domains.",
+      "interfaces": {
+        "provides": [
+          "WorkspaceMockUI"
+        ],
+        "consumes": [
+          "WorkspaceMockStyles",
+          "Workspace",
+          "WorkspaceController",
+          "WorkspaceExplorerView",
+          "WorkspaceModel",
+          "ProviderRegistry",
+          "ProviderManager",
+          "Theme",
+          "Utils"
+        ]
+      },
+      "interactions": [
+        "WorkspaceUI delegates its public render contract to WorkspaceMockUI.",
+        "All project, folder, file, permission, provider, import, and configuration operations use the existing domain facades."
       ]
     },
     {
@@ -800,21 +864,11 @@
           "WorkspaceUI"
         ],
         "consumes": [
-          "Workspace",
-          "I18n",
-          "Utils",
-          "Atoms",
-          "Molecules",
-          "WorkspaceController",
-          "WorkspaceExplorerView",
-          "WorkspaceEditorView",
-          "WorkspaceInspectorView",
-          "WorkspacePanelLayout"
+          "WorkspaceMockUI"
         ]
       },
       "interactions": [
-        "The modal mounts one project at a time; navigation back to Projects Main is guarded by the Workspace dirty-state confirmation.",
-        "The interface manages local editor drafts, derived directory navigation, imports, and effective AI read access."
+        "Preserves the WorkspaceUI.render(container, options) contract consumed by settings-modal."
       ]
     },
     {
