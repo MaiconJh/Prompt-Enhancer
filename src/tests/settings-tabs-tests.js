@@ -30,7 +30,8 @@ test('aba Workspace delega o gerenciamento à view dedicada', () => {
     const start = settings.indexOf('function renderWorkspace()');
     const end = settings.indexOf('function renderManualContext()', start);
     const view = settings.slice(start, end);
-    assert.ok(view.includes('WorkspaceUI.render(bodyEl)'));
+    assert.ok(view.includes('ProjectsMain.render(bodyEl'));
+    assert.ok(settings.includes('WorkspaceUI.render(bodyEl, {'));
     assert.equal(view.includes('Workspace.projects.create('), false);
 });
 
