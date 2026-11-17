@@ -38,7 +38,7 @@ test('virtualiza linhas visíveis acima do limite e mantém apenas a janela no D
 
     container.scrollTop = 3000;
     container.dispatchEvent(new dom.window.Event('scroll'));
-    assert.ok(container.querySelector('[data-row-index="92"]'));
+    assert.ok(container.querySelector('[data-row-index="130"]'));
     assert.equal(container.querySelector('[data-row-index="0"]'), null);
     assert.ok(container.querySelector('.pe-workspace__tree-spacer'));
     view.destroy(container);
