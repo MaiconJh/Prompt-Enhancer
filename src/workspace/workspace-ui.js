@@ -7,8 +7,8 @@ const WorkspaceUI = (() => {
         return node;
     };
 
-    function render(container) {
-        const root = element('section', 'pe-workspace');
+    function render(container, options = {}) {
+        const root = element('section', 'pe-workspace is-project-workspace');
         root.setAttribute('aria-label', I18n.t('sm.workspace.title'));
         container.appendChild(root);
 
@@ -18,6 +18,17 @@ const WorkspaceUI = (() => {
         root.appendChild(status);
 
         const header = element('div', 'pe-workspace__header');
+        const backButton = Atoms.buttonNode({
+            label: I18n.t('sm.projects.title'),
+            ariaLabel: I18n.t('sm.projects.title'),
+            variant: 'ghost',
+            onClick: async () => {
+                if (await confirmLeave()) options.onBack?.();
+            }
+        });
+        backButton.classList.add('pe-workspace__back');
+        backButton.prepend(Atoms.icon('arrow-left'));
+        const projectTitle = element('strong', 'pe-workspace__project-title', 'Workspace');
         const projectSelect = element('select', 'pe-param-input');
         projectSelect.setAttribute('aria-label', I18n.t('ws.project.select'));
         const createName = element('input', 'pe-param-input');
@@ -39,7 +50,12 @@ const WorkspaceUI = (() => {
         projectDeleteButton.prepend(Atoms.icon('trash'));
         const createProjectRow = element('div', 'pe-workspace__create-project');
         createProjectRow.append(createName, createProjectButton);
-        header.append(projectSelect, createProjectRow, projectDeleteButton);
+        header.append(backButton, projectTitle, projectSelect, createProjectRow, projectDeleteButton);
+        if (options.projectId) {
+            projectSelect.hidden = true;
+            createProjectRow.hidden = true;
+            projectDeleteButton.hidden = true;
+        }
 
         const navigation = element('nav', 'pe-workspace__activity-bar');
         navigation.setAttribute('aria-label', I18n.t('ws.navigation.label'));
@@ -420,6 +436,7 @@ const WorkspaceUI = (() => {
 
         function updateProjectControls() {
             const hasProject = !!currentProject;
+            projectTitle.textContent = currentProject?.name || 'Workspace';
             overviewView.hidden = activeView !== 'overview';
             filesView.hidden = !hasProject || activeView !== 'files';
             accessView.hidden = !hasProject || activeView !== 'access';
@@ -917,7 +934,7 @@ const WorkspaceUI = (() => {
                 showStatus(I18n.t('ws.status.initializing'));
                 if (!Workspace.isInitialized()) await Workspace.init();
                 await refreshProjects();
-                await loadProject(Workspace.getActiveProjectId());
+                await loadProject(options.projectId || Workspace.getActiveProjectId());
             } catch (error) {
                 showStatus(error.message || I18n.t('ws.errors.initializeFailed'), 'error');
                 const retry = Atoms.buttonNode({
@@ -933,7 +950,12 @@ const WorkspaceUI = (() => {
         setActiveView(currentProject ? 'files' : 'overview');
         updateProjectControls();
         initialize();
-        return { refresh: initialize };
+        return {
+            root,
+            refresh: initialize,
+            canLeave: confirmLeave,
+            getProjectId: () => currentProject?.id || options.projectId || null
+        };
     }
 
     return { render };
