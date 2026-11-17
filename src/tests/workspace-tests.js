@@ -7,6 +7,7 @@ import vm from 'node:vm';
 const sourceDir = new URL('../workspace/', import.meta.url);
 const modelSource = await readFile(new URL('workspace-model.js', sourceDir), 'utf8');
 const registrySource = await readFile(new URL('file-registry.js', sourceDir), 'utf8');
+const folderRegistrySource = await readFile(new URL('folder-registry.js', sourceDir), 'utf8');
 const facadeSource = await readFile(new URL('workspace.js', sourceDir), 'utf8');
 
 function createHarness() {
@@ -15,6 +16,7 @@ function createHarness() {
         ['project_b', { id: 'project_b', name: 'Project B', updatedAt: 1 }]
     ]);
     const files = new Map();
+    const folders = new Map();
     let idCounter = 0;
     const context = vm.createContext({
         TextEncoder,
@@ -24,6 +26,7 @@ function createHarness() {
             close() {},
             async getProject(id) { return projects.get(id) || null; },
             async listFiles(projectId) { return [...files.values()].filter(file => file.projectId === projectId); },
+            async listFolders(projectId) { return [...folders.values()].filter(folder => folder.projectId === projectId); },
             async getFile(id) { return files.get(id) || null; },
             async saveFile(file, options = {}) {
                 const siblings = [...files.values()].filter(item => item.projectId === file.projectId);
@@ -62,6 +65,29 @@ function createHarness() {
                 projects.set(projectId, { ...projects.get(projectId), updatedAt: Date.now() });
                 return batch;
             },
+            async createProjectFolder(folder) {
+                if (folders.has(folder.id) || [...folders.values()].some(item => item.projectId === folder.projectId && item.path === folder.path)) throw Object.assign(new Error('folder exists'), { code: 'folder-exists' });
+                folders.set(folder.id, folder); return folder;
+            },
+            async renameProjectFolder(projectId, sourcePath, targetPath) {
+                const movedFiles = [...files.values()].filter(file => file.projectId === projectId && file.path.startsWith(sourcePath + '/'));
+                const movedFolders = [...folders.values()].filter(folder => folder.projectId === projectId && (folder.path === sourcePath || folder.path.startsWith(sourcePath + '/')));
+                for (const file of movedFiles) { const path = targetPath + file.path.slice(sourcePath.length); const name = path.split('/').pop(); const dot = name.lastIndexOf('.'); files.set(file.id, { ...file, path, name, extension: dot > 0 ? name.slice(dot + 1).toLowerCase() : '' }); }
+                for (const folder of movedFolders) { const path = targetPath + folder.path.slice(sourcePath.length); folders.set(folder.id, { ...folder, path, name: path.split('/').pop() }); }
+                if (!movedFolders.some(folder => folder.path === sourcePath)) { const id = 'folder_' + (++idCounter); folders.set(id, { id, projectId, path: targetPath, name: targetPath.split('/').pop() }); }
+                return { files: movedFiles, folders: movedFolders };
+            },
+            async deleteProjectFolder(projectId, folderPath) {
+                let removed = 0;
+                for (const [id, file] of [...files]) if (file.projectId === projectId && file.path.startsWith(folderPath + '/')) { files.delete(id); removed++; }
+                for (const [id, folder] of [...folders]) if (folder.projectId === projectId && (folder.path === folderPath || folder.path.startsWith(folderPath + '/'))) { folders.delete(id); removed++; }
+                return removed;
+            },
+            async setFileAccessMany(projectId, changes) {
+                const updated = [];
+                for (const change of changes) { const file = files.get(change.id); if (!file || file.projectId !== projectId) throw Object.assign(new Error('file missing'), { code: 'file-not-found' }); const next = { ...file, aiAccess: change.access }; files.set(file.id, next); updated.push(next); }
+                return updated;
+            },
             async deleteProjectFile(projectId, fileId) {
                 const file = files.get(fileId);
                 if (!file || file.projectId !== projectId) return false;
@@ -76,12 +102,15 @@ function createHarness() {
     });
     vm.runInContext(modelSource, context, { filename: 'workspace-model.js' });
     vm.runInContext(registrySource, context, { filename: 'file-registry.js' });
+    vm.runInContext(folderRegistrySource, context, { filename: 'folder-registry.js' });
     vm.runInContext(facadeSource, context, { filename: 'workspace.js' });
     return {
         model: vm.runInContext('WorkspaceModel', context),
         registry: vm.runInContext('FileRegistry', context),
+        folderRegistry: vm.runInContext('FolderRegistry', context),
         workspace: vm.runInContext('Workspace', context),
-        files
+        files,
+        folders
     };
 }
 
@@ -224,4 +253,74 @@ test('expõe createMany somente pela fachada pública após init', async () => {
         { path: 'src/b.js', content: 'b' }
     ]);
     assert.equal(files.length, 2);
+});
+
+
+test('normaliza configurações de contexto e preferência de abertura por projeto', () => {
+    const { model } = createHarness();
+    const project = model.normalizeProject({ name: 'Config', settings: {
+        defaultView: 'ai',
+        config: { includePatterns: ['src/**', '**/*.md'], maxContextBytes: 8192 }
+    }});
+    assert.equal(project.settings.defaultView, 'ai');
+    assert.deepEqual(Array.from(project.settings.config.includePatterns), ['src/**', '**/*.md']);
+    assert.equal(project.settings.config.maxContextBytes, 8192);
+    assert.equal(model.normalizeProject({ name: 'Default' }).settings.defaultView, 'files');
+    assert.throws(() => model.normalizeProject({ name: 'Invalid config', settings: { config: { includePatterns: ['../secret'] } } }));
+    assert.throws(() => model.normalizeProject({ name: 'Invalid budget', settings: { config: { maxContextBytes: 999999 } } }));
+});
+
+test('cria pastas vazias persistentes e isola o registro por projeto', async () => {
+    const { folderRegistry, folders } = createHarness();
+    const folder = await folderRegistry.create('project_a', 'src/empty');
+    assert.equal(folder.path, 'src/empty');
+    assert.equal((await folderRegistry.list('project_a')).length, 1);
+    assert.equal((await folderRegistry.list('project_b')).length, 0);
+    assert.equal(folders.has(folder.id), true);
+});
+
+test('renomeia pastas e todos os descendentes sem perder IDs de arquivos', async () => {
+    const { registry, folderRegistry, files } = createHarness();
+    const file = await registry.create('project_a', { path: 'src/lib/index.js', content: 'export {};' });
+    await folderRegistry.create('project_a', 'src/lib');
+    await folderRegistry.rename('project_a', 'src', 'app');
+    assert.equal(files.get(file.id).path, 'app/lib/index.js');
+    assert.ok((await folderRegistry.list('project_a')).some(folder => folder.path === 'app/lib'));
+});
+
+test('exclui pastas vazias ou com conteúdo de forma recursiva', async () => {
+    const { registry, folderRegistry, files, folders } = createHarness();
+    const file = await registry.create('project_a', { path: 'src/nested/index.js', content: 'x' });
+    await folderRegistry.create('project_a', 'src/nested/empty');
+    const removed = await folderRegistry.remove('project_a', 'src');
+    assert.equal(removed, 2);
+    assert.equal(files.has(file.id), false);
+    assert.equal(folders.size, 0);
+});
+
+test('altera permissões de vários arquivos em uma operação validada', async () => {
+    const { registry, files } = createHarness();
+    const first = await registry.create('project_a', { path: 'a.js', content: 'a' });
+    const second = await registry.create('project_a', { path: 'b.js', content: 'b' });
+    const updated = await registry.setAccessMany('project_a', [
+        { id: first.id, access: 'allowed' }, { id: second.id, access: 'allowed' }
+    ]);
+    assert.equal(updated.length, 2);
+    assert.ok(updated.every(file => file.aiAccess === 'allowed'));
+    await assert.rejects(registry.setAccessMany('project_a', [{ id: first.id, access: 'all' }]), { code: 'invalid-ai-access' });
+    assert.equal(files.get(first.id).aiAccess, 'allowed');
+});
+
+test('expõe operações de pastas e permissões em lote pela fachada Workspace', async () => {
+    const { workspace } = createHarness();
+    await workspace.init();
+    const folder = await workspace.folders.create('project_a', 'empty');
+    const file = await workspace.files.create('project_a', { path: 'empty/a.js', content: 'x' });
+    const access = await workspace.files.setAccessMany('project_a', [{ id: file.id, access: 'allowed' }]);
+    assert.equal(access[0].aiAccess, 'allowed');
+    assert.equal((await workspace.folders.list('project_a')).length, 1);
+    await workspace.folders.rename('project_a', 'empty', 'renamed');
+    assert.equal((await workspace.files.get('project_a', file.id)).path, 'renamed/a.js');
+    await workspace.folders.remove('project_a', 'renamed');
+    assert.equal((await workspace.files.list('project_a')).length, 0);
 });
