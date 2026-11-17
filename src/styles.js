@@ -4701,6 +4701,14 @@ function injectStyles() {
             .pe-workspace__editor-actions > .pe-btn { flex: 1 1 100%; }
         }
 
+
+        @keyframes pe-navigation-enter {
+            from { opacity: 0; transform: translateY(7px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pe-projects-main,
+        .pe-workspace.is-project-workspace { animation: pe-navigation-enter 180ms ease both; }
+
         /* Preferência de Movimento Reduzido (Acessibilidade WCAG 2.3.3) */
         @media (prefers-reduced-motion: reduce) {
             .pe-scope *,
@@ -4740,6 +4748,8 @@ function injectStyles() {
             height: 100%;
         }
         .pe-scope .pe-modal.is-projects-main .pe-panel__body {
+            display: flex;
+            flex-direction: column;
             padding: 0;
             overflow: hidden;
         }
@@ -4751,6 +4761,7 @@ function injectStyles() {
             height: 100%;
             min-width: 0;
             min-height: 0;
+            flex: 1 1 auto;
             padding: 22px 28px 26px;
             color: var(--pe-text);
             overflow: auto;
@@ -4814,7 +4825,9 @@ function injectStyles() {
         .pe-projects-main__empty { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 56px 18px; border: 1px dashed var(--pe-border-strong); border-radius: var(--pe-radius-lg); text-align: center; }
         .pe-projects-main__empty strong { color: var(--pe-text); font-size: var(--pe-fs-base); }
         .pe-projects-main__empty p { max-width: 420px; margin: 0; color: var(--pe-text-muted); font-size: var(--pe-fs-sm); line-height: 1.5; }
-        .pe-workspace.is-project-workspace { height: 100%; min-height: 0; }
+        .pe-workspace.is-project-workspace { height: 100%; min-height: 0; flex: 1 1 auto; }
+        .pe-workspace.is-project-workspace .pe-workspace__shell { flex: 1 1 auto; min-height: 0; }
+        .pe-workspace.is-project-workspace .pe-workspace__main { flex: 1 1 auto; min-height: 0; }
         .pe-workspace__header { grid-template-columns: auto minmax(0, 1fr) auto auto auto; align-items: center; }
         .pe-workspace__back { justify-self: start; }
         .pe-workspace__back .pe-ico { transform: rotate(180deg); }
@@ -4822,6 +4835,8 @@ function injectStyles() {
         .pe-workspace__header > [hidden] { display: none !important; }
 
         @media (max-width: 768px) {
+            .pe-modal-backdrop:has(.pe-modal.is-projects-main),
+            .pe-modal-backdrop:has(.pe-modal.is-workspace-expanded) { padding: 0; }
             .pe-scope .pe-modal.is-projects-main,
             .pe-scope .pe-modal.is-workspace-expanded {
                 width: 100%;
