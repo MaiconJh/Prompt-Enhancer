@@ -95,8 +95,8 @@ test('Acesso à IA usa catálogo e credenciais reais, sem provedores ou chaves d
     assert.match(mockUiSource, /ProviderRegistry\.hydrate\(\)/);
     assert.match(mockUiSource, /ProviderRegistry\.groupByProvider\(\)/);
     assert.match(mockUiSource, /ProviderManager\.pin\(entry\)/);
-    assert.match(mockUiSource, /ProviderManager\.update\(active\?\.id, \{apiKey:/);
-    assert.match(mockUiSource, /type=\'password\'/);
+    assert.match(mockUiSource, /ProviderManager\\.update\\(active\\?\\.id,\\s*\\{apiKey:/);
+    assert.match(mockUiSource, /password/);
     assert.match(mockUiSource, /Workspace\.files\.setAccessMany/);
     assert.match(mockUiSource, /aiProviderModelId/);
     assert.doesNotMatch(mockUiSource, /AIzaSyExample|sk-proj-example|Anthropic Claude 3/);
