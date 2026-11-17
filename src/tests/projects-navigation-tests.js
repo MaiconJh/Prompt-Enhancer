@@ -34,8 +34,8 @@ test('Workspace is scoped to the selected project and exposes guarded return nav
     assert.match(workspace, /WorkspaceMockUI\.render\(container, options\)/);
     assert.match(mockWorkspace, /options\.projectId\s*\|\|\s*Workspace\.getActiveProjectId\(\)/);
     assert.match(mockWorkspace, /options\.onBack\?\.\(\)/);
-    assert.match(mockWorkspace, /canLeave:\s*confirmLeave/);
-    assert.match(mockWorkspace, /function confirmLeave\(/);
+    assert.match(mockWorkspace, /canLeave,/);
+    assert.match(mockWorkspace, /function canLeave\(/);
 });
 
 test('modal reuses one shell and preserves one Workspace session per project', () => {
