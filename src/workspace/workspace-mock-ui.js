@@ -17,7 +17,7 @@ const WorkspaceMockUI = (() => {
   const on=(s,e,fn)=>$(s)?.addEventListener(e,fn);
   const tree=$('[data-tree]'),editor=$('[data-editor]'),fileInput=$('[data-file-input]'),dirInput=$('[data-dir-input]');
   let project=null,files=[],folders=[],selectedFile=null,selectedFileId=null,inspectedNodeId=null,focusedNodeId=null;
-  let activeView='files',collapsed=false,focusMode=false,inspectorOpen=false,searchQuery='',expandedPaths=new Set();
+  let activeView='files',collapsed=false,focusMode=false,inspectorOpen=false,searchQuery='',expandedPaths=new Set(),renderedEditorFileId=null,forceEditorSync=false;
   let editingNodeId=null,renameValue='',renameCommitInProgress=false,draftFiles=[],draftFolders=[],saveError=null;
   const contents=new Map(),originals=new Map(),dirty=new Set();
   let providerGroups=[],ai={providerId:'',modelId:'',apiKey:'',accessMode:'selected',fileAccess:{}},aiSaved='',showKey=false,aiErrors={};
@@ -82,11 +82,11 @@ const WorkspaceMockUI = (() => {
   }
   function renderEditor(){
    const has=!!selectedFile;$('[data-editor-toolbar]').hidden=!has;$('[data-editor-area]').hidden=!has;$('[data-editor-empty]').hidden=has;
-   if(has){const value=contents.get(selectedFile.id)??selectedFile.content??'';if(editor.value!==value&&document.activeElement!==editor)editor.value=value;
+   if(has){const value=contents.get(selectedFile.id)??selectedFile.content??'';if(forceEditorSync||renderedEditorFileId!==selectedFile.id||(editor.value!==value&&document.activeElement!==editor))editor.value=value;renderedEditorFileId=selectedFile.id;forceEditorSync=false;
     $('[data-readonly]').hidden=!selectedFile.readOnly;editor.readOnly=!!selectedFile.readOnly;
     $('[data-action="save-file"]').hidden=!dirtyFile(selectedFile.id);$('[data-action="discard-file"]').hidden=!dirtyFile(selectedFile.id);
     $('[data-save-error]').hidden=!(saveError&&saveError.id===selectedFile.id);$('[data-save-error]').textContent=saveError?.message||'';
-   }else{editor.value='';editor.readOnly=false;$('[data-action="save-file"]').hidden=true;$('[data-action="discard-file"]').hidden=true;$('[data-save-error]').hidden=true;}
+   }else{editor.value='';editor.readOnly=false;renderedEditorFileId=null;forceEditorSync=false;$('[data-action="save-file"]').hidden=true;$('[data-action="discard-file"]').hidden=true;$('[data-save-error]').hidden=true;}
    breadcrumbs();
   }
   function nodeSize(node){return node.type==='file'?Number(node.file?.size)||bytes(contents.get(node.id)||originals.get(node.id)||''):files.filter(f=>f.path.startsWith(node.path+'/')).reduce((n,f)=>n+(Number(f.size)||0),0);}
@@ -177,9 +177,9 @@ const WorkspaceMockUI = (() => {
    try{const content=contents.get(id)??f.content??'';const updated=await Workspace.files.update(project.id,id,{path:f.path,content});contents.set(id,content);originals.set(id,content);dirty.delete(id);if(selectedFileId===id)selectedFile={...f,...updated,content};saveError=null;await refreshData();toast('Arquivo salvo','success');return true;}
    catch(e){saveError={id,message:e.message||'Falha ao salvar o arquivo.'};updateAll();toast('Falha ao salvar o arquivo','error');return false;}
   }
-  function discardFile(id){if(!originals.has(id))return;contents.set(id,originals.get(id));dirty.delete(id);saveError=null;updateAll();toast('Alterações descartadas','info');}
+  function discardFile(id){if(!originals.has(id))return;contents.set(id,originals.get(id));dirty.delete(id);saveError=null;forceEditorSync=true;updateAll();toast('Alterações descartadas','info');}
   async function saveAllFiles(){let ok=true;for(const id of [...dirty])if(!await saveFile(id))ok=false;return ok;}
-  function discardAllFiles(){for(const id of [...dirty]){if(originals.has(id))contents.set(id,originals.get(id));dirty.delete(id);}saveError=null;updateAll();}
+  function discardAllFiles(){for(const id of [...dirty]){if(originals.has(id))contents.set(id,originals.get(id));dirty.delete(id);}saveError=null;forceEditorSync=true;updateAll();}
   function editorInput(){if(!selectedFile)return;contents.set(selectedFile.id,editor.value);if(editor.value===(originals.get(selectedFile.id)||''))dirty.delete(selectedFile.id);else dirty.add(selectedFile.id);if(saveError?.id===selectedFile.id)saveError=null;updateHeader();updateLayout();renderTree();renderInspector();updateStatus();}
   function toggleFileAccess(id){if(ai.accessMode!=='selected')return;ai.fileAccess[id]=ai.fileAccess[id]==='allowed'?'denied':'allowed';renderAI();renderInspector();}
   function toggleExplorer(){collapsed=!collapsed;updateLayout();}
