@@ -169,7 +169,7 @@ const WorkspaceMockUI = (() => {
    const n=pendingDelete;if(!n)return;try{
     if(n.type==='folder'){if(n.folder?.draft){draftFolders=draftFolders.filter(f=>f.id!==n.id);draftFiles=draftFiles.filter(f=>!f.path.startsWith(n.path+'/'));}else await Workspace.folders.remove(project.id,n.path);for(const f of files.filter(f=>f.path.startsWith(n.path+'/'))){dirty.delete(f.id);contents.delete(f.id);originals.delete(f.id);delete ai.fileAccess[f.id];}if(selectedFile?.path.startsWith(n.path+'/')){selectedFile=null;selectedFileId=null;}if(inspectedNodeId!==n.id&&nodeById(inspectedNodeId)?.path.startsWith(n.path+'/'))inspectedNodeId=null;if(focusedNodeId!==n.id&&nodeById(focusedNodeId)?.path.startsWith(n.path+'/'))focusedNodeId=null;}
     else{if(n.file?.draft)draftFiles=draftFiles.filter(f=>f.id!==n.id);else await Workspace.files.remove(project.id,n.id);dirty.delete(n.id);contents.delete(n.id);originals.delete(n.id);delete ai.fileAccess[n.id];if(selectedFileId===n.id){selectedFile=null;selectedFileId=null;}}
-    if(n.folder?.draft)draftFolders=draftFolders.filter(f=>f.id!==n.id);if(inspectedNodeId===n.id)inspectedNodeId=null;cancelDelete();await refreshData();toast('Item excluído','success');
+    if(n.type==='folder'){draftFiles=draftFiles.filter(f=>!f.path.startsWith(n.path+'/'));draftFolders=draftFolders.filter(f=>f.id!==n.id&&!f.path.startsWith(n.path+'/'));}if(inspectedNodeId===n.id)inspectedNodeId=null;cancelDelete();await refreshData();toast('Item excluído','success');
    }catch(e){toast(e.message||'Não foi possível excluir o item.','error');}
   }
   async function saveFile(id){
@@ -277,7 +277,6 @@ const WorkspaceMockUI = (() => {
   for(const v of ['files','ai','settings'])on('[data-view="'+v+'"]','click',()=>switchView(v));
   on('[data-search]','input',e=>{searchQuery=e.target.value;renderTree();});
   on('[data-editor]','input',()=>{if(!selectedFile)return;contents.set(selectedFile.id,editor.value);if(editor.value===(originals.get(selectedFile.id)||''))dirty.delete(selectedFile.id);else dirty.add(selectedFile.id);saveError=null;updateHeader();updateLayout();renderTree();renderInspector();updateStatus();});
-  on('[data-editor]','keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();selectedFileId&&saveFile(selectedFileId);}});
   on('[data-api-key]','input',e=>{ai.apiKey=e.target.value;updateHeader();renderAI();});
   on('[data-model]','change',e=>{const m=ProviderRegistry.get(e.target.value);if(m){if(m.providerId!==ai.providerId)ai.apiKey='';ai.providerId=m.providerId;ai.modelId=m.id;renderAI();}});
   on('[data-setting="name"]','input',e=>{settings.name=e.target.value;renderSettings();});on('[data-setting="description"]','input',e=>{settings.description=e.target.value;renderSettings();});
