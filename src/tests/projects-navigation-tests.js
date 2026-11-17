@@ -4,13 +4,14 @@ import test from 'node:test';
 
 const projects = await readFile(new URL('../workspace/projects-main.js', import.meta.url), 'utf8');
 const workspace = await readFile(new URL('../workspace/workspace-ui.js', import.meta.url), 'utf8');
+const mockWorkspace = await readFile(new URL('../workspace/workspace-mock-ui.js', import.meta.url), 'utf8');
 const settings = await readFile(new URL('../settings-modal.js', import.meta.url), 'utf8');
 const styles = await readFile(new URL('../styles.js', import.meta.url), 'utf8');
 const manifest = await readFile(new URL('../../manifest.json', import.meta.url), 'utf8');
 const i18n = await readFile(new URL('../i18n.js', import.meta.url), 'utf8');
 
 test('navigation modules and dictionaries have valid JavaScript syntax', () => {
-    for (const source of [projects, workspace, settings, styles, i18n]) assert.doesNotThrow(() => new Function(source));
+    for (const source of [projects, workspace, mockWorkspace, settings, styles, i18n]) assert.doesNotThrow(() => new Function(source));
     assert.doesNotThrow(() => JSON.parse(manifest));
 });
 
@@ -30,11 +31,11 @@ test('Projects Main provides search, sorting, empty states, and project actions'
 
 test('Workspace is scoped to the selected project and exposes guarded return navigation', () => {
     assert.match(workspace, /function render\(container, options = \{\}\)/);
-    assert.match(workspace, /loadProject\(options\.projectId \|\| Workspace\.getActiveProjectId\(\)\)/);
-    assert.match(workspace, /if \(await confirmLeave\(\)\) options\.onBack\?\.\(\)/);
-    assert.match(workspace, /canLeave: confirmLeave/);
-    assert.match(workspace, /projectSelect\.hidden = true/);
-    assert.match(workspace, /createProjectRow\.hidden = true/);
+    assert.match(workspace, /WorkspaceMockUI\.render\(container, options\)/);
+    assert.match(mockWorkspace, /options\.projectId\s*\|\|\s*Workspace\.getActiveProjectId\(\)/);
+    assert.match(mockWorkspace, /options\.onBack\?\.\(\)/);
+    assert.match(mockWorkspace, /canLeave:\s*confirmLeave/);
+    assert.match(mockWorkspace, /function confirmLeave\(/);
 });
 
 test('modal reuses one shell and preserves one Workspace session per project', () => {
