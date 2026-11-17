@@ -22,3 +22,14 @@ test('persiste pastas em object store versionado e expõe mutações atômicas',
     }
     assert.match(source, /transaction\(\['projects', 'files', 'folders'\], 'readwrite'\)/);
 });
+
+
+test('salvamento de arquivo e lote verifica colisões com o domínio de pastas', () => {
+    const saveFile = source.slice(source.indexOf('function saveFile('), source.indexOf('function saveFiles('));
+    const saveFiles = source.slice(source.indexOf('function saveFiles('), source.indexOf('function deleteProject('));
+    assert.match(saveFile, /transaction\(\['projects', 'files', 'folders'\], 'readwrite'\)/);
+    assert.match(saveFile, /projectFolders\.some\(folder => folder\.path === file\.path\)/);
+    assert.match(saveFile, /item\.path\.startsWith\(file\.path \+ '\/'\)/);
+    assert.match(saveFiles, /transaction\(\['projects', 'files', 'folders'\], 'readwrite'\)/);
+    assert.match(saveFiles, /projectFolders\.some\(folder => folder\.path === file\.path\)/);
+});
