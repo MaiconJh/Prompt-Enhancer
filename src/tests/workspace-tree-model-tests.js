@@ -68,3 +68,27 @@ test('suporta árvores profundas e largas com linhas achatadas', () => {
     assert.ok(rows.length > 300);
     assert.ok(rows.every(row => row.kind === 'folder' || row.kind === 'file'));
 });
+
+
+test('inclui pastas persistidas mesmo quando estão vazias', () => {
+    const folders = [
+        { id: 'folder-empty', path: 'empty', name: 'empty' },
+        { id: 'folder-nested', path: 'empty/nested', name: 'nested' }
+    ];
+    const index = model.buildIndex(files, folders);
+    const rows = model.flattenVisible(index, { expandedPaths: new Set(['empty']) });
+    const empty = rows.find(row => row.path === 'empty');
+    const nested = rows.find(row => row.path === 'empty/nested');
+    assert.equal(empty.id, 'folder-empty');
+    assert.equal(empty.hasChildren, true);
+    assert.equal(nested.id, 'folder-nested');
+    assert.equal(nested.hasChildren, false);
+});
+
+test('mescla pastas explícitas com diretórios derivados sem duplicar caminhos', () => {
+    const folders = [{ id: 'folder-src', path: 'src', name: 'src' }];
+    const index = model.buildIndex(files, folders);
+    const rows = model.flattenVisible(index, { expandedPaths: new Set(['src']) });
+    assert.equal(rows.filter(row => row.kind === 'folder' && row.path === 'src').length, 1);
+    assert.equal(rows.find(row => row.path === 'src').id, 'folder-src');
+});
