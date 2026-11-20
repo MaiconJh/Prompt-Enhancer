@@ -227,7 +227,8 @@ function render(container,options={}){
     const fileOk=await saveAllFiles(),aiOk=aiDirty()?await saveAi(true):true,settingsOk=settingsDirty()?await saveSettings(true):true;
     if(!fileOk||!aiOk||!settingsOk){toast('Algumas alterações não puderam ser salvas.','error');return false;}
     toast('Todas as alterações foram salvas','success');return true;
-   }finally{headerActionBusy='';updateHeader();}
+   }catch(error){toast(error?.message||'Não foi possível concluir o salvamento.','error');return false;}
+   finally{headerActionBusy='';updateHeader();}
   }
   function discardPendingChanges(){
    if(headerActionBusy||!hasPending())return false;
