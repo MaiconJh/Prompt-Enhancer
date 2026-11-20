@@ -74,29 +74,37 @@ test('Projects Main is registered and localized in both supported languages', ()
 });
 
 
-test('Workspace exposes pending-change actions in its own header and not in the modal footer', () => {
-    assert.match(workspace, /data-workspace-actions/);
-    assert.match(workspace, /data-action=\\?"save-changes\\?"/);
-    assert.match(workspace, /data-action=\\?"discard-changes\\?"/);
-    assert.match(workspace, /function updateHeaderActions\(\)/);
-    assert.match(workspace, /actions\.hidden=\!\(visible\|\|activeView==='settings'\)/);
-    assert.match(workspace, /function runHeaderAction\(action\)/);
-    assert.doesNotMatch(workspace, /options\.onFooterChange/);
-    assert.doesNotMatch(settings, /onFooterChange:/);
-    assert.doesNotMatch(settings, /runWorkspaceFooterAction/);
+test('Workspace reports pending changes to the modal footer and exposes centralized save/discard operations', () => {
+    assert.match(workspace, /options\.onPendingChange\?\.\(pendingState\(\)\)/);
+    assert.match(workspace, /function pendingState\(\)/);
+    assert.match(workspace, /fileCount:dirty\.size/);
+    assert.match(workspace, /savePending:savePendingChanges/);
+    assert.match(workspace, /discardPending:discardPendingChanges/);
+    assert.doesNotMatch(workspace, /data-workspace-actions|data-header-dirty/);
+    assert.doesNotMatch(workspace, /data-action=\\?"save-file\\?"|data-action=\\?"discard-file\\?"/);
+    assert.match(settings, /pe-workspace-change-state/);
+    assert.match(settings, /session\.savePending\?\.\(\)/);
+    assert.match(settings, /session\.discardPending\?\.\(\)/);
 });
 
-test('Restore is available only for Settings and applies WorkspaceModel defaults', () => {
-    assert.match(workspace, /data-action=\\?"restore-settings-defaults\\?"/);
-    assert.match(workspace, /restore\.hidden=activeView!=='settings'/);
+test('The shared modal footer saves and discards pending file, AI, and project settings changes', () => {
+    assert.match(workspace, /const hasPending=\(\)=>dirty\.size>0\|\|aiDirty\(\)\|\|settingsDirty\(\)/);
+    assert.match(workspace, /const fileOk=await saveAllFiles\(\),aiOk=aiDirty\(\)\?await saveAi\(true\):true,settingsOk=settingsDirty\(\)\?await saveSettings\(true\):true/);
+    assert.match(workspace, /discardAllFiles\(\);if\(aiDirty\(\)\)resetAi\(\);if\(settingsDirty\(\)\)resetSettings\(\)/);
+    assert.match(settings, /onPendingChange: state => \{ if \(activeWorkspaceId === projectId && !closed\) renderWorkspaceFooter\(state\); \}/);
+    assert.match(settings, /if \(state\?\.hasPending\)/);
+});
+
+test('Restore defaults is separate and appears only when Settings can actually restore defaults', () => {
     assert.match(workspace, /WorkspaceModel\.DEFAULT_PROJECT_SETTINGS/);
     assert.match(workspace, /WorkspaceModel\.DEFAULT_PROJECT_CONFIG/);
-    assert.match(workspace, /function restoreSettingsDefaults\(\)/);
-    assert.match(workspace, /restore\.disabled=!!headerActionBusy\|\|settingsAtDefaults\(\)/);
+    assert.match(workspace, /function canRestoreDefaults\(\)\{return activeView==='settings'&&!settingsAtDefaults\(\)&&!headerActionBusy;\}/);
+    assert.match(workspace, /restoreDefaults:restoreSettingsDefaults/);
+    assert.match(settings, /if \(state\?\.canRestore\) addAction\('Restaurar padrões', 'restore'\)/);
 });
 
-test('Header actions follow AI and project-settings dirty state and block navigation while saving', () => {
-    assert.match(workspace, /const visible=\(activeView==='ai'&&aiDirty\(\)\)\|\|\(activeView==='settings'&&settingsDirty\(\)\)/);
+test('Workspace navigation remains blocked while centralized save/discard operations are running', () => {
     assert.match(workspace, /function canLeave\(\)\{if\(headerActionBusy\)return Promise\.resolve\(false\)/);
-    assert.match(workspace, /updateHeaderActions\(\);/);
+    assert.match(workspace, /headerActionBusy='save';updateHeader\(\)/);
+    assert.match(workspace, /headerActionBusy='discard';updateHeader\(\)/);
 });
