@@ -3084,7 +3084,14 @@ function injectStyles() {
             height: min(900px, calc(100dvh - 48px));
             max-height: min(900px, calc(100dvh - 48px));
         }
-        .pe-scope .pe-modal.is-workspace-expanded .pe-panel__body {
+        .pe-scope .pe-modal.is-workspace-expanded > .pe-panel__header,
+        .pe-scope .pe-modal.is-workspace-expanded > .pe-modal-layout > .pe-modal-tabs {
+            display: none;
+        }
+        .pe-scope .pe-modal.is-workspace-expanded > .pe-modal-layout > .pe-modal-main > .pe-panel__body {
+            padding: 0;
+        }
+        .pe-scope .pe-modal.is-workspace-expanded .pe-workspace-host > .pe-panel__body {
             padding: 18px 22px 28px;
         }
 

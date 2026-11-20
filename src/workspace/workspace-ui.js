@@ -16,7 +16,7 @@ function render(container,options={}){
   const host=el('div','pe-workspace-host');host.style.cssText='display:flex;flex-direction:column;width:100%;height:100%;min-height:0;';host.innerHTML=MARKUP;container.appendChild(host);
   const $=s=>host.querySelector(s), $$=s=>[...host.querySelectorAll(s)];
   const on=(s,e,fn)=>$(s)?.addEventListener(e,fn);
-  const tree=$('[data-tree]'),editor=$('[data-editor]'),fileInput=$('[data-file-input]'),dirInput=$('[data-dir-input]');
+  const tree=$('[data-tree]'),editor=$('[data-editor]'),fileInput=$('[data-file-input]'),dirInput=$('[data-dir-input]'),apiKeyInput=$('[data-api-key]');
   let project=null,files=[],folders=[],selectedFile=null,selectedFileId=null,inspectedNodeId=null,focusedNodeId=null;
   let activeView='files',collapsed=false,focusMode=false,inspectorOpen=false,searchQuery='',expandedPaths=new Set(),renderedEditorFileId=null,forceEditorSync=false;
   let editingNodeId=null,renameValue='',renameCommitInProgress=false,draftFiles=[],draftFolders=[],saveError=null;
@@ -112,7 +112,6 @@ function render(container,options={}){
    $('[data-status-project]').textContent=project?.id||'';const p=$('[data-status-pending]');p.hidden=!dirty.size;p.replaceChildren();if(dirty.size){const dot=el('span','status-dot');dot.style.background='var(--pe-warning)';p.append(dot,document.createTextNode(dirty.size+' pendência(s)'));}
    status(saveError?'Erro ao salvar':dirty.size?'Alterações não salvas':'Pronto',saveError?'error':dirty.size?'warning':'');
   }
-  function updateAll(){updateHeader();updateLayout();renderTree();renderEditor();renderInspector();updateStatus();renderAI();renderSettings();}
   function reconcileAiFileBaseline(){
    let baseline;try{baseline=JSON.parse(aiSaved||'{}');}catch(_){baseline={};}baseline.fileAccess=baseline.fileAccess||{};
    const ids=new Set(files.map(f=>f.id));for(const id of Object.keys(baseline.fileAccess))if(!ids.has(id))delete baseline.fileAccess[id];
@@ -130,14 +129,14 @@ function render(container,options={}){
    status('Carregando projeto');project=await Workspace.projects.get(projectId);if(!project)throw new Error('O projeto selecionado não existe mais.');
    files=await Workspace.files.list(project.id);folders=await Workspace.folders.list(project.id);
    settings={name:project.name,description:project.description||'',defaultView:project.settings?.defaultView||'files',instructions:project.settings?.instructions||'',configText:JSON.stringify(project.settings?.config||{includePatterns:[],maxContextBytes:49152},null,2)};
-   settingsSaved=json(settings);ai.accessMode=project.settings?.aiAccessMode||'selected';ai.fileAccess=Object.fromEntries(files.map(f=>[f.id,f.aiAccess||'denied']));
-   const pinned=ProviderManager.getPinned?.();const preferredModelId=project.settings?.aiProviderModelId||'';let model=preferredModelId?ProviderRegistry.get(preferredModelId):null;if(!model)model=pinned||ProviderRegistry.getCached()[0]||null;
-   if(preferredModelId){await ensureCatalog();model=ProviderRegistry.get(preferredModelId)||null;}
+    settingsSaved=json(settings);ai.accessMode=project.settings?.aiAccessMode||'selected';ai.fileAccess=Object.fromEntries(files.map(f=>[f.id,f.aiAccess||'denied']));aiSaved=json(aiSnapshot());
+    const pinned=ProviderManager.getPinned?.();const preferredModelId=project.settings?.aiProviderModelId||'';let model=preferredModelId?ProviderRegistry.get(preferredModelId):null;if(!model)model=pinned||ProviderRegistry.getCached()[0]||null;
+    if(preferredModelId){try{await ensureCatalog();}catch(error){toast(error.message||'Falha ao carregar provedores.','error');}model=ProviderRegistry.get(preferredModelId)||null;}
    if(model){if(preferredModelId&&!ProviderManager.pin(model))toast('O modelo salvo não pôde ser ativado; revise o Acesso à IA.','warning');ai.providerId=model.providerId;ai.modelId=model.id;const currentPinned=ProviderManager.getPinned?.();const active=ProviderManager.getActive?.();ai.apiKey=currentPinned?.id===model.id?active?.apiKey||'':'';}
    else if(preferredModelId){ai.providerId='';ai.modelId=preferredModelId;ai.apiKey='';}
    aiSaved=json(aiSnapshot());activeView=['files','ai','settings'].includes(project.settings?.defaultView)?project.settings.defaultView:'files';
    expandedPaths=new Set(folders.filter(f=>!f.path.includes('/')).map(f=>f.path));if(!expandedPaths.size)for(const f of files)if(f.path.includes('/'))expandedPaths.add(f.path.split('/')[0]);
-   if(files[0])await selectFileNow(files[0].id);if(activeView==='ai')await ensureCatalog();updateAll();status('Pronto');
+    if(files[0])await selectFileNow(files[0].id);if(activeView==='ai'){try{await ensureCatalog();}catch(error){toast(error.message||'Falha ao carregar provedores.','error');}}updateAll();status('Pronto');
   }
   async function selectFileNow(id){
    const file=await Workspace.files.get(project.id,id);if(!file)throw new Error('Arquivo não encontrado.');
@@ -201,7 +200,7 @@ function render(container,options={}){
 
   async function ensureCatalog(){
    if(providerGroups.length)return Promise.resolve(providerGroups);
-   if(catalogPromise)return catalogPromise;catalogPromise=(async()=>{try{await ProviderRegistry.hydrate();}catch(error){if(!ProviderRegistry.getCached().length)throw error;}providerGroups=ProviderRegistry.groupByProvider();if(!ai.modelId&&providerGroups[0]?.entries[0]){ai.providerId=providerGroups[0].providerId;ai.modelId=providerGroups[0].entries[0].id;}renderAI();})().finally(()=>catalogPromise=null);return catalogPromise;
+   if(catalogPromise)return catalogPromise;catalogPromise=(async()=>{try{await ProviderRegistry.hydrate();}catch(error){if(!ProviderRegistry.getCached().length)throw error;}providerGroups=ProviderRegistry.groupByProvider();let autoSelected=false;if(!ai.modelId&&providerGroups[0]?.entries[0]){ai.providerId=providerGroups[0].providerId;ai.modelId=providerGroups[0].entries[0].id;autoSelected=true;}if(autoSelected)aiSaved=json(aiSnapshot());renderAI();})().finally(()=>catalogPromise=null);return catalogPromise;
   }
   const model=()=>ProviderRegistry.get(ai.modelId);
   const group=()=>providerGroups.find(g=>g.providerId===ai.providerId)||null;
@@ -211,7 +210,7 @@ function render(container,options={}){
   function selectProvider(id){const g=providerGroups.find(x=>x.providerId===id);if(!g)return;const prev=ai.providerId;ai.providerId=id;const pinned=ProviderManager.getPinned?.();const next=g.entries.find(e=>e.id===pinned?.id)||g.entries[0];ai.modelId=next?.id||'';if(prev!==id)ai.apiKey='';aiErrors={};showKey=false;renderAI();}
   function selectModel(id){const e=ProviderRegistry.get(id);if(!e)return;if(e.providerId!==ai.providerId)ai.apiKey='';ai.providerId=e.providerId;ai.modelId=e.id;aiErrors={};renderAI();}
   function renderAI(){
-   if(!providerList)return;renderProviders();const m=model(),g=group();
+   renderProviders();const m=model(),g=group();
    const select=$('[data-model]');select.replaceChildren();for(const e of g?.entries||[]){const o=el('option','',e.label);o.value=e.id;select.append(o);}select.value=ai.modelId;
    apiKeyInput.type=showKey?'text':'password';if(apiKeyInput.value!==ai.apiKey&&document.activeElement!==apiKeyInput)apiKeyInput.value=ai.apiKey;$('[data-action="toggle-key"]').innerHTML=showKey?"<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M17.94 17.94A10.94 10.94 0 0 1 12 19c-6.5 0-10-7-10-7a20.7 20.7 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 5c6.5 0 10 7 10 7a20.7 20.7 0 0 1-3.06 4.06\"/><line x1=\"2\" y1=\"2\" x2=\"22\" y2=\"22\"/></svg>":"<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg>";$('[data-action="toggle-key"]').setAttribute('aria-label',showKey?'Ocultar chave':'Mostrar chave');apiKeyInput.disabled=!needsKey(m);apiKeyInput.placeholder=needsKey(m)?'sk-...':'Este modelo não exige chave';
    $('[data-key-hint]').textContent=needsKey(m)?'Credenciais armazenadas nas configurações globais do provedor. A chave permanece mascarada.':'Este modelo não exige chave de API.';
@@ -270,8 +269,8 @@ function render(container,options={}){
   on('[data-action="save-file"]','click',()=>selectedFileId&&saveFile(selectedFileId));on('[data-action="discard-file"]','click',()=>selectedFileId&&discardFile(selectedFileId));
   on('[data-action="toggle-key"]','click',()=>{showKey=!showKey;renderAI();});on('[data-action="reset-ai"]','click',resetAi);on('[data-action="save-ai"]','click',()=>saveAi());
   on('[data-action="reset-settings"]','click',resetSettings);on('[data-action="save-settings"]','click',()=>saveSettings());
-  on('[data-action="cancel-pending"]','click',()=>{dialog('pending',false);const r=pendingResolver;pendingResolver=null;pendingAction=null;if(r)r(false);});
-  on('[data-action="discard-continue"]','click',()=>{discardAllFiles();resetAi();resetSettings();dialog('pending',false);const a=pendingAction,r=pendingResolver;pendingAction=null;pendingResolver=null;if(a)executeAction(a);if(r)r(true);});
+  on('[data-action="cancel-pending"]','click',cancelPending);
+  on('[data-action="discard-continue"]','click',discardAndContinue);
   on('[data-action="save-continue"]','click',saveAndContinue);
   on('[data-action="cancel-delete"]','click',()=>{pendingDelete=null;dialog('delete',false);});on('[data-action="confirm-delete"]','click',confirmDelete);
   on('[data-action="close-batch"]','click',()=>dialog('batch',false));on('[data-action="commit-batch"]','click',commitBatch);

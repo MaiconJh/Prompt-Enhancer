@@ -1071,6 +1071,10 @@
                 }
                 panel.classList.remove('is-projects-main');
                 panel.classList.add('is-workspace-expanded');
+                requestAnimationFrame(() => {
+                    const backLink = bodyEl.querySelector('[data-action="back"]');
+                    if (backLink instanceof HTMLElement) backLink.focus();
+                });
             } catch (error) {
                 activeWorkspaceId = null;
                 Molecules.toast(error.message || I18n.t('ws.errors.loadFailed'), 'error');
