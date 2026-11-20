@@ -1050,6 +1050,26 @@
             panel.classList.remove('is-workspace-expanded');
         }
 
+        function resetWorkspaceFooter() {
+            footerEl.replaceChildren();
+            const closeBtn = Atoms.button({ icon: 'x', label: I18n.t('sm.footer.close'), ariaLabel: I18n.t('sm.footer.closeWindowAria'), variant: 'primary', onClick: close });
+            footerEl.appendChild(closeBtn);
+         }
+        function updateWorkspaceFooter(state) {
+            footerEl.replaceChildren();
+            if (state && state.visible) {
+                const indicator = document.createElement('span');
+                indicator.className = 'pe-dirty-indicator';
+                indicator.textContent = 'Alterações não salvas';
+                const spacer = document.createElement('span');
+                spacer.className = 'spacer';
+                const discard = Atoms.button({ icon: null, label: 'Descartar', ariaLabel: 'Descartar alterações', variant: 'outline', onClick: () => { if (state.discard) state.discard(); } });
+                const save = Atoms.button({ icon: 'save', label: 'Salvar', ariaLabel: 'Salvar alterações', variant: 'primary', onClick: () => { if (state.save) state.save(); } });
+                footerEl.append(indicator, spacer, discard, save);
+            } else {
+                resetWorkspaceFooter();
+            }
+         }
         async function openWorkspace(projectId) {
             if (!projectId || closed) return;
             activeWorkspaceId = projectId;
