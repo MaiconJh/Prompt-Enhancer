@@ -1055,6 +1055,7 @@
         }
 
         function renderWorkspaceFooter(state = null) {
+            footerEl.hidden = false;
             footerEl.replaceChildren();
             footerEl.classList.toggle('is-workspace-footer', !!state);
             if (state?.hasPending) {
