@@ -951,6 +951,7 @@ function injectStyles() {
         .pe-panel__footer.is-workspace-footer { min-height: 62px; }
         .pe-panel__footer.is-workspace-footer .pe-workspace-change-state { margin-right: auto; }
         .pe-panel__footer.is-workspace-footer .pe-workspace-footer-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--pe-gap-2); flex-shrink: 0; }
+        .pe-panel__footer.is-workspace-footer .pe-workspace-footer-actions .pe-btn:first-child:not(:only-child) { margin-right: 0; }
         .pe-panel__footer.is-workspace-footer .pe-workspace-change-state { display: flex; flex-direction: column; gap: 3px; min-width: 0; color: var(--pe-warning); font-size: var(--pe-fs-xs); }
         .pe-panel__footer.is-workspace-footer .pe-workspace-change-state strong { font-weight: var(--pe-fw-semi); }
         .pe-panel__footer.is-workspace-footer .pe-workspace-change-state span { color: var(--pe-text-muted); font-size: var(--pe-fs-2xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
