@@ -1125,7 +1125,7 @@
                 if (!session) {
                     session = WorkspaceUI.render(bodyEl, {
                         projectId,
-                        onPendingChange: state => { if (activeWorkspaceId === projectId && !closed) renderWorkspaceFooter(state); },
+                        onPendingChange: state => { if (activeWorkspaceId === projectId && workspaceSessions.get(projectId) === session && !closed) renderWorkspaceFooter(state); },
                         onBack: () => { if (activeWorkspaceId === projectId) showProjectsMain(); }
                     });
                     workspaceSessions.set(projectId, session);
