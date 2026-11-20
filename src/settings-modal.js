@@ -1054,8 +1054,47 @@
             panel.classList.remove('is-workspace-expanded');
         }
 
-        function renderWorkspaceFooter() {
+        function renderWorkspaceFooter(state = null) {
             footerEl.replaceChildren();
+            footerEl.classList.toggle('is-workspace-footer', !!state);
+            if (state?.hasPending) {
+                const status = document.createElement('div');
+                status.className = 'pe-workspace-change-state';
+                const title = document.createElement('strong');
+                title.textContent = 'Alterações não salvas';
+                const detail = document.createElement('span');
+                detail.textContent = state.domains.join(' · ');
+                status.append(title, detail);
+                footerEl.appendChild(status);
+            } else {
+                const spacer = document.createElement('span');
+                spacer.className = 'pe-workspace-change-state is-empty';
+                spacer.textContent = '';
+                footerEl.appendChild(spacer);
+            }
+
+            const actions = document.createElement('div');
+            actions.className = 'pe-workspace-footer-actions';
+            const addAction = (label, action, variant = '') => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'pe-btn' + (variant ? ' ' + variant : '');
+                button.textContent = label;
+                button.disabled = !!state?.busy;
+                button.addEventListener('click', async () => {
+                    const session = activeWorkspaceId ? workspaceSessions.get(activeWorkspaceId) : null;
+                    if (!session) return;
+                    if (action === 'save') await session.savePending?.();
+                    else if (action === 'discard') session.discardPending?.();
+                    else if (action === 'restore') session.restoreDefaults?.();
+                });
+                actions.appendChild(button);
+            };
+            if (state?.canRestore) addAction('Restaurar padrões', 'restore');
+            if (state?.hasPending) {
+                addAction(state.busyAction === 'discard' ? 'Descartando…' : 'Descartar', 'discard');
+                addAction(state.busyAction === 'save' ? 'Salvando…' : 'Salvar alterações', 'save', 'pe-btn--primary');
+            }
             const closeBtn = Atoms.button({
                 icon: 'x',
                 label: I18n.t('sm.footer.close'),
@@ -1063,7 +1102,8 @@
                 variant: 'primary',
                 onClick: close
             });
-            footerEl.appendChild(closeBtn);
+            actions.appendChild(closeBtn);
+            footerEl.appendChild(actions);
         }
         function resetWorkspaceFooter() {
             renderWorkspaceFooter();
@@ -1085,6 +1125,7 @@
                 if (!session) {
                     session = WorkspaceUI.render(bodyEl, {
                         projectId,
+                        onPendingChange: state => { if (activeWorkspaceId === projectId && workspaceSessions.get(projectId) === session && !closed) renderWorkspaceFooter(state); },
                         onBack: () => { if (activeWorkspaceId === projectId) showProjectsMain(); }
                     });
                     workspaceSessions.set(projectId, session);
