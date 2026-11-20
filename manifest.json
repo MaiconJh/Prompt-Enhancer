@@ -722,13 +722,15 @@
     },
     {
       "file": "workspace/workspace-explorer-view.js",
-      "description": "Renders the Workspace file explorer with persistent folder expansion, path search, keyboard navigation and threshold-based row virtualization.",
+      "description": "Renders the Workspace file explorer with jsTree, VSCode-compatible file icons, persistent folder expansion, path search and workspace file operations.",
       "interfaces": {
         "provides": [
           "WorkspaceExplorerView"
         ],
         "consumes": [
           "WorkspaceTreeModel",
+          "jQuery/jsTree",
+          "find-file-icon and the bundled vscode-icons SVG set",
           "I18n"
         ]
       },
@@ -849,12 +851,14 @@
           "ProviderManager",
           "Utils",
           "Atoms",
-          "I18n"
+          "I18n",
+          "Theme"
         ]
       },
       "interactions": [
         "Provides the WorkspaceUI.render(container, options) contract consumed by settings-modal.",
-        "All project, folder, file, permission, provider, import, and configuration operations use the existing domain facades."
+        "All project, folder, file, permission, provider, import, and configuration operations use the existing domain facades.",
+        "Monaco selects and updates its editor theme from the resolved application theme."
       ]
     },
     {

@@ -6,6 +6,161 @@ const WorkspaceExplorerView = (() => {
     const states = new WeakMap();
     const SVG_NS = 'http://www.w3.org/2000/svg';
 
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+    }
+
+    function makeJsTreeData(state) {
+        const query = String(state.options.searchQuery || '').trim().toLocaleLowerCase();
+        const pathIds = new Map();
+        let serial = 0;
+        const build = (node, depth = 0, revealAll = false) => {
+            const children = [];
+            for (const folder of node.sortedFolders || []) {
+                const folderMatches = query && folder.path.toLocaleLowerCase().includes(query);
+                const folderNode = build(folder, depth, revealAll || !!folderMatches);
+                if (folderNode) children.push(folderNode);
+            }
+            for (const file of node.sortedFiles || []) {
+                if (query && !revealAll && !file.path.toLocaleLowerCase().includes(query) && !file.name.toLocaleLowerCase().includes(query)) continue;
+                const row = { kind: 'file', id: file.id, path: file.path, name: file.name, depth, file };
+                children.push({ id: 'pe_node_' + (++serial), text: row.name, icon: false, data: { row }, li_attr: { 'data-tree-id': row.id, 'data-row-kind': 'file', 'data-row-path': row.path }, a_attr: { title: row.path } });
+            }
+            if (node.path && query && !children.length && !node.path.toLocaleLowerCase().includes(query)) return null;
+            if (!node.path) return children;
+            const row = { kind: 'folder', id: node.id || 'folder:' + node.path, path: node.path, name: node.name, depth, expanded: state.expandedPaths.has(node.path), hasChildren: children.length > 0, explicit: !!node.explicit, folder: node };
+            const id = 'pe_node_' + (++serial);
+            pathIds.set(row.path, id);
+            const folderMatches = query && node.path.toLocaleLowerCase().includes(query);
+            return { id, text: row.name, icon: false, children, state: { opened: !!query || row.expanded }, data: { row }, li_attr: { 'data-tree-id': row.id, 'data-row-kind': 'folder', 'data-row-path': row.path }, a_attr: { title: row.path } };
+        };
+        const roots = build(state.index);
+        state.pathIds = pathIds;
+        return roots;
+    }
+
+    function recordsKey(records) {
+        return records.map(item => [item.id, item.path, item.name].join('\u0000')).join('\u0001');
+    }
+
+    function expandedKey(state) {
+        return [...state.expandedPaths].sort().join('\u0001');
+    }
+
+    function treeKey(state) {
+        return [recordsKey(state.files || []), recordsKey(state.folders || []), String(state.options.searchQuery || '')].join('\u0002');
+    }
+
+    function renderJsTree(container, state) {
+        const $ = window.__PEJQuery;
+        if (!$?.fn?.jstree) return false;
+        container.classList.add('pe-jstree-host');
+        const data = makeJsTreeData(state);
+        const tree = $(container);
+        if (!state.jsTreeInitialized) {
+            tree.on('ready.jstree', () => { state.jsTreeInitialized = true; decorateJsTree(container, state); });
+            tree.on('open_node.jstree', (_event, detail) => {
+                const row = detail.node.data?.row;
+                if (row?.kind === 'folder') state.expandedPaths.add(row.path);
+                state.expansionKey = expandedKey(state);
+                decorateJsTree(container, state);
+            });
+            tree.on('close_node.jstree', (_event, detail) => {
+                const row = detail.node.data?.row;
+                if (row?.kind === 'folder') state.expandedPaths.delete(row.path);
+                state.expansionKey = expandedKey(state);
+                decorateJsTree(container, state);
+            });
+            tree.on('select_node.jstree', (_event, detail) => {
+                const row = detail.node.data?.row;
+                if (!row) return;
+                if (row.kind === 'folder') {
+                    const instance = tree.jstree(true);
+                    if (instance.is_open(detail.node)) instance.close_node(detail.node);
+                    else instance.open_node(detail.node);
+                }
+                state.options.onFocus?.(row);
+                state.options.onInspect?.(row);
+                if (row.kind === 'file') state.options.onSelect?.(row.id);
+            });
+            tree.on('dblclick', '.jstree-anchor', event => {
+                const row = tree.jstree(true).get_node(event.currentTarget);
+                if (row?.data?.row) state.options.onStartRename?.(row.data.row);
+            });
+            tree.on('click', '.pe-jstree-delete', event => {
+                event.preventDefault(); event.stopPropagation();
+                const row = tree.jstree(true).get_node(event.currentTarget.closest('li'))?.data?.row;
+                if (row) state.options.onDelete?.(row);
+            });
+            tree.on('input', '.pe-jstree-rename', event => state.options.onRenameInput?.(event.currentTarget.value));
+            tree.on('focusout', '.pe-jstree-rename', () => state.options.onCommitRename?.());
+            tree.on('keydown', '.pe-jstree-rename', event => {
+                if (event.key === 'Enter') { event.preventDefault(); state.options.onCommitRename?.(); }
+                else if (event.key === 'Escape') { event.preventDefault(); state.options.onCancelRename?.(); }
+                else event.stopPropagation();
+            });
+            tree.on('keydown', event => {
+                if (event.target.matches('.pe-jstree-rename')) return;
+                const node = tree.jstree(true)?.get_node(event.target.closest('li'));
+                const row = node?.data?.row;
+                if (!row) return;
+                if (event.key === 'F2') { event.preventDefault(); state.options.onStartRename?.(row); }
+                if (event.key === 'Delete') { event.preventDefault(); state.options.onDelete?.(row); }
+            });
+            tree.jstree({ core: { data, multiple: false, force_text: true, dblclick_toggle: false, themes: { name: 'default', dots: false, icons: false, ellipsis: true } }, plugins: ['wholerow'] });
+            state.jsTreeInitialized = true;
+            state.jsTreeKey = treeKey(state);
+            state.expansionKey = expandedKey(state);
+            return true;
+        }
+        const instance = tree.jstree(true);
+        if (instance) {
+            const nextTreeKey = treeKey(state);
+            const nextExpansionKey = expandedKey(state);
+            if (state.jsTreeKey !== nextTreeKey || state.expansionKey !== nextExpansionKey) {
+                instance.settings.core.data = data;
+                instance.refresh();
+                state.jsTreeKey = nextTreeKey;
+                state.expansionKey = nextExpansionKey;
+            } else decorateJsTree(container, state);
+        }
+        return true;
+    }
+
+    function decorateJsTree(container, state) {
+        for (const anchor of container.querySelectorAll('.jstree-anchor')) {
+            const li = anchor.closest('li');
+            const node = window.__PEJQuery(li).jstree(true)?.get_node(li);
+            const row = node?.data?.row;
+            if (!row) continue;
+            li.dataset.treeId = row.id;
+            li.dataset.depth = String(row.depth);
+            li.classList.toggle('is-selected', state.options.selectedFileId === row.id);
+            li.classList.toggle('is-focused', state.options.focusedNodeId === row.id);
+            let html;
+            if (state.options.editingNodeId === row.id) {
+                html = '<span class="pe-file-icon">' + iconFor(row, row.expanded) + '</span><input class="pe-jstree-rename" aria-label="' + escapeHtml(I18n.t('ws.files.renamePrompt', { path: row.path })) + '" value="' + escapeHtml(state.options.renameValue || '') + '">';
+                if (anchor.dataset.peRenderKey !== html) anchor.innerHTML = html;
+                const input = anchor.querySelector('input');
+                queueMicrotask(() => { if (input?.isConnected) { input.focus(); input.select(); } });
+            } else {
+                const name = escapeHtml(row.name);
+                const icon = iconFor(row, row.kind === 'folder' && !!window.__PEJQuery(li).jstree(true)?.is_open(li));
+                html = '<span class="pe-file-icon">' + icon + '</span><span class="pe-file-name">' + name + '</span>' + (row.kind === 'file' && state.options.isDirty?.(row.id) ? '<span class="pe-dirty-dot" title="' + escapeHtml(I18n.t('ws.dirty.title')) + '"></span>' : '');
+                if (anchor.dataset.peRenderKey !== html) anchor.innerHTML = html;
+            }
+            anchor.dataset.peRenderKey = html;
+            if (!li.querySelector('.pe-jstree-delete')) {
+                const button = document.createElement('button');
+                button.type = 'button'; button.className = 'pe-jstree-delete pe-icon-btn pe-icon-btn--delete';
+                button.setAttribute('aria-label', I18n.t('ws.files.delete') + ' ' + row.name);
+                button.title = I18n.t('ws.files.delete');
+                button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+                anchor.after(button);
+            }
+        }
+    }
+
     const FILE_COLORS = Object.freeze({
         md: '#519aba', json: '#cbcb41', js: '#cbcb41', mjs: '#cbcb41', cjs: '#cbcb41',
         jsx: '#cbcb41', ts: '#519aba', tsx: '#519aba', html: '#e37933', css: '#519aba',
@@ -22,6 +177,13 @@ const WorkspaceExplorerView = (() => {
     }
 
     function iconFor(node, expanded) {
+        const iconResult = node.kind === 'folder'
+            ? window.__PEFindFileIcon?.(node.name + '/', 'folder')
+            : window.__PEFindFileIcon?.(node.name, 'file');
+        const iconName = node.kind === 'folder' && expanded ? iconResult?.expandedName : iconResult?.name;
+        const iconKey = String(iconName || '').replace(/^vscode-icons:/, '');
+        const iconData = window.__PEFileIconSvg?.[iconKey];
+        if (iconData) return '<svg viewBox="0 0 ' + iconData.width + ' ' + iconData.height + '" width="16" height="16" aria-hidden="true">' + iconData.body + '</svg>';
         if (node.kind === 'folder') {
             return expanded
                 ? '<svg viewBox="0 0 16 16" width="16" height="16"><path d="M1.5 3C1.22 3 1 3.22 1 3.5V15c0 .28.22.5.5.5h13c.28 0 .5-.22.5-.5V5.5c0-.28-.22-.5-.5-.5H8L6.5 3.5H1.5z" fill="#dcb67a" opacity=".6"/><path d="M1 6h14l-1.5 7H2.5L1 6z" fill="#dcb67a"/></svg>'
@@ -274,18 +436,31 @@ const WorkspaceExplorerView = (() => {
 
         state.options = { ...options, files: Array.isArray(options.files) ? options.files : [], folders: Array.isArray(options.folders) ? options.folders : [] };
         if (options.expandedPaths && typeof options.expandedPaths.has === 'function') state.expandedPaths = options.expandedPaths;
-        if (state.files !== state.options.files || state.folders !== state.options.folders) {
+        const nextFilesKey = recordsKey(state.options.files);
+        const nextFoldersKey = recordsKey(state.options.folders);
+        if (state.filesKey !== nextFilesKey || state.foldersKey !== nextFoldersKey) {
             state.files = state.options.files;
             state.folders = state.options.folders;
+            state.filesKey = nextFilesKey;
+            state.foldersKey = nextFoldersKey;
             state.index = WorkspaceTreeModel.buildIndex(state.files, state.folders);
         }
         updateRows(state);
+        if (renderJsTree(container, state)) return;
         renderRows(container, state);
     }
 
     function toggleFolder(container, path) {
         const state = states.get(container);
         if (!state) return false;
+        if (state.jsTreeInitialized && window.__PEJQuery?.fn?.jstree) {
+            const instance = window.__PEJQuery(container).jstree(true);
+            const nodeId = state.pathIds?.get(String(path));
+            if (!instance || !nodeId) return false;
+            if (instance.is_open(nodeId)) instance.close_node(nodeId);
+            else instance.open_node(nodeId);
+            return true;
+        }
         if (state.expandedPaths.has(path)) state.expandedPaths.delete(path);
         else state.expandedPaths.add(path);
         updateRows(state);
@@ -298,6 +473,21 @@ const WorkspaceExplorerView = (() => {
         if (!state) return false;
         const parts = String(path || '').split('/').filter(Boolean);
         for (let index = 1; index < parts.length; index++) state.expandedPaths.add(parts.slice(0, index).join('/'));
+        if (state.jsTreeInitialized && window.__PEJQuery?.fn?.jstree) {
+            const instance = window.__PEJQuery(container).jstree(true);
+            const nodeId = state.pathIds?.get(String(path));
+            if (instance && nodeId) {
+                for (let index = 1; index < parts.length; index++) {
+                    const parentId = state.pathIds.get(parts.slice(0, index).join('/'));
+                    if (parentId) instance.open_node(parentId, false, 0);
+                }
+                instance.deselect_all();
+                instance.select_node(nodeId);
+                instance.get_node(nodeId, true)?.[0]?.scrollIntoView({ block: 'nearest' });
+                return true;
+            }
+            return false;
+        }
         updateRows(state);
         const rowIndex = state.rows.findIndex(row => row.path === path);
         if (rowIndex < 0) { renderRows(container, state); return false; }
@@ -315,6 +505,8 @@ const WorkspaceExplorerView = (() => {
     function destroy(container) {
         const state = states.get(container);
         if (!state) return;
+        if (state.jsTreeInitialized && window.__PEJQuery?.fn?.jstree) window.__PEJQuery(container).jstree('destroy');
+        container.classList.remove('pe-jstree-host');
         container.removeEventListener('scroll', state.onScroll);
         container.removeEventListener('click', state.onClick);
         container.removeEventListener('dblclick', state.onDoubleClick);

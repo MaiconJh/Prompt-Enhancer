@@ -25,6 +25,10 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@iconify-json/vscode-icons": "^1.2.99",
+    "find-file-icon": "^1.0.0",
+    "jquery": "^3.8.0",
+    "jstree": "^3.3.17",
     "playwright": "^1.65.0"
   },
   "devDependencies": {

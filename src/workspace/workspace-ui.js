@@ -32,8 +32,44 @@ function render(container,options={}){
   const monacoHost=$('[data-monaco]');
   const pageWindow=()=>typeof unsafeWindow!=='undefined'?unsafeWindow:window;
   let monacoEditor=null,monacoLoadPromise=null;
+  let stopMonacoThemeObserver=null,monacoThemeDefined=false;
   const editorValue=()=>monacoEditor?monacoEditor.getValue():editor.value;
   const setEditorValue=value=>{if(monacoEditor){if(monacoEditor.getValue()!==value)monacoEditor.setValue(value);}else editor.value=value;};
+  function ensureMonacoDarkTheme(monaco){
+   if(monacoThemeDefined)return;
+   monaco.defineTheme('pe-workspace-dark',{base:'vs-dark',inherit:true,rules:[],colors:{
+    'editor.background':'#17181c','editor.foreground':'#d4d4d4','editorGutter.background':'#17181c',
+    'editorLineNumber.foreground':'#858b98','editorLineNumber.activeForeground':'#d7d9df',
+    'editor.lineHighlightBackground':'#202127','editor.selectionBackground':'#34415f',
+    'editor.inactiveSelectionBackground':'#2b303b','editorCursor.foreground':'#c5c9d2',
+    'editorIndentGuide.background1':'#292c33','editorIndentGuide.activeBackground1':'#454a56',
+    'editorOverviewRuler.border':'#24262c','minimap.background':'#17181c',
+    'scrollbarSlider.background':'#50545f66','scrollbarSlider.hoverBackground':'#686d7a88',
+    'scrollbarSlider.activeBackground':'#7b819099'
+   }});
+   monacoThemeDefined=true;
+  }
+  function applyMonacoTheme(){
+   const monaco=pageWindow().monaco?.editor;if(!monaco)return;
+   ensureMonacoDarkTheme(monaco);
+   monaco.setTheme(Theme.resolved()==='dark'?'pe-workspace-dark':'vs');
+  }
+  function watchMonacoTheme(){
+   if(stopMonacoThemeObserver)return;
+   window.addEventListener('pe:theme-changed',applyMonacoTheme);
+   const stopHostObserver=Theme.observe(applyMonacoTheme);
+   const media=window.matchMedia?.('(prefers-color-scheme: dark)');
+   const onSystemThemeChange=()=>{if(Theme.get()==='auto')applyMonacoTheme();};
+   media?.addEventListener?.('change',onSystemThemeChange);
+   if(media?.addListener&&!media.addEventListener)media.addListener(onSystemThemeChange);
+   stopMonacoThemeObserver=()=>{
+    window.removeEventListener('pe:theme-changed',applyMonacoTheme);
+    stopHostObserver();
+    media?.removeEventListener?.('change',onSystemThemeChange);
+    if(media?.removeListener&&!media.removeEventListener)media.removeListener(onSystemThemeChange);
+    stopMonacoThemeObserver=null;
+   };
+  }
   function loadMonaco(){
    if(monacoEditor)return Promise.resolve(monacoEditor);
    if(monacoLoadPromise)return monacoLoadPromise;
@@ -46,9 +82,11 @@ function render(container,options={}){
      page.require(['vs/editor/editor.main'],()=>{try{
       if(destroyed){resolve(null);return;}
       if(!page.monaco?.editor)throw new Error('API do Monaco não ficou disponível');
-      const isLight=matchMedia('(prefers-color-scheme: light)').matches;
       monacoHost.style.display='block';editor.style.display='none';
-      monacoEditor=page.monaco.editor.create(monacoHost,{value:editor.value,language:'plaintext',theme:isLight?'vs':'vs-dark',automaticLayout:true,minimap:{enabled:true},fontSize:13,scrollBeyondLastLine:false,readOnly:editor.readOnly,wordWrap:'off'});
+      const theme=Theme.resolved()==='dark'?'pe-workspace-dark':'vs';
+      ensureMonacoDarkTheme(page.monaco.editor);
+      monacoEditor=page.monaco.editor.create(monacoHost,{value:editor.value,language:'plaintext',theme,automaticLayout:true,minimap:{enabled:true},fontSize:13,scrollBeyondLastLine:false,readOnly:editor.readOnly,wordWrap:'off'});
+      watchMonacoTheme();
       monacoEditor.onDidChangeModelContent(()=>{if(!selectedFile)return;editor.dispatchEvent(new Event('input',{bubbles:true}));});resolve(monacoEditor);
      }catch(error){reject(error);}},error=>reject(error));
     }catch(error){reject(error);}
@@ -381,7 +419,7 @@ function render(container,options={}){
   window.addEventListener('keydown',globalKey);
   const init=async()=>{if(!Workspace.isInitialized())await Workspace.init();if(destroyed)return;await loadProject();if(destroyed)return;if(window.innerWidth<=900){collapsed=true;inspectorOpen=false;updateLayout();}if(typeof ResizeObserver==='function'){resizeObserver=new ResizeObserver(()=>{if(!destroyed)renderTree();});resizeObserver.observe(tree);}};
   init().catch(e=>{status(e.message||'Falha ao carregar o projeto','error');toast(e.message||'Falha ao carregar o projeto','error');});
-  return {root:host,getProjectId:()=>project?.id||projectId,canLeave,refresh:init,getPendingState:pendingState,savePending:savePendingChanges,discardPending:discardPendingChanges,restoreDefaults:restoreSettingsDefaults,destroy(){destroyed=true;monacoEditor?.dispose();monacoEditor=null;window.removeEventListener('keydown',globalKey);resizeObserver?.disconnect();WorkspaceExplorerView.destroy(tree);toastHost?.remove();host.remove();}};
+  return {root:host,getProjectId:()=>project?.id||projectId,canLeave,refresh:init,getPendingState:pendingState,savePending:savePendingChanges,discardPending:discardPendingChanges,restoreDefaults:restoreSettingsDefaults,destroy(){destroyed=true;stopMonacoThemeObserver?.();monacoEditor?.dispose();monacoEditor=null;window.removeEventListener('keydown',globalKey);resizeObserver?.disconnect();WorkspaceExplorerView.destroy(tree);toastHost?.remove();host.remove();}};
  }
  return Object.freeze({render});
 })();
