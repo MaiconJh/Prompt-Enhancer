@@ -49,6 +49,15 @@ test('stylesheet permanece isolado do shell externo', () => {
     assert.doesNotMatch(stylesSource, /\.pe-workspace-host \.pe-modal-backdrop/);
 });
 
+test('cabeçalho do Workspace usa o botão X para fechar o modal, sem alternância de tema', () => {
+    assert.ok(markup.includes('data-action="close-workspace"'));
+    assert.ok(markup.includes('class="pe-panel__close"'));
+    assert.doesNotMatch(markup, /data-action="theme"/);
+    assert.doesNotMatch(uiSource, /Theme\.cycle|updateThemeIcon/);
+    assert.match(uiSource, /data-action="close-workspace"[^]*options\.onClose\?\.\(\)/);
+    assert.match(settingsSource, /onClose:\s*close/);
+});
+
 test('modal continua responsável pela navegação Projects Main → Workspace no mesmo shell', () => {
     assert.match(settingsSource, /function renderWorkspace\(\)\s*\{[\s\S]*ProjectsMain\.render\(bodyEl/);
     assert.match(settingsSource, /WorkspaceUI\.render\(bodyEl,\s*\{\s*projectId,/);
