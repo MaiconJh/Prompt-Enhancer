@@ -76,8 +76,8 @@ test('Projects Main is registered and localized in both supported languages', ()
 
 test('Workspace exposes pending-change actions in its own header and not in the modal footer', () => {
     assert.match(workspace, /data-workspace-actions/);
-    assert.match(workspace, /data-action="save-changes"/);
-    assert.match(workspace, /data-action="discard-changes"/);
+    assert.match(workspace, /data-action=\\?"save-changes\\?"/);
+    assert.match(workspace, /data-action=\\?"discard-changes\\?"/);
     assert.match(workspace, /function updateHeaderActions\(\)/);
     assert.match(workspace, /actions\.hidden=\!\(visible\|\|activeView==='settings'\)/);
     assert.match(workspace, /function runHeaderAction\(action\)/);
@@ -87,7 +87,7 @@ test('Workspace exposes pending-change actions in its own header and not in the 
 });
 
 test('Restore is available only for Settings and applies WorkspaceModel defaults', () => {
-    assert.match(workspace, /data-action="restore-settings-defaults"/);
+    assert.match(workspace, /data-action=\\?"restore-settings-defaults\\?"/);
     assert.match(workspace, /restore\.hidden=activeView!=='settings'/);
     assert.match(workspace, /WorkspaceModel\.DEFAULT_PROJECT_SETTINGS/);
     assert.match(workspace, /WorkspaceModel\.DEFAULT_PROJECT_CONFIG/);
