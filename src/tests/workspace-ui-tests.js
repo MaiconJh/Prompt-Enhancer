@@ -62,14 +62,17 @@ test('cabeçalho do Workspace reutiliza o botão X compartilhado e não alterna 
     assert.ok(module.interfaces.consumes.includes('I18n'));
 });
 
-test('rodapé do Workspace não duplica o fechamento disponível no cabeçalho', () => {
-    const start = settingsSource.indexOf('function renderWorkspaceFooter(state = null)');
-    const end = settingsSource.indexOf('function resetWorkspaceFooter()', start);
-    assert.ok(start >= 0 && end > start);
-    const footer = settingsSource.slice(start, end);
-    assert.doesNotMatch(footer, /sm\.footer\.close|closeWindowAria|onClick:\s*close/);
-    assert.match(footer, /Salvar alterações/);
-    assert.match(footer, /Descartar/);
+test('ações do Workspace são integradas à Status Bar e removem o rodapé externo', () => {
+    assert.ok(markup.includes('data-status-actions'));
+    assert.ok(!markup.includes('data-status-project'));
+    assert.match(uiSource, /function renderStatusActions\(\)/);
+    assert.match(uiSource, /Salvar/);
+    assert.match(uiSource, /Descartar/);
+    assert.match(uiSource, /Restaurar padrões/);
+    assert.match(settingsSource, /if \(workspaceRoute\) footerEl\.remove\(\)/);
+    assert.match(settingsSource, /panel\.appendChild\(footerEl\)/);
+    assert.doesNotMatch(settingsSource, /function renderWorkspaceFooter/);
+    assert.match(stylesSource, /pe-workspace-status-action/);
 });
 
 test('modal continua responsável pela navegação Projects Main → Workspace no mesmo shell', () => {
