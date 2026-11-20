@@ -1096,14 +1096,6 @@
                 addAction(state.busyAction === 'discard' ? 'Descartando…' : 'Descartar', 'discard');
                 addAction(state.busyAction === 'save' ? 'Salvando…' : 'Salvar alterações', 'save', 'pe-btn--primary');
             }
-            const closeBtn = Atoms.button({
-                icon: 'x',
-                label: I18n.t('sm.footer.close'),
-                ariaLabel: I18n.t('sm.footer.closeWindowAria'),
-                variant: 'primary',
-                onClick: close
-            });
-            actions.appendChild(closeBtn);
             footerEl.appendChild(actions);
         }
         function resetWorkspaceFooter() {
