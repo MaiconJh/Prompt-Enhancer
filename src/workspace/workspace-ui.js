@@ -16,6 +16,11 @@ function render(container,options={}){
   const host=el('div','pe-workspace-host');host.style.cssText='display:flex;flex-direction:column;width:100%;height:100%;min-height:0;';host.innerHTML=MARKUP;container.appendChild(host);
   const $=s=>host.querySelector(s), $$=s=>[...host.querySelectorAll(s)];
   const on=(s,e,fn)=>$(s)?.addEventListener(e,fn);
+  const toastHost=$('[data-toasts]');
+  if(toastHost){
+   toastHost.className='pe-workspace-toast-stack';
+   document.body.appendChild(toastHost);
+  }
   const tree=$('[data-tree]'),editor=$('[data-editor]'),fileInput=$('[data-file-input]'),dirInput=$('[data-dir-input]'),apiKeyInput=$('[data-api-key]');
   let project=null,files=[],folders=[],selectedFile=null,selectedFileId=null,inspectedNodeId=null,focusedNodeId=null;
   let activeView='files',collapsed=false,focusMode=false,inspectorOpen=false,searchQuery='',expandedPaths=new Set(),renderedEditorFileId=null,forceEditorSync=false;
@@ -47,7 +52,17 @@ function render(container,options={}){
   const accessLabel=()=>ai.accessMode==='none'?'Nenhum arquivo disponível':ai.accessMode==='all'?'Todos os arquivos disponíveis':'Somente arquivos permitidos';
 
   function toast(message,type='info'){
-   const n=el('div','pe-toast pe-toast--'+type,message);n.setAttribute('role','status');$('[data-toasts]').appendChild(n);setTimeout(()=>n.remove(),3200);
+   if(!toastHost)return;
+   const n=el('div','pe-workspace-toast pe-workspace-toast--'+type,message);
+   n.setAttribute('role',type==='error'?'alert':'status');
+   n.setAttribute('aria-live',type==='error'?'assertive':'polite');
+   const computed=getComputedStyle(host);
+   for(let i=0;i<computed.length;i++){
+    const name=computed.item(i);
+    if(name.startsWith('--pe-'))n.style.setProperty(name,computed.getPropertyValue(name));
+   }
+   toastHost.appendChild(n);
+   setTimeout(()=>n.remove(),3200);
   }
   function status(message,type=''){
    $('[data-status-text]').textContent=message;$('[data-status-dot]').style.background=type==='error'?'var(--pe-error)':type==='warning'?'var(--pe-warning)':'var(--pe-success)';
@@ -296,7 +311,7 @@ function render(container,options={}){
   window.addEventListener('keydown',globalKey);
   const init=async()=>{if(!Workspace.isInitialized())await Workspace.init();if(destroyed)return;await loadProject();if(destroyed)return;updateThemeIcon();if(window.innerWidth<=900){collapsed=true;inspectorOpen=false;updateLayout();}if(typeof ResizeObserver==='function'){resizeObserver=new ResizeObserver(()=>{if(!destroyed)renderTree();});resizeObserver.observe(tree);}};
   init().catch(e=>{status(e.message||'Falha ao carregar o projeto','error');toast(e.message||'Falha ao carregar o projeto','error');});
-  return {root:host,getProjectId:()=>project?.id||projectId,canLeave,refresh:init,destroy(){destroyed=true;window.removeEventListener('keydown',globalKey);resizeObserver?.disconnect();WorkspaceExplorerView.destroy(tree);host.remove();}};
+  return {root:host,getProjectId:()=>project?.id||projectId,canLeave,refresh:init,destroy(){destroyed=true;window.removeEventListener('keydown',globalKey);resizeObserver?.disconnect();WorkspaceExplorerView.destroy(tree);toastHost?.remove();host.remove();}};
  }
  return Object.freeze({render});
 })();
