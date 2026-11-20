@@ -146,14 +146,15 @@ test('workspace e módulos de domínio estão registrados na ordem de dependênc
 
 
 
-test('rodapé do Workspace serializa salvar/descartar e preserva pendências em falhas', () => {
-    assert.match(settingsSource, /function runWorkspaceFooterAction\(action\)/);
-    assert.match(settingsSource, /if \(workspaceFooterBusy \|\| !workspaceFooterState\?\.visible\) return/);
-    assert.match(settingsSource, /const result = await callback\(\)/);
-    assert.match(settingsSource, /result === false && workspaceFooterState\?\.visible/);
-    assert.match(settingsSource, /disabled: busy/);
-    assert.match(uiSource, /catch\(e\)[\s\S]*?renderAI\(\);updateFooter\(\)/);
-    assert.match(uiSource, /catch\(e\)\{updateFooter\(\);toast/);
+test('rodapé compartilhado coordena salvar/descartar e preserva pendências em falhas', () => {
+    assert.match(settingsSource, /function renderWorkspaceFooter\(state = null\)/);
+    assert.match(settingsSource, /session\.savePending\?\.\(\)/);
+    assert.match(settingsSource, /session\.discardPending\?\.\(\)/);
+    assert.match(settingsSource, /if \(state\?\.hasPending\)/);
+    assert.match(uiSource, /async function savePendingChanges\(\)/);
+    assert.match(uiSource, /if\(!fileOk\|\|!aiOk\|\|!settingsOk\)/);
+    assert.match(uiSource, /function discardPendingChanges\(\)/);
+    assert.match(uiSource, /Não foi possível concluir o salvamento/);
 });
 
 test('callbacks do Workspace não atualizam o rodapé de outro projeto ou sessão', () => {
