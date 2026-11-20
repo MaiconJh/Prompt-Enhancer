@@ -49,13 +49,17 @@ test('stylesheet permanece isolado do shell externo', () => {
     assert.doesNotMatch(stylesSource, /\.pe-workspace-host \.pe-modal-backdrop/);
 });
 
-test('cabeçalho do Workspace usa o botão X para fechar o modal, sem alternância de tema', () => {
-    assert.ok(markup.includes('data-action="close-workspace"'));
-    assert.ok(markup.includes('class="pe-panel__close"'));
-    assert.doesNotMatch(markup, /data-action="theme"/);
-    assert.doesNotMatch(uiSource, /Theme\.cycle|updateThemeIcon/);
-    assert.match(uiSource, /data-action="close-workspace"[^]*options\.onClose\?\.\(\)/);
+test('cabeçalho do Workspace reutiliza o botão X e o ícone compartilhado do modal', () => {
+    assert.doesNotMatch(markup, /data-action="close-workspace"|class="pe-panel__close"/);
+    assert.match(uiSource, /closeBtn\.className\s*=\s*'pe-panel__close'/);
+    assert.match(uiSource, /closeBtn\.setAttribute\('aria-label',\s*I18n\.t\('sm\.footer\.closeAria'\)\)/);
+    assert.match(uiSource, /closeBtn\.appendChild\(Atoms\.icon\('x'\)\)/);
+    assert.match(uiSource, /closeBtn\.addEventListener\('click',\s*\(\)\s*=>options\.onClose\?\.\(\)\)/);
+    assert.doesNotMatch(uiSource, /Theme\.cycle|updateThemeIcon|data-action="theme"/);
     assert.match(settingsSource, /onClose:\s*close/);
+    const module = manifest.modules.find(item => item.file === 'workspace/workspace-ui.js');
+    assert.ok(module.interfaces.consumes.includes('Atoms'));
+    assert.ok(module.interfaces.consumes.includes('I18n'));
 });
 
 test('modal continua responsável pela navegação Projects Main → Workspace no mesmo shell', () => {
