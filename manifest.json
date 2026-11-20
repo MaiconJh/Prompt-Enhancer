@@ -847,7 +847,9 @@
           "WorkspaceModel",
           "ProviderRegistry",
           "ProviderManager",
-          "Utils"
+          "Utils",
+          "Atoms",
+          "I18n"
         ]
       },
       "interactions": [
