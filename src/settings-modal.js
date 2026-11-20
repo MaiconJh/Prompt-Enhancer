@@ -1100,7 +1100,6 @@
         function showProjectsMain() {
             workspaceOpenSequence++;
             activeWorkspaceId = null;
-            if (footerEl.parentNode !== panel) panel.appendChild(footerEl);
             panel.classList.remove('is-workspace-expanded');
             panel.classList.add('is-projects-main');
             if (projectsMainView?.root) bodyEl.replaceChildren(projectsMainView.root);
