@@ -96,12 +96,12 @@ test('Status Bar coordena salvar, descartar e restaurar sem alterar as operaçõ
     assert.match(workspace, /add\(headerActionBusy==='save'\?'Salvando…':'Salvar'/);
 });
 
-test('Restore defaults is separate and appears only when Settings can actually restore defaults', () => {
+test('Restaurar padrões aparece apenas nas Configurações quando há valores restauráveis', () => {
     assert.match(workspace, /WorkspaceModel\.DEFAULT_PROJECT_SETTINGS/);
     assert.match(workspace, /WorkspaceModel\.DEFAULT_PROJECT_CONFIG/);
     assert.match(workspace, /function canRestoreDefaults\(\)\{return activeView==='settings'&&!settingsAtDefaults\(\)&&!headerActionBusy;\}/);
     assert.match(workspace, /restoreDefaults:restoreSettingsDefaults/);
-    assert.match(settings, /if \(state\?\.canRestore\) addAction\('Restaurar padrões', 'restore'\)/);
+    assert.match(workspace, /if\(state\.canRestore\)add\('Restaurar padrões'/);
 });
 
 test('Workspace navigation remains blocked while centralized save/discard operations are running', () => {
