@@ -3106,7 +3106,7 @@ function injectStyles() {
             padding: 0;
         }
         .pe-scope .pe-modal.is-workspace-expanded .pe-workspace-host > .pe-panel__body {
-            padding: 18px 22px 28px;
+            padding: 0 !important;
         }
 
         .pe-scope .pe-modal::before {
