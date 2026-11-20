@@ -122,6 +122,7 @@ function render(container,options={}){
    const edit=el('section','pe-inspector__section');edit.append(el('h5','','Estado de edição'));const r=el('div','pe-access-row');r.append(el('span','','Alterações pendentes'),el('span','pe-badge '+(dirtyFile(node.id)?'pe-badge--warn':'pe-badge--ok'),dirtyFile(node.id)?'Não salvas':'Salvo'));edit.append(r);target.append(edit);
   }
   function updateHeaderActions(){
+    updateHeader();
     const visible=(activeView==='ai'&&aiDirty())||(activeView==='settings'&&settingsDirty());
     const actions=$('[data-workspace-actions]'),save=$('[data-action="save-changes"]'),discard=$('[data-action="discard-changes"]'),restore=$('[data-action="restore-settings-defaults"]');
     actions.hidden=!(visible||activeView==='settings');
