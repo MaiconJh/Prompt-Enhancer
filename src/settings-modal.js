@@ -288,6 +288,8 @@
                 workspaceOpenSequence++;
                 activeWorkspaceId = null;
             }
+            if (workspaceRoute) footerEl.remove();
+            else if (footerEl.parentNode !== panel) panel.appendChild(footerEl);
             tabsBar.hidden = workspaceRoute;
             panel.classList.toggle('is-projects-main', workspaceRoute);
             panel.classList.toggle('is-workspace-expanded', workspaceRoute && activeWorkspaceId !== null);
@@ -328,7 +330,7 @@
             else if (activeTab === 'systemPrompt') renderSystemPrompt();
             else if (activeTab === 'provider') renderProvider();
             else renderHistory();
-            renderFooter(activeTab, computeDirty(activeTab), false);
+            if (!workspaceRoute) renderFooter(activeTab, computeDirty(activeTab), false);
         }
 
         function renderParams() {
@@ -1054,58 +1056,10 @@
             panel.classList.remove('is-workspace-expanded');
         }
 
-        function renderWorkspaceFooter(state = null) {
-            footerEl.hidden = false;
-            footerEl.replaceChildren();
-            footerEl.classList.toggle('is-workspace-footer', !!state);
-            if (state?.hasPending) {
-                const status = document.createElement('div');
-                status.className = 'pe-workspace-change-state';
-                const title = document.createElement('strong');
-                title.textContent = 'Alterações não salvas';
-                const detail = document.createElement('span');
-                detail.textContent = state.domains.join(' · ');
-                status.append(title, detail);
-                footerEl.appendChild(status);
-            } else {
-                const spacer = document.createElement('span');
-                spacer.className = 'pe-workspace-change-state is-empty';
-                spacer.textContent = '';
-                footerEl.appendChild(spacer);
-            }
-
-            const actions = document.createElement('div');
-            actions.className = 'pe-workspace-footer-actions';
-            const addAction = (label, action, variant = '') => {
-                const button = document.createElement('button');
-                button.type = 'button';
-                button.className = 'pe-btn' + (variant ? ' ' + variant : '');
-                button.textContent = label;
-                button.disabled = !!state?.busy;
-                button.addEventListener('click', async () => {
-                    const session = activeWorkspaceId ? workspaceSessions.get(activeWorkspaceId) : null;
-                    if (!session) return;
-                    if (action === 'save') await session.savePending?.();
-                    else if (action === 'discard') session.discardPending?.();
-                    else if (action === 'restore') session.restoreDefaults?.();
-                });
-                actions.appendChild(button);
-            };
-            if (state?.canRestore) addAction('Restaurar padrões', 'restore');
-            if (state?.hasPending) {
-                addAction(state.busyAction === 'discard' ? 'Descartando…' : 'Descartar', 'discard');
-                addAction(state.busyAction === 'save' ? 'Salvando…' : 'Salvar alterações', 'save', 'pe-btn--primary');
-            }
-            footerEl.appendChild(actions);
-        }
-        function resetWorkspaceFooter() {
-            renderWorkspaceFooter();
-        }
         async function openWorkspace(projectId) {
             if (!projectId || closed) return;
             const openSequence = ++workspaceOpenSequence;
             activeWorkspaceId = projectId;
-            renderWorkspaceFooter();
             panel.classList.remove('is-projects-main');
             panel.classList.add('is-workspace-expanded');
             try {
@@ -1118,7 +1072,6 @@
                 if (!session) {
                     session = WorkspaceUI.render(bodyEl, {
                         projectId,
-                        onPendingChange: state => { if (activeWorkspaceId === projectId && workspaceSessions.get(projectId) === session && !closed) renderWorkspaceFooter(state); },
                         onBack: () => { if (activeWorkspaceId === projectId) showProjectsMain(); },
                         onClose: close
                     });
@@ -1147,7 +1100,7 @@
         function showProjectsMain() {
             workspaceOpenSequence++;
             activeWorkspaceId = null;
-            resetWorkspaceFooter();
+            if (footerEl.parentNode !== panel) panel.appendChild(footerEl);
             panel.classList.remove('is-workspace-expanded');
             panel.classList.add('is-projects-main');
             if (projectsMainView?.root) bodyEl.replaceChildren(projectsMainView.root);
