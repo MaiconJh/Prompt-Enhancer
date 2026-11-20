@@ -74,25 +74,26 @@ test('Projects Main is registered and localized in both supported languages', ()
 });
 
 
-test('Workspace reports pending changes to the modal footer and exposes centralized save/discard operations', () => {
-    assert.match(workspace, /options\.onPendingChange\?\.\(pendingState\(\)\)/);
+test('Workspace expõe ações pendentes diretamente na Status Bar', () => {
+    assert.match(workspace, /function renderStatusActions\(\)/);
     assert.match(workspace, /const pendingState=\(\)=>/);
     assert.match(workspace, /fileCount:dirty\.size/);
     assert.match(workspace, /savePending:savePendingChanges/);
     assert.match(workspace, /discardPending:discardPendingChanges/);
-    assert.doesNotMatch(workspace, /data-workspace-actions|data-header-dirty/);
-    assert.doesNotMatch(workspace, /data-action=\\?"save-file\\?"|data-action=\\?"discard-file\\?"/);
-    assert.match(settings, /pe-workspace-change-state/);
-    assert.match(settings, /session\.savePending\?\.\(\)/);
-    assert.match(settings, /session\.discardPending\?\.\(\)/);
+    assert.match(workspace, /restoreDefaults:restoreSettingsDefaults/);
+    assert.match(workspace, /data-status-actions/);
+    assert.doesNotMatch(workspace, /options\.onPendingChange/);
+    assert.doesNotMatch(settings, /renderWorkspaceFooter|pe-workspace-footer-actions/);
+    assert.match(settings, /if \(workspaceRoute\) footerEl\.remove\(\)/);
 });
 
-test('The shared modal footer saves and discards pending file, AI, and project settings changes', () => {
+test('Status Bar coordena salvar, descartar e restaurar sem alterar as operações de domínio', () => {
     assert.match(workspace, /const hasPending=\(\)=>dirty\.size>0\|\|aiDirty\(\)\|\|settingsDirty\(\)/);
     assert.match(workspace, /const fileOk=await saveAllFiles\(\),aiOk=aiDirty\(\)\?await saveAi\(true\):true,settingsOk=settingsDirty\(\)\?await saveSettings\(true\):true/);
     assert.match(workspace, /discardAllFiles\(\);if\(aiDirty\(\)\)resetAi\(\);if\(settingsDirty\(\)\)resetSettings\(\)/);
-    assert.match(settings, /onPendingChange: state => \{ if \(activeWorkspaceId === projectId && workspaceSessions\.get\(projectId\) === session && !closed\) renderWorkspaceFooter\(state\); \}/);
-    assert.match(settings, /if \(state\?\.hasPending\)/);
+    assert.match(workspace, /if\(state\.canRestore\)add\('Restaurar padrões'/);
+    assert.match(workspace, /add\('Descartar'/);
+    assert.match(workspace, /add\(headerActionBusy==='save'\?'Salvando…':'Salvar'/);
 });
 
 test('Restore defaults is separate and appears only when Settings can actually restore defaults', () => {
