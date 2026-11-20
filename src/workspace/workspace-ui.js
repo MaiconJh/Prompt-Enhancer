@@ -46,7 +46,7 @@ function render(container,options={}){
   const aiDirty=()=>json(aiSnapshot())!==aiSaved;
   const settingsSnapshot=()=>({...settings});
   const settingsDirty=()=>json(settingsSnapshot())!==settingsSaved;
-  const settingsAtDefaults=()=>{try{const defaults=WorkspaceModel.DEFAULT_PROJECT_SETTINGS;const config=WorkspaceModel.normalizeConfig(JSON.parse(settings.configText));return settings.defaultView===defaults.defaultView&&settings.instructions===defaults.instructions&&json(config)===json(WorkspaceModel.normalizeConfig(WorkspaceModel.DEFAULT_PROJECT_CONFIG));}catch(_){return false;}};
+  const settingsAtDefaults=()=>{try{const defaults=WorkspaceModel.DEFAULT_PROJECT_SETTINGS,defaultConfig=WorkspaceModel.normalizeConfig(WorkspaceModel.DEFAULT_PROJECT_CONFIG),config=WorkspaceModel.normalizeConfig(JSON.parse(settings.configText));const keys=Object.keys(config).sort(),defaultKeys=Object.keys(defaultConfig).sort();return settings.defaultView===defaults.defaultView&&settings.instructions===defaults.instructions&&keys.length===defaultKeys.length&&keys.every((key,index)=>key===defaultKeys[index])&&config.maxContextBytes===defaultConfig.maxContextBytes&&config.includePatterns.length===0;}catch(_){return false;}};
   const hasPending=()=>dirty.size>0||aiDirty()||settingsDirty();
   const totalSize=()=>files.reduce((n,f)=>n+(Number(f.size)||0),0);
   const effective=id=>ai.accessMode==='none'?'denied':ai.accessMode==='all'?'allowed':ai.fileAccess[id]==='allowed'?'allowed':'denied';
