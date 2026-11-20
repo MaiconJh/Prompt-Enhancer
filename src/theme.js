@@ -91,5 +91,5 @@ const Theme = (() => {
         return detectHostTheme();
     }
 
-    return { MODES, get, set, apply, cycle, resolved };
+    return { MODES, get, set, apply, cycle, resolved, observe };
 })();
