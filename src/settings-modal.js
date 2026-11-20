@@ -1069,7 +1069,7 @@
             } else {
                 const spacer = document.createElement('span');
                 spacer.className = 'pe-workspace-change-state is-empty';
-                spacer.textContent = state ? 'Nenhuma alteração pendente' : '';
+                spacer.textContent = '';
                 footerEl.appendChild(spacer);
             }
 
