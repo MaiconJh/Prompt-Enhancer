@@ -1092,8 +1092,8 @@
             };
             if (state?.canRestore) addAction('Restaurar padrões', 'restore');
             if (state?.hasPending) {
-                addAction(state.busy ? 'Aguarde…' : 'Descartar', 'discard');
-                addAction(state.busy ? 'Salvando…' : 'Salvar alterações', 'save', 'pe-btn--primary');
+                addAction(state.busyAction === 'discard' ? 'Descartando…' : 'Descartar', 'discard');
+                addAction(state.busyAction === 'save' ? 'Salvando…' : 'Salvar alterações', 'save', 'pe-btn--primary');
             }
             const closeBtn = Atoms.button({
                 icon: 'x',
