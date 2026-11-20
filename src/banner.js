@@ -20,6 +20,8 @@
 // @exclude      *://*.banco*/*
 // @exclude      *://*.gov*/*
 // @grant        GM_xmlhttpRequest
+// @grant        GM_addElement
+// @grant        unsafeWindow
 // @grant        GM_addStyle
 // @grant        GM_notification
 // @grant        GM_registerMenuCommand
@@ -40,6 +42,7 @@
 // @connect      api.cloudflare.com
 // @connect      localhost
 // @connect      127.0.0.1
+// @connect      cdn.jsdelivr.net
 // @require      https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js#sha256=KAM+RJox68w5blvosTtjFSvwMJQoj7WGcDQyGSe84Ic=
 // @noframes
 // @run-at       document-idle
