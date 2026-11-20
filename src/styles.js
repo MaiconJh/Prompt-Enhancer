@@ -2318,8 +2318,8 @@ function injectStyles() {
 
         .pe-toast {
             position: fixed;
-            left: 18px;
-            right: auto;
+            right: 18px;
+            left: auto;
             bottom: 18px;
             z-index: var(--pe-z-toast);
             max-width: min(360px, calc(100vw - 36px));
