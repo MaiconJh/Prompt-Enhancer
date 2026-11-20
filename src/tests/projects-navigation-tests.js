@@ -76,7 +76,7 @@ test('Projects Main is registered and localized in both supported languages', ()
 
 test('Workspace reports pending changes to the modal footer and exposes centralized save/discard operations', () => {
     assert.match(workspace, /options\.onPendingChange\?\.\(pendingState\(\)\)/);
-    assert.match(workspace, /function pendingState\(\)/);
+    assert.match(workspace, /const pendingState=\(\)=>/);
     assert.match(workspace, /fileCount:dirty\.size/);
     assert.match(workspace, /savePending:savePendingChanges/);
     assert.match(workspace, /discardPending:discardPendingChanges/);
