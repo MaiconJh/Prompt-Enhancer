@@ -91,7 +91,7 @@ test('The shared modal footer saves and discards pending file, AI, and project s
     assert.match(workspace, /const hasPending=\(\)=>dirty\.size>0\|\|aiDirty\(\)\|\|settingsDirty\(\)/);
     assert.match(workspace, /const fileOk=await saveAllFiles\(\),aiOk=aiDirty\(\)\?await saveAi\(true\):true,settingsOk=settingsDirty\(\)\?await saveSettings\(true\):true/);
     assert.match(workspace, /discardAllFiles\(\);if\(aiDirty\(\)\)resetAi\(\);if\(settingsDirty\(\)\)resetSettings\(\)/);
-    assert.match(settings, /onPendingChange: state => \{ if \(activeWorkspaceId === projectId && !closed\) renderWorkspaceFooter\(state\); \}/);
+    assert.match(settings, /onPendingChange: state => \{ if \(activeWorkspaceId === projectId && workspaceSessions\.get\(projectId\) === session && !closed\) renderWorkspaceFooter\(state\); \}/);
     assert.match(settings, /if \(state\?\.hasPending\)/);
 });
 
