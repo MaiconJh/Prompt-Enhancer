@@ -148,6 +148,7 @@ test('workspace e módulos de domínio estão registrados na ordem de dependênc
 
 test('rodapé compartilhado coordena salvar/descartar e preserva pendências em falhas', () => {
     assert.match(settingsSource, /function renderWorkspaceFooter\(state = null\)/);
+    assert.match(settingsSource, /function renderWorkspaceFooter\(state = null\)\s*\{\s*footerEl\.hidden = false;/);
     assert.match(settingsSource, /session\.savePending\?\.\(\)/);
     assert.match(settingsSource, /session\.discardPending\?\.\(\)/);
     assert.match(settingsSource, /if \(state\?\.hasPending\)/);
