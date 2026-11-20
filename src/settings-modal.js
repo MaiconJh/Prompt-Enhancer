@@ -1063,7 +1063,8 @@
                 if (!session) {
                     session = WorkspaceUI.render(bodyEl, {
                         projectId,
-                        onBack: showProjectsMain
+                        onBack: showProjectsMain,
+                        onFooterChange: updateWorkspaceFooter
                     });
                     workspaceSessions.set(projectId, session);
                 } else {
@@ -1088,6 +1089,7 @@
             panel.classList.add('is-projects-main');
             if (projectsMainView?.root) bodyEl.replaceChildren(projectsMainView.root);
             projectsMainView?.refresh?.();
+            resetWorkspaceFooter();
         }
 
         function renderManualContext() {
