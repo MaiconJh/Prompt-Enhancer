@@ -55,6 +55,12 @@ test('modal dimensions match the Projects Main and Workspace reference sizes', (
     assert.match(styles, /prefers-reduced-motion:\s*reduce/);
 });
 
+
+test('toasts globais e locais do Workspace ficam alinhados no canto inferior esquerdo', () => {
+    assert.match(styles, /\.pe-toast\s*\{[^}]*left:\s*18px;[^}]*right:\s*auto;/s);
+    assert.match(styles, /max-width:\s*min\(360px,\s*calc\(100vw\s*-\s*36px\)\)/);
+});
+
 test('Projects Main is registered and localized in both supported languages', () => {
     assert.ok(manifest.includes('"file": "workspace/projects-main.js"'));
     assert.ok(manifest.includes('"ProjectsMain"'));
