@@ -30,6 +30,10 @@
         let projectsMainView = null;
         const workspaceSessions = new Map();
         let activeWorkspaceId = null;
+        let workspaceOpenSequence = 0;
+        let workspaceFooterState = null;
+        let workspaceFooterBusy = false;
+        let workspaceFooterAction = null;
         let isClosing = false;
 
         const backdrop = document.createElement('div');
@@ -147,7 +151,7 @@
         });
 
         async function close() {
-            if (closed || isClosing) return;
+            if (closed || isClosing || workspaceFooterBusy) return;
             isClosing = true;
             try {
                 if (activeWorkspaceId) {
@@ -283,7 +287,13 @@
         function render() {
             prevFooterDirty = false;
             const workspaceRoute = activeTab === 'workspace';
-            if (!workspaceRoute) activeWorkspaceId = null;
+            if (!workspaceRoute) {
+                workspaceOpenSequence++;
+                activeWorkspaceId = null;
+                workspaceFooterState = null;
+                workspaceFooterBusy = false;
+                workspaceFooterAction = null;
+            }
             tabsBar.hidden = workspaceRoute;
             panel.classList.toggle('is-projects-main', workspaceRoute);
             panel.classList.toggle('is-workspace-expanded', workspaceRoute && activeWorkspaceId !== null);
@@ -1050,53 +1060,107 @@
             panel.classList.remove('is-workspace-expanded');
         }
 
-        function resetWorkspaceFooter() {
+        function renderWorkspaceFooter() {
             footerEl.replaceChildren();
-            const closeBtn = Atoms.button({ icon: 'x', label: I18n.t('sm.footer.close'), ariaLabel: I18n.t('sm.footer.closeWindowAria'), variant: 'primary', onClick: close });
-            footerEl.appendChild(closeBtn);
-         }
-        function updateWorkspaceFooter(state) {
-            footerEl.replaceChildren();
-            if (state && state.visible) {
+            if (workspaceFooterState?.visible) {
                 const indicator = document.createElement('span');
                 indicator.className = 'pe-dirty-indicator';
                 indicator.textContent = 'Alterações não salvas';
                 const spacer = document.createElement('span');
                 spacer.className = 'spacer';
-                const discard = Atoms.button({ icon: null, label: 'Descartar', ariaLabel: 'Descartar alterações', variant: 'outline', onClick: () => { if (state.discard) state.discard(); } });
-                const save = Atoms.button({ icon: 'save', label: 'Salvar', ariaLabel: 'Salvar alterações', variant: 'primary', onClick: () => { if (state.save) state.save(); } });
+                const busy = workspaceFooterBusy;
+                const discard = Atoms.button({
+                    icon: null,
+                    label: busy && workspaceFooterAction === 'discard' ? 'Descartando…' : 'Descartar',
+                    ariaLabel: 'Descartar alterações',
+                    variant: 'outline',
+                    disabled: busy,
+                    onClick: () => runWorkspaceFooterAction('discard')
+                });
+                const save = Atoms.button({
+                    icon: 'save',
+                    label: busy && workspaceFooterAction === 'save' ? 'Salvando…' : 'Salvar',
+                    ariaLabel: 'Salvar alterações',
+                    variant: 'primary',
+                    disabled: busy,
+                    onClick: () => runWorkspaceFooterAction('save')
+                });
+                if (busy && workspaceFooterAction === 'save') save.classList.add('is-loading');
                 footerEl.append(indicator, spacer, discard, save);
-            } else {
-                resetWorkspaceFooter();
+                return;
             }
-         }
+            const closeBtn = Atoms.button({ icon: 'x', label: I18n.t('sm.footer.close'), ariaLabel: I18n.t('sm.footer.closeWindowAria'), variant: 'primary', onClick: close, disabled: workspaceFooterBusy });
+            footerEl.appendChild(closeBtn);
+        }
+        function resetWorkspaceFooter() {
+            workspaceFooterState = null;
+            if (!workspaceFooterBusy) renderWorkspaceFooter();
+        }
+        function updateWorkspaceFooter(state) {
+            workspaceFooterState = state || null;
+            if (!workspaceFooterBusy) renderWorkspaceFooter();
+        }
+        async function runWorkspaceFooterAction(action) {
+            if (workspaceFooterBusy || !workspaceFooterState?.visible) return;
+            const callback = action === 'save' ? workspaceFooterState.save : workspaceFooterState.discard;
+            if (typeof callback !== 'function') return;
+            workspaceFooterBusy = true;
+            workspaceFooterAction = action;
+            renderWorkspaceFooter();
+            try {
+                const result = await callback();
+                if (result === false && workspaceFooterState?.visible) {
+                    // A falha mantém as alterações pendentes e os controles disponíveis para nova tentativa.
+                } else if (result !== false && workspaceFooterState?.visible) {
+                    workspaceFooterState = { ...workspaceFooterState, visible: false };
+                }
+            } catch (error) {
+                Molecules.toast(error?.message || I18n.t('ws.errors.operationFailed'), 'error');
+            } finally {
+                workspaceFooterBusy = false;
+                workspaceFooterAction = null;
+                renderWorkspaceFooter();
+            }
+        }
         async function openWorkspace(projectId) {
-            if (!projectId || closed) return;
+            if (!projectId || closed || workspaceFooterBusy) return;
+            const openSequence = ++workspaceOpenSequence;
             activeWorkspaceId = projectId;
+            workspaceFooterState = null;
+            renderWorkspaceFooter();
             panel.classList.remove('is-projects-main');
             panel.classList.add('is-workspace-expanded');
             try {
                 if (!Workspace.isInitialized()) await Workspace.init();
+                if (closed || openSequence !== workspaceOpenSequence || activeWorkspaceId !== projectId) return;
                 await Workspace.setActiveProjectId(projectId);
+                if (closed || openSequence !== workspaceOpenSequence || activeWorkspaceId !== projectId) return;
                 bodyEl.replaceChildren();
                 let session = workspaceSessions.get(projectId);
                 if (!session) {
                     session = WorkspaceUI.render(bodyEl, {
                         projectId,
-                        onBack: showProjectsMain,
-                        onFooterChange: updateWorkspaceFooter
+                        onBack: () => { if (activeWorkspaceId === projectId && !workspaceFooterBusy) showProjectsMain(); },
+                        onFooterChange: state => {
+                            if (!closed && activeWorkspaceId === projectId && workspaceSessions.get(projectId) === session) updateWorkspaceFooter(state);
+                        }
                     });
                     workspaceSessions.set(projectId, session);
                 } else {
                     bodyEl.appendChild(session.root);
+                    session.refresh?.().catch?.(error => {
+                        if (activeWorkspaceId === projectId) Molecules.toast(error.message || I18n.t('ws.errors.loadFailed'), 'error');
+                    });
                 }
                 panel.classList.remove('is-projects-main');
                 panel.classList.add('is-workspace-expanded');
                 requestAnimationFrame(() => {
+                    if (closed || activeWorkspaceId !== projectId) return;
                     const backLink = bodyEl.querySelector('[data-action="back"]');
                     if (backLink instanceof HTMLElement) backLink.focus();
                 });
             } catch (error) {
+                if (openSequence !== workspaceOpenSequence || closed) return;
                 activeWorkspaceId = null;
                 Molecules.toast(error.message || I18n.t('ws.errors.loadFailed'), 'error');
                 showProjectsMain();
@@ -1104,12 +1168,13 @@
         }
 
         function showProjectsMain() {
+            workspaceOpenSequence++;
             activeWorkspaceId = null;
+            resetWorkspaceFooter();
             panel.classList.remove('is-workspace-expanded');
             panel.classList.add('is-projects-main');
             if (projectsMainView?.root) bodyEl.replaceChildren(projectsMainView.root);
             projectsMainView?.refresh?.();
-            resetWorkspaceFooter();
         }
 
         function renderManualContext() {
