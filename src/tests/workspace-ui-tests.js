@@ -145,6 +145,24 @@ test('workspace e módulos de domínio estão registrados na ordem de dependênc
 });
 
 
+
+test('rodapé do Workspace serializa salvar/descartar e preserva pendências em falhas', () => {
+    assert.match(settingsSource, /function runWorkspaceFooterAction\(action\)/);
+    assert.match(settingsSource, /if \(workspaceFooterBusy \|\| !workspaceFooterState\?\.visible\) return/);
+    assert.match(settingsSource, /const result = await callback\(\)/);
+    assert.match(settingsSource, /result === false && workspaceFooterState\?\.visible/);
+    assert.match(settingsSource, /disabled: busy/);
+    assert.match(uiSource, /catch\(e\)[\s\S]*?renderAI\(\);updateFooter\(\)/);
+    assert.match(uiSource, /catch\(e\)\{updateFooter\(\);toast/);
+});
+
+test('callbacks do Workspace não atualizam o rodapé de outro projeto ou sessão', () => {
+    assert.match(settingsSource, /let workspaceOpenSequence = 0/);
+    assert.match(settingsSource, /openSequence !== workspaceOpenSequence/);
+    assert.match(settingsSource, /activeWorkspaceId === projectId && workspaceSessions\.get\(projectId\) === session/);
+    assert.match(settingsSource, /workspaceOpenSequence\+\+/);
+});
+
 test('mantém sessões ao retornar à Projects Main e libera recursos ao encerrar o modal', () => {
     assert.match(settingsSource, /workspaceSessions\.get\(activeWorkspaceId\)/);
     assert.match(settingsSource, /bodyEl\.replaceChildren\(activeSession\.root\)/);
