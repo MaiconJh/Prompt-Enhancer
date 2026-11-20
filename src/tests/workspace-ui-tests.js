@@ -39,6 +39,13 @@ test('implementa as três áreas do workspace e mantém o Inspector contextual f
     assert.match(uiSource, /has-inspector/);
 });
 
+test('campo de busca do Explorer evita preenchimento automático e limpa valor injetado ao focar', () => {
+    assert.match(markup, /name="pe-workspace-file-filter"[^>]*autocomplete="off"[^>]*readonly/);
+    assert.match(markup, /data-lpignore="true"/);
+    assert.match(markup, /data-1p-ignore="true"/);
+    assert.match(uiSource, /on\('\[data-search\]','focus',e=>\{e\.target\.readOnly=false;if\(!searchQuery\)e\.target\.value='';\}\)/);
+});
+
 test('stylesheet permanece isolado do shell externo', () => {
     assert.doesNotThrow(() => new Function(stylesSource));
     assert.match(stylesSource, /\.pe-workspace-host/);
