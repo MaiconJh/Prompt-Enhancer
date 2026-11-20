@@ -72,3 +72,31 @@ test('Projects Main is registered and localized in both supported languages', ()
         assert.equal(i18n.split('"' + key + '"').length - 1, 2, key + ' must exist in PT-BR and EN');
     }
 });
+
+
+test('Workspace exposes pending-change actions in its own header and not in the modal footer', () => {
+    assert.match(workspace, /data-workspace-actions/);
+    assert.match(workspace, /data-action="save-changes"/);
+    assert.match(workspace, /data-action="discard-changes"/);
+    assert.match(workspace, /function updateHeaderActions\(\)/);
+    assert.match(workspace, /actions\.hidden=\!\(visible\|\|activeView==='settings'\)/);
+    assert.match(workspace, /function runHeaderAction\(action\)/);
+    assert.doesNotMatch(workspace, /options\.onFooterChange/);
+    assert.doesNotMatch(settings, /onFooterChange:/);
+    assert.doesNotMatch(settings, /runWorkspaceFooterAction/);
+});
+
+test('Restore is available only for Settings and applies WorkspaceModel defaults', () => {
+    assert.match(workspace, /data-action="restore-settings-defaults"/);
+    assert.match(workspace, /restore\.hidden=activeView!=='settings'/);
+    assert.match(workspace, /WorkspaceModel\.DEFAULT_PROJECT_SETTINGS/);
+    assert.match(workspace, /WorkspaceModel\.DEFAULT_PROJECT_CONFIG/);
+    assert.match(workspace, /function restoreSettingsDefaults\(\)/);
+    assert.match(workspace, /restore\.disabled=!!headerActionBusy\|\|settingsAtDefaults\(\)/);
+});
+
+test('Header actions follow AI and project-settings dirty state and block navigation while saving', () => {
+    assert.match(workspace, /const visible=\(activeView==='ai'&&aiDirty\(\)\)\|\|\(activeView==='settings'&&settingsDirty\(\)\)/);
+    assert.match(workspace, /function canLeave\(\)\{if\(headerActionBusy\)return Promise\.resolve\(false\)/);
+    assert.match(workspace, /updateHeaderActions\(\);/);
+});
