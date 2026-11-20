@@ -6,6 +6,7 @@ const projects = await readFile(new URL('../workspace/projects-main.js', import.
 const workspace = await readFile(new URL('../workspace/workspace-ui.js', import.meta.url), 'utf8');
 const settings = await readFile(new URL('../settings-modal.js', import.meta.url), 'utf8');
 const styles = await readFile(new URL('../styles.js', import.meta.url), 'utf8');
+const workspaceStyles = await readFile(new URL('../workspace/workspace-styles.js', import.meta.url), 'utf8');
 const manifest = await readFile(new URL('../../manifest.json', import.meta.url), 'utf8');
 const i18n = await readFile(new URL('../i18n.js', import.meta.url), 'utf8');
 
@@ -56,9 +57,12 @@ test('modal dimensions match the Projects Main and Workspace reference sizes', (
 });
 
 
-test('toasts globais e locais do Workspace ficam alinhados no canto inferior esquerdo', () => {
-    assert.match(styles, /\.pe-toast\s*\{[^}]*left:\s*18px;[^}]*right:\s*auto;/s);
-    assert.match(styles, /max-width:\s*min\(360px,\s*calc\(100vw\s*-\s*36px\)\)/);
+test('toasts globais e do Workspace ficam no canto inferior direito da viewport, fora do modal', () => {
+    assert.match(styles, /\.pe-toast\s*\{[^}]*right:\s*18px;[^}]*left:\s*auto;/s);
+    assert.match(workspace, /const toastHost=\$\('\[data-toasts\]'\)[\s\S]*?document\.body\.appendChild\(toastHost\)/);
+    assert.match(workspace, /toastHost\?\.remove\(\)/);
+    assert.match(workspaceStyles, /\.pe-workspace-toast-stack\{[^}]*position: fixed; right: 24px; bottom: 24px; left: auto;/);
+    assert.match(workspaceStyles, /\.pe-workspace-toast\{/);
 });
 
 test('Projects Main is registered and localized in both supported languages', () => {
