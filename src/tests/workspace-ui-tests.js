@@ -62,14 +62,17 @@ test('cabeçalho do Workspace reutiliza o botão X compartilhado e não alterna 
     assert.ok(module.interfaces.consumes.includes('I18n'));
 });
 
-test('rodapé do Workspace não duplica o fechamento disponível no cabeçalho', () => {
-    const start = settingsSource.indexOf('function renderWorkspaceFooter(state = null)');
-    const end = settingsSource.indexOf('function resetWorkspaceFooter()', start);
-    assert.ok(start >= 0 && end > start);
-    const footer = settingsSource.slice(start, end);
-    assert.doesNotMatch(footer, /sm\.footer\.close|closeWindowAria|onClick:\s*close/);
-    assert.match(footer, /Salvar alterações/);
-    assert.match(footer, /Descartar/);
+test('ações do Workspace são integradas à Status Bar e removem o rodapé externo', () => {
+    assert.ok(markup.includes('data-status-actions'));
+    assert.ok(!markup.includes('data-status-project'));
+    assert.match(uiSource, /function renderStatusActions\(\)/);
+    assert.match(uiSource, /Salvar/);
+    assert.match(uiSource, /Descartar/);
+    assert.match(uiSource, /Restaurar padrões/);
+    assert.match(settingsSource, /if \(workspaceRoute\) footerEl\.remove\(\)/);
+    assert.match(settingsSource, /panel\.appendChild\(footerEl\)/);
+    assert.doesNotMatch(settingsSource, /function renderWorkspaceFooter/);
+    assert.match(stylesSource, /pe-workspace-status-action/);
 });
 
 test('modal continua responsável pela navegação Projects Main → Workspace no mesmo shell', () => {
@@ -169,23 +172,23 @@ test('workspace e módulos de domínio estão registrados na ordem de dependênc
 
 
 
-test('rodapé compartilhado coordena salvar/descartar e preserva pendências em falhas', () => {
-    assert.match(settingsSource, /function renderWorkspaceFooter\(state = null\)/);
-    assert.match(settingsSource, /function renderWorkspaceFooter\(state = null\)\s*\{\s*footerEl\.hidden = false;/);
-    assert.match(settingsSource, /session\.savePending\?\.\(\)/);
-    assert.match(settingsSource, /session\.discardPending\?\.\(\)/);
-    assert.match(settingsSource, /if \(state\?\.hasPending\)/);
+test('ações da Status Bar coordenam salvar/descartar e preservam pendências em falhas', () => {
+    assert.match(uiSource, /function renderStatusActions\(\)/);
     assert.match(uiSource, /async function savePendingChanges\(\)/);
     assert.match(uiSource, /if\(!fileOk\|\|!aiOk\|\|!settingsOk\)/);
     assert.match(uiSource, /function discardPendingChanges\(\)/);
     assert.match(uiSource, /Não foi possível concluir o salvamento/);
+    assert.match(uiSource, /add\('Descartar',null,'outline',discardPendingChanges\)/);
+    assert.match(uiSource, /savePendingChanges\)/);
+    assert.doesNotMatch(settingsSource, /renderWorkspaceFooter|pe-workspace-footer-actions/);
 });
 
-test('callbacks do Workspace não atualizam o rodapé de outro projeto ou sessão', () => {
+test('callbacks de navegação do Workspace permanecem vinculados ao projeto ativo', () => {
     assert.match(settingsSource, /let workspaceOpenSequence = 0/);
     assert.match(settingsSource, /openSequence !== workspaceOpenSequence/);
-    assert.match(settingsSource, /activeWorkspaceId === projectId && workspaceSessions\.get\(projectId\) === session/);
+    assert.match(settingsSource, /onBack: \(\) => \{ if \(activeWorkspaceId === projectId\)/);
     assert.match(settingsSource, /workspaceOpenSequence\+\+/);
+    assert.doesNotMatch(settingsSource, /onPendingChange: state =>/);
 });
 
 test('mantém sessões ao retornar à Projects Main e libera recursos ao encerrar o modal', () => {
