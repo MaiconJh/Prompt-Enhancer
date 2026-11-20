@@ -73,6 +73,8 @@ test('ações do Workspace são integradas à Status Bar e removem o rodapé ext
     assert.match(settingsSource, /panel\.appendChild\(footerEl\)/);
     assert.doesNotMatch(settingsSource, /function renderWorkspaceFooter/);
     assert.match(stylesSource, /pe-workspace-status-action/);
+    assert.match(stylesSource, /pe-workspace-status-action \.pe-ico:empty/);
+    assert.match(stylesSource, /justify-content:center!important; gap:5px!important; min-width:64px!important/);
 });
 
 test('modal continua responsável pela navegação Projects Main → Workspace no mesmo shell', () => {
@@ -157,6 +159,17 @@ test('Status Bar, Inspector e feedback refletem estado real do Workspace', () =>
     assert.match(uiSource, /nodeSize\(node\)/);
     assert.match(uiSource, /function toast\(/);
     assert.match(uiSource, /function updateStatus\(/);
+});
+
+test('Status Bar alterna o contexto pela view ativa e mantém estado persistente agregado', () => {
+    assert.match(markup, /data-status-editor-only/);
+    assert.match(markup, /role="status" aria-live="polite"/);
+    assert.match(uiSource, /statusBar\.classList\.toggle\('is-editor-mode',editorMode\)/);
+    assert.match(uiSource, /for\(const item of statusBar\.querySelectorAll\('\[data-status-editor-only\]'\)\)item\.hidden=!editorMode/);
+    assert.match(uiSource, /else status\(pending\.hasPending\?'Alterações não salvas':'Tudo salvo'/);
+    assert.match(uiSource, /const hasPending=\(\)=>dirty\.size>0\|\|aiDirty\(\)\|\|settingsDirty\(\)/);
+    assert.match(uiSource, /p\.textContent=pending\.domains\.join\(' · '\)/);
+    assert.match(uiSource, /if\(state\.canRestore\)add\('Restaurar padrões'/);
 });
 
 test('workspace e módulos de domínio estão registrados na ordem de dependência', () => {
