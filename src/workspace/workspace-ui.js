@@ -250,8 +250,16 @@ function render(container,options={}){
    expandedPaths=new Set(folders.filter(f=>!f.path.includes('/')).map(f=>f.path));if(!expandedPaths.size)for(const f of files)if(f.path.includes('/'))expandedPaths.add(f.path.split('/')[0]);
     if(files[0])await selectFileNow(files[0].id);if(activeView==='ai'){try{await ensureCatalog();}catch(error){toast(error.message||'Falha ao carregar provedores.','error');}}updateAll();status('Pronto');
   }
-  async function selectFileNow(id){
-   const file=await Workspace.files.get(project.id,id);if(!file)throw new Error('Arquivo não encontrado.');
+  async function selectFileNow(id,createdFile=null){
+   let file=await Workspace.files.get(project.id,id);
+   // A criação já confirmou a gravação. Preserve a seleção mesmo se uma leitura
+   // imediata do IndexedDB falhar; o registro será relido nas próximas ações.
+   if(!file&&createdFile?.id===id)file={...createdFile,content:contents.get(id)??createdFile.content??''};
+   if(!file&&contents.has(id)){
+    const metadata=files.find(item=>item.id===id);
+    if(metadata)file={...metadata,content:contents.get(id)};
+   }
+   if(!file)throw new Error('Arquivo não encontrado.');
    selectedFileId=id;selectedFile=file;inspectedNodeId=id;focusedNodeId=id;
    if(!originals.has(id))originals.set(id,file.content||'');if(!contents.has(id))contents.set(id,file.content||'');saveError=null;updateAll();
   }
@@ -265,12 +273,13 @@ function render(container,options={}){
   async function commitRename(){
    const id=editingNodeId,node=nodeById(id),name=String(renameValue||'').trim();if(!id||renameCommitInProgress)return;if(!node||!name){cancelRename();return;}renameCommitInProgress=true;
    const parent=node.path.split('/').slice(0,-1).join('/'),path=parent?parent+'/'+name:name;
-   try{WorkspaceModel.normalizeFilePath(path);if(path===node.path){editingNodeId=null;renderTree();return;}
-    if(node.type==='file'){if(node.file?.draft){const created=await Workspace.files.create(project.id,{path,content:''});draftFiles=draftFiles.filter(f=>f.id!==id);await refreshData();await selectFileNow(created.id);}
-     else{const saved=await Workspace.files.get(project.id,id);await Workspace.files.update(project.id,id,{path,content:saved.content});await refreshData();}}
-    else if(node.folder?.draft){const created=await Workspace.folders.create(project.id,path);draftFolders=draftFolders.filter(f=>f.id!==id);await refreshData();inspectedNodeId=created.id;}
-    else{await Workspace.folders.rename(project.id,node.path,path);await refreshData();inspectedNodeId=folders.find(f=>f.path===path)?.id||'folder:'+path;focusedNodeId=inspectedNodeId;}
-    editingNodeId=null;updateAll();toast('Item criado ou renomeado','success');
+   let successMessage='Item renomeado';
+   try{WorkspaceModel.normalizeFilePath(path);if(path===node.path&&!node.file?.draft&&!node.folder?.draft){editingNodeId=null;renderTree();return;}
+    if(node.type==='file'){if(node.file?.draft){const created=await Workspace.files.create(project.id,{path,content:''});contents.set(created.id,'');originals.set(created.id,'');draftFiles=draftFiles.filter(f=>f.id!==id);await refreshData();activeView='files';focusMode=false;await selectFileNow(created.id,created);successMessage='Arquivo criado e aberto no editor';}
+     else{const saved=await Workspace.files.get(project.id,id);await Workspace.files.update(project.id,id,{path,content:saved.content});await refreshData();successMessage='Arquivo renomeado';}}
+    else if(node.folder?.draft){const created=await Workspace.folders.create(project.id,path);draftFolders=draftFolders.filter(f=>f.id!==id);await refreshData();inspectedNodeId=created.id;successMessage='Pasta criada';}
+    else{await Workspace.folders.rename(project.id,node.path,path);await refreshData();inspectedNodeId=folders.find(f=>f.path===path)?.id||'folder:'+path;focusedNodeId=inspectedNodeId;successMessage='Pasta renomeada';}
+    editingNodeId=null;updateAll();toast(successMessage,'success');
    }catch(e){toast(e.message||'Não foi possível renomear o item.','error');renderTree();}
    finally{renameCommitInProgress=false;}
   }
