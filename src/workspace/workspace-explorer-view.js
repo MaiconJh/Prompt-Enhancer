@@ -51,6 +51,94 @@ const WorkspaceExplorerView = (() => {
         return [recordsKey(state.files || []), recordsKey(state.folders || []), String(state.options.searchQuery || '')].join('\u0002');
     }
 
+    function closeActionMenus(container, preserveTarget = null, restoreFocus = false) {
+        const state = states.get(container);
+        const menu = state?.contextMenu;
+        if (!menu || (preserveTarget && menu.contains(preserveTarget))) return;
+        menu.hidden = true;
+        state.contextRow = null;
+        if (restoreFocus && state.contextAnchor?.isConnected) state.contextAnchor.focus();
+        state.contextAnchor = null;
+    }
+
+    function ensureActionMenu(container, state) {
+        if (state.contextMenu) return state.contextMenu;
+        const menu = document.createElement('div');
+        menu.className = 'pe-jstree-context-menu';
+        menu.setAttribute('role', 'menu');
+        menu.setAttribute('aria-label', I18n.t('ws.files.actions'));
+        menu.hidden = true;
+        const rename = document.createElement('button');
+        rename.type = 'button'; rename.className = 'pe-jstree-action'; rename.dataset.action = 'rename';
+        rename.setAttribute('role', 'menuitem'); rename.textContent = I18n.t('ws.files.rename');
+        const remove = document.createElement('button');
+        remove.type = 'button'; remove.className = 'pe-jstree-action pe-jstree-action--delete';
+        remove.dataset.action = 'delete'; remove.setAttribute('role', 'menuitem');
+        remove.textContent = I18n.t('ws.files.deleteAction');
+        menu.append(rename, remove);
+        menu.addEventListener('click', event => {
+            const action = event.target.closest('[data-action]')?.dataset.action;
+            const row = state.contextRow;
+            closeActionMenus(container);
+            if (!row || !action) return;
+            if (action === 'rename') state.options.onStartRename?.(row);
+            else if (action === 'delete') state.options.onDelete?.(row);
+        });
+        menu.addEventListener('keydown', event => {
+            event.stopPropagation();
+            const items = [...menu.querySelectorAll('[role="menuitem"]')];
+            const current = items.indexOf(event.target);
+            if (event.key === 'Escape') {
+                event.preventDefault(); closeActionMenus(container, null, true);
+            } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                event.preventDefault();
+                const delta = event.key === 'ArrowDown' ? 1 : -1;
+                items[(current + delta + items.length) % items.length]?.focus();
+            }
+        });
+        const workspaceHost = container.closest('.pe-workspace-host');
+        const hostStyles = workspaceHost && getComputedStyle(workspaceHost);
+        for (const token of ['--pe-surface', '--pe-surface-2', '--pe-border-strong', '--pe-text-secondary', '--pe-text', '--pe-error-soft', '--pe-error', '--pe-shadow-2', '--pe-font', '--pe-fs-base']) {
+            const value = hostStyles?.getPropertyValue(token).trim();
+            if (value) menu.style.setProperty(token, value);
+        }
+        document.body.appendChild(menu);
+        state.contextMenu = menu;
+        state.contextMenuHost = menu.parentElement;
+        return menu;
+    }
+
+    function rowFromElement(container, state, element) {
+        const rowElement = element?.closest?.('[data-tree-id]');
+        if (!rowElement || !container.contains(rowElement)) return null;
+        if (state.jsTreeInitialized && window.__PEJQuery?.fn?.jstree) {
+            return window.__PEJQuery(container).jstree(true)?.get_node(rowElement)?.data?.row || null;
+        }
+        return state.rows[Number(rowElement.dataset.rowIndex)] || null;
+    }
+
+    function openActionMenu(container, state, row, x, y, anchor = null) {
+        const menu = ensureActionMenu(container, state);
+        state.options.onFocus?.(row);
+        state.options.onInspect?.(row);
+        state.contextRow = row;
+        state.contextAnchor = anchor;
+        menu.querySelector('[data-action="rename"]').textContent = I18n.t('ws.files.rename');
+        menu.querySelector('[data-action="delete"]').textContent = I18n.t('ws.files.deleteAction');
+        menu.hidden = false;
+        if (!Number.isFinite(x) || !Number.isFinite(y)) {
+            const bounds = anchor?.getBoundingClientRect();
+            x = bounds?.right || 8;
+            y = bounds?.bottom || 8;
+        }
+        const margin = 8;
+        const left = Math.max(margin, Math.min(x, window.innerWidth - menu.offsetWidth - margin));
+        const top = Math.max(margin, Math.min(y, window.innerHeight - menu.offsetHeight - margin));
+        menu.style.left = left + 'px';
+        menu.style.top = top + 'px';
+        menu.querySelector('[role="menuitem"]')?.focus();
+    }
+
     function renderJsTree(container, state) {
         const $ = window.__PEJQuery;
         if (!$?.fn?.jstree) return false;
@@ -87,10 +175,13 @@ const WorkspaceExplorerView = (() => {
                 const row = tree.jstree(true).get_node(event.currentTarget);
                 if (row?.data?.row) state.options.onStartRename?.(row.data.row);
             });
-            tree.on('click', '.pe-jstree-delete', event => {
-                event.preventDefault(); event.stopPropagation();
-                const row = tree.jstree(true).get_node(event.currentTarget.closest('li'))?.data?.row;
-                if (row) state.options.onDelete?.(row);
+            tree.on('contextmenu', 'li[data-tree-id]', event => {
+                event.preventDefault(); event.stopImmediatePropagation();
+                const row = rowFromElement(container, state, event.currentTarget);
+                if (!row) return;
+                const anchor = event.currentTarget.querySelector('.jstree-anchor');
+                const pointer = event.originalEvent || event;
+                openActionMenu(container, state, row, pointer.clientX, pointer.clientY, anchor);
             });
             tree.on('input', '.pe-jstree-rename', event => state.options.onRenameInput?.(event.currentTarget.value));
             tree.on('focusout', '.pe-jstree-rename', () => state.options.onCommitRename?.());
@@ -101,11 +192,17 @@ const WorkspaceExplorerView = (() => {
             });
             tree.on('keydown', event => {
                 if (event.target.matches('.pe-jstree-rename')) return;
-                const node = tree.jstree(true)?.get_node(event.target.closest('li'));
-                const row = node?.data?.row;
+                const row = rowFromElement(container, state, event.target);
                 if (!row) return;
                 if (event.key === 'F2') { event.preventDefault(); state.options.onStartRename?.(row); }
                 if (event.key === 'Delete') { event.preventDefault(); state.options.onDelete?.(row); }
+                if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+                    event.preventDefault();
+                    const rowElement = event.target.closest('li[data-tree-id]');
+                    const anchor = rowElement?.querySelector('.jstree-anchor');
+                    const bounds = anchor?.getBoundingClientRect();
+                    openActionMenu(container, state, row, bounds?.right || 16, bounds?.bottom || 16, anchor);
+                }
             });
             tree.jstree({ core: { data, multiple: false, force_text: true, dblclick_toggle: false, themes: { name: 'default', dots: false, icons: false, ellipsis: true } }, plugins: ['wholerow'] });
             state.jsTreeInitialized = true;
@@ -150,14 +247,8 @@ const WorkspaceExplorerView = (() => {
                 if (anchor.dataset.peRenderKey !== html) anchor.innerHTML = html;
             }
             anchor.dataset.peRenderKey = html;
-            if (!li.querySelector('.pe-jstree-delete')) {
-                const button = document.createElement('button');
-                button.type = 'button'; button.className = 'pe-jstree-delete pe-icon-btn pe-icon-btn--delete';
-                button.setAttribute('aria-label', I18n.t('ws.files.delete') + ' ' + row.name);
-                button.title = I18n.t('ws.files.delete');
-                button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
-                anchor.after(button);
-            }
+            const isEditing = state.options.editingNodeId === row.id;
+            if (isEditing && state.contextRow?.id === row.id) closeActionMenus(container);
         }
     }
 
@@ -278,18 +369,6 @@ const WorkspaceExplorerView = (() => {
             item.appendChild(dirty);
         }
 
-        if (options.editingNodeId !== node.id) {
-            const actions = document.createElement('div');
-            actions.className = 'pe-tree-row__actions';
-            const remove = document.createElement('button');
-            remove.type = 'button';
-            remove.className = 'pe-icon-btn pe-icon-btn--delete';
-            remove.setAttribute('aria-label', I18n.t('ws.files.delete') + ' ' + node.name);
-            remove.title = I18n.t('ws.files.delete');
-            remove.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
-            actions.appendChild(remove);
-            item.appendChild(actions);
-        }
         return item;
     }
 
@@ -349,19 +428,21 @@ const WorkspaceExplorerView = (() => {
         if (!state) {
             state = { expandedPaths: new Set(), files: null, folders: null, index: null, rows: [], options: {}, start: 0, end: 0 };
             states.set(container, state);
-            state.onScroll = () => { if (container.dataset.virtualized === 'true') renderRows(container, state); };
+            state.onOutsidePointerDown = event => closeActionMenus(container, event.target);
+            document.addEventListener('pointerdown', state.onOutsidePointerDown, true);
+            state.onScroll = () => { closeActionMenus(container); if (container.dataset.virtualized === 'true') renderRows(container, state); };
+            state.onContextMenu = event => {
+                if (state.jsTreeInitialized) return;
+                const row = rowFromElement(container, state, event.target);
+                if (!row) return;
+                event.preventDefault();
+                openActionMenu(container, state, row, event.clientX, event.clientY, event.target.closest('[data-tree-id]'));
+            };
             state.onClick = event => {
-                const remove = event.target.closest('.pe-icon-btn--delete');
                 const rowEl = event.target.closest('[data-tree-id]');
                 if (!rowEl || !container.contains(rowEl)) return;
                 const row = state.rows[Number(rowEl.dataset.rowIndex)];
                 if (!row) return;
-                if (remove) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    state.options.onDelete?.(row);
-                    return;
-                }
                 if (state.options.editingNodeId === row.id) return;
                 state.options.onFocus?.(row);
                 state.options.onInspect?.(row);
@@ -432,6 +513,7 @@ const WorkspaceExplorerView = (() => {
             container.addEventListener('click', state.onClick);
             container.addEventListener('dblclick', state.onDoubleClick);
             container.addEventListener('keydown', state.onKeyDown);
+            container.addEventListener('contextmenu', state.onContextMenu);
         }
 
         state.options = { ...options, files: Array.isArray(options.files) ? options.files : [], folders: Array.isArray(options.folders) ? options.folders : [] };
@@ -505,12 +587,15 @@ const WorkspaceExplorerView = (() => {
     function destroy(container) {
         const state = states.get(container);
         if (!state) return;
+        if (state.onOutsidePointerDown) document.removeEventListener('pointerdown', state.onOutsidePointerDown, true);
+        state.contextMenu?.remove();
         if (state.jsTreeInitialized && window.__PEJQuery?.fn?.jstree) window.__PEJQuery(container).jstree('destroy');
         container.classList.remove('pe-jstree-host');
         container.removeEventListener('scroll', state.onScroll);
         container.removeEventListener('click', state.onClick);
         container.removeEventListener('dblclick', state.onDoubleClick);
         container.removeEventListener('keydown', state.onKeyDown);
+        container.removeEventListener('contextmenu', state.onContextMenu);
         states.delete(container);
     }
 
